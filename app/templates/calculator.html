@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Zakat Calculator - Calculate Your Islamic Wealth Tax{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Zakat Calculator</h1>
+    <p class="subtitle">Calculate your Islamic wealth obligation (2.5%)</p>
+
+    <div class="info-box">
+        <p><strong>Nisab Threshold:</strong> Zakat is obligatory when your wealth exceeds the Nisab
+        (equivalent to 85g of gold or 595g of silver). Enter your assets below to calculate.</p>
+    </div>
+
+    <form id="zakatForm">
+        <div class="section-title">Cash & Savings</div>
+
+        <div class="form-group">
+            <label for="cash">Cash & Bank Accounts</label>
+            <input type="number" id="cash" name="cash" step="0.01" min="0" placeholder="0.00">
+            <p class="hint">Checking, savings, cash on hand</p>
+        </div>
+
+        <div class="form-group">
+            <label for="investments">Investments</label>
+            <input type="number" id="investments" name="investments" step="0.01" min="0" placeholder="0.00">
+            <p class="hint">Stocks, bonds, mutual funds</p>
+        </div>
+
+        <div class="section-title">Precious Metals</div>
+
+        <div class="form-group">
+            <label for="goldGrams">Gold (grams)</label>
+            <input type="number" id="goldGrams" name="goldGrams" step="0.01" min="0" placeholder="0.00">
+            <p class="hint">Weight of gold in grams (any karat)</p>
+        </div>
+
+        <div class="form-group">
+            <label for="silverGrams">Silver (grams)</label>
+            <input type="number" id="silverGrams" name="silverGrams" step="0.01" min="0" placeholder="0.00">
+            <p class="hint">Weight of silver in grams</p>
+        </div>
+
+        <div class="section-title">Other Assets</div>
+
+        <div class="form-group">
+            <label for="business">Business Assets</label>
+            <input type="number" id="business" name="business" step="0.01" min="0" placeholder="0.00">
+            <p class="hint">Inventory, receivables, business cash</p>
+        </div>
+
+        <div class="form-group">
+            <label for="other">Other Zakatable Assets</label>
+            <input type="number" id="other" name="other" step="0.01" min="0" placeholder="0.00">
+            <p class="hint">Loans given, rental income due</p>
+        </div>
+
+        <button type="submit">Calculate Zakat</button>
+    </form>
+
+    <div id="result" class="result">
+        <div class="result-row">
+            <span class="result-label">Total Wealth</span>
+            <span class="result-value" id="totalWealth">$0.00</span>
+        </div>
+        <div class="result-row">
+            <span class="result-label">Nisab Threshold (Gold)</span>
+            <span class="result-value" id="nisabThreshold">$0.00</span>
+        </div>
+        <div class="result-row">
+            <span class="result-label">Above Nisab</span>
+            <span class="result-value" id="aboveNisab">-</span>
+        </div>
+        <div class="result-row">
+            <span class="result-label">Zakat Due (2.5%)</span>
+            <span class="result-value zakat-due" id="zakatDue">$0.00</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Pricing data cache
+    let pricingData = null;
+
+    // Fetch pricing data on load
+    async function fetchPricing() {
+        try {
+            const response = await fetch('/api/v1/pricing');
+            pricingData = await response.json();
+        } catch (error) {
+            console.error('Failed to fetch pricing:', error);
+            // Fallback values
+            pricingData = {
+                gold: { price_per_gram_usd: 65.50, nisab_grams: 85 },
+                silver: { price_per_gram_usd: 0.82 },
+                zakat_rate: 0.025
+            };
+        }
+    }
+
+    // Format currency
+    function formatCurrency(amount) {
+        return '$' + amount.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    // Calculate Zakat
+    function calculateZakat(event) {
+        event.preventDefault();
+
+        const cash = parseFloat(document.getElementById('cash').value) || 0;
+        const investments = parseFloat(document.getElementById('investments').value) || 0;
+        const goldGrams = parseFloat(document.getElementById('goldGrams').value) || 0;
+        const silverGrams = parseFloat(document.getElementById('silverGrams').value) || 0;
+        const business = parseFloat(document.getElementById('business').value) || 0;
+        const other = parseFloat(document.getElementById('other').value) || 0;
+
+        // Calculate precious metals value
+        const goldValue = goldGrams * pricingData.gold.price_per_gram_usd;
+        const silverValue = silverGrams * pricingData.silver.price_per_gram_usd;
+
+        // Total wealth
+        const totalWealth = cash + investments + goldValue + silverValue + business + other;
+
+        // Nisab threshold (based on gold)
+        const nisabThreshold = pricingData.gold.nisab_grams * pricingData.gold.price_per_gram_usd;
+
+        // Calculate Zakat if above Nisab
+        const aboveNisab = totalWealth >= nisabThreshold;
+        const zakatDue = aboveNisab ? totalWealth * pricingData.zakat_rate : 0;
+
+        // Display results
+        document.getElementById('totalWealth').textContent = formatCurrency(totalWealth);
+        document.getElementById('nisabThreshold').textContent = formatCurrency(nisabThreshold);
+        document.getElementById('aboveNisab').textContent = aboveNisab ? 'Yes' : 'No';
+        document.getElementById('zakatDue').textContent = formatCurrency(zakatDue);
+        document.getElementById('result').classList.add('show');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+        await fetchPricing();
+        document.getElementById('zakatForm').addEventListener('submit', calculateZakat);
+    });
+</script>
+{% endblock %}
