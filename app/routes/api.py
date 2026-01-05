@@ -4,8 +4,31 @@ from flask import Blueprint, jsonify, request
 from app.services.pricing import get_pricing, format_pricing_response
 from app.services.calc import calculate_zakat
 from app.services.fx import SUPPORTED_CURRENCIES
+from app.data.currencies import (
+    get_ordered_currencies,
+    is_valid_currency,
+    DEFAULT_CURRENCY,
+)
 
 api_bp = Blueprint('api', __name__)
+
+
+@api_bp.route('/currencies')
+def currencies():
+    """Return ordered list of all supported currencies.
+
+    Returns:
+        JSON with currencies list in priority order:
+        - CAD first (project default)
+        - High-volume currencies by trading volume
+        - Remaining currencies alphabetically by code
+    """
+    currency_list = get_ordered_currencies()
+    return jsonify({
+        'currencies': currency_list,
+        'default': DEFAULT_CURRENCY,
+        'count': len(currency_list)
+    })
 
 
 @api_bp.route('/pricing')

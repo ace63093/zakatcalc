@@ -53,7 +53,7 @@ class TestValidateCurrency:
             assert validate_currency(curr) is True
 
     def test_unsupported_currency_invalid(self):
-        """Unsupported currencies should not validate."""
-        assert validate_currency('EUR') is False
+        """Invalid (non-ISO 4217) currencies should not validate."""
         assert validate_currency('XYZ') is False
+        assert validate_currency('FAKE') is False
         assert validate_currency('') is False
