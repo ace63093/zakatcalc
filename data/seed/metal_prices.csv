@@ -1,0 +1,17 @@
+date,metal,price_per_gram_usd,source
+2025-12-01,gold,82.50,seed
+2025-12-01,silver,0.98,seed
+2025-12-01,platinum,31.20,seed
+2025-12-01,palladium,32.50,seed
+2025-12-15,gold,83.00,seed
+2025-12-15,silver,1.00,seed
+2025-12-15,platinum,31.50,seed
+2025-12-15,palladium,32.80,seed
+2026-01-01,gold,84.00,seed
+2026-01-01,silver,1.02,seed
+2026-01-01,platinum,32.00,seed
+2026-01-01,palladium,33.00,seed
+2026-01-03,gold,84.25,seed
+2026-01-03,silver,1.03,seed
+2026-01-03,platinum,32.15,seed
+2026-01-03,palladium,33.10,seed

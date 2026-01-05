@@ -1,0 +1,41 @@
+date,symbol,name,price_usd,rank,source
+2025-12-01,BTC,Bitcoin,97500.00,1,seed
+2025-12-01,ETH,Ethereum,3650.00,2,seed
+2025-12-01,USDT,Tether,1.00,3,seed
+2025-12-01,BNB,BNB,620.00,4,seed
+2025-12-01,SOL,Solana,225.00,5,seed
+2025-12-01,XRP,XRP,2.15,6,seed
+2025-12-01,USDC,USD Coin,1.00,7,seed
+2025-12-01,ADA,Cardano,0.95,8,seed
+2025-12-01,DOGE,Dogecoin,0.42,9,seed
+2025-12-01,AVAX,Avalanche,42.50,10,seed
+2025-12-15,BTC,Bitcoin,98200.00,1,seed
+2025-12-15,ETH,Ethereum,3720.00,2,seed
+2025-12-15,USDT,Tether,1.00,3,seed
+2025-12-15,BNB,BNB,635.00,4,seed
+2025-12-15,SOL,Solana,232.00,5,seed
+2025-12-15,XRP,XRP,2.25,6,seed
+2025-12-15,USDC,USD Coin,1.00,7,seed
+2025-12-15,ADA,Cardano,0.98,8,seed
+2025-12-15,DOGE,Dogecoin,0.44,9,seed
+2025-12-15,AVAX,Avalanche,44.00,10,seed
+2026-01-01,BTC,Bitcoin,99000.00,1,seed
+2026-01-01,ETH,Ethereum,3800.00,2,seed
+2026-01-01,USDT,Tether,1.00,3,seed
+2026-01-01,BNB,BNB,650.00,4,seed
+2026-01-01,SOL,Solana,240.00,5,seed
+2026-01-01,XRP,XRP,2.35,6,seed
+2026-01-01,USDC,USD Coin,1.00,7,seed
+2026-01-01,ADA,Cardano,1.02,8,seed
+2026-01-01,DOGE,Dogecoin,0.46,9,seed
+2026-01-01,AVAX,Avalanche,45.50,10,seed
+2026-01-03,BTC,Bitcoin,98500.00,1,seed
+2026-01-03,ETH,Ethereum,3780.00,2,seed
+2026-01-03,USDT,Tether,1.00,3,seed
+2026-01-03,BNB,BNB,645.00,4,seed
+2026-01-03,SOL,Solana,238.00,5,seed
+2026-01-03,XRP,XRP,2.32,6,seed
+2026-01-03,USDC,USD Coin,1.00,7,seed
+2026-01-03,ADA,Cardano,1.00,8,seed
+2026-01-03,DOGE,Dogecoin,0.45,9,seed
+2026-01-03,AVAX,Avalanche,45.00,10,seed

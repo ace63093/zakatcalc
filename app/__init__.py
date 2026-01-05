@@ -1,4 +1,5 @@
 """Flask application factory for Zakat Calculator."""
+import os
 from flask import Flask
 
 
@@ -17,11 +18,20 @@ def create_app(config: dict | None = None) -> Flask:
     app.config.update(
         SECRET_KEY='dev-secret-key-change-in-production',
         JSON_SORT_KEYS=False,
+        DATA_DIR=os.environ.get('DATA_DIR', os.path.join(os.path.dirname(__file__), '..', 'data')),
     )
 
     # Override with provided config
     if config:
         app.config.update(config)
+
+    # Initialize database
+    from app import db
+    db.init_app(app)
+
+    # Register CLI commands
+    from app import cli
+    cli.register_cli(app)
 
     # Register blueprints
     from app.routes.main import main_bp
