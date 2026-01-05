@@ -12,14 +12,14 @@ def temp_data_dir(monkeypatch, tmp_path):
 
 
 def test_pricing_returns_200(client, temp_data_dir):
-    """GET /api/v1/pricing should return status 200."""
-    response = client.get('/api/v1/pricing')
+    """GET /api/v1/pricing/legacy should return status 200."""
+    response = client.get('/api/v1/pricing/legacy')
     assert response.status_code == 200
 
 
 def test_pricing_returns_required_keys(client, temp_data_dir):
-    """GET /api/v1/pricing should return all required keys."""
-    response = client.get('/api/v1/pricing')
+    """GET /api/v1/pricing/legacy should return all required keys."""
+    response = client.get('/api/v1/pricing/legacy')
     data = response.get_json()
 
     required_keys = ['base_currency', 'fx_rates', 'metals', 'zakat_rate', 'as_of', 'cache_status']
@@ -28,15 +28,15 @@ def test_pricing_returns_required_keys(client, temp_data_dir):
 
 
 def test_pricing_zakat_rate_is_correct(client, temp_data_dir):
-    """GET /api/v1/pricing should return zakat_rate of 0.025 (2.5%)."""
-    response = client.get('/api/v1/pricing')
+    """GET /api/v1/pricing/legacy should return zakat_rate of 0.025 (2.5%)."""
+    response = client.get('/api/v1/pricing/legacy')
     data = response.get_json()
     assert data['zakat_rate'] == 0.025
 
 
 def test_pricing_gold_has_nisab_info(client, temp_data_dir):
-    """GET /api/v1/pricing gold data should include nisab info (85 grams)."""
-    response = client.get('/api/v1/pricing')
+    """GET /api/v1/pricing/legacy gold data should include nisab info (85 grams)."""
+    response = client.get('/api/v1/pricing/legacy')
     data = response.get_json()
 
     assert 'nisab_grams' in data['metals']['gold']
@@ -44,8 +44,8 @@ def test_pricing_gold_has_nisab_info(client, temp_data_dir):
 
 
 def test_pricing_silver_has_nisab_info(client, temp_data_dir):
-    """GET /api/v1/pricing silver data should include nisab info (595 grams)."""
-    response = client.get('/api/v1/pricing')
+    """GET /api/v1/pricing/legacy silver data should include nisab info (595 grams)."""
+    response = client.get('/api/v1/pricing/legacy')
     data = response.get_json()
 
     assert 'nisab_grams' in data['metals']['silver']
@@ -61,7 +61,7 @@ def test_pricing_refresh_returns_200(client, temp_data_dir):
 def test_pricing_refresh_returns_refreshed_status(client, temp_data_dir):
     """POST /api/v1/pricing/refresh should return cache_status of refreshed."""
     # First populate cache
-    client.get('/api/v1/pricing')
+    client.get('/api/v1/pricing/legacy')
     # Then refresh
     response = client.post('/api/v1/pricing/refresh')
     data = response.get_json()
@@ -69,8 +69,8 @@ def test_pricing_refresh_returns_refreshed_status(client, temp_data_dir):
 
 
 def test_pricing_cache_hit_on_second_call(client, temp_data_dir):
-    """Second GET /api/v1/pricing should return cache hit."""
-    client.get('/api/v1/pricing')  # First call
-    response = client.get('/api/v1/pricing')  # Second call
+    """Second GET /api/v1/pricing/legacy should return cache hit."""
+    client.get('/api/v1/pricing/legacy')  # First call
+    response = client.get('/api/v1/pricing/legacy')  # Second call
     data = response.get_json()
     assert data['cache_status'] == 'hit'
