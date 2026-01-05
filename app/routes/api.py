@@ -1,40 +1,72 @@
-"""API routes for pricing data."""
-from flask import Blueprint, jsonify
+"""API routes for pricing and calculation."""
+from flask import Blueprint, jsonify, request
+
+from app.services.pricing import get_pricing, format_pricing_response
+from app.services.calc import calculate_zakat
+from app.services.fx import SUPPORTED_CURRENCIES
 
 api_bp = Blueprint('api', __name__)
 
-# Stub pricing data for MVP
-# In production, these would come from real market data APIs
-STUB_PRICING = {
-    'gold': {
-        'price_per_gram_usd': 65.50,
-        'nisab_grams': 85,
-        'nisab_value_usd': 5567.50,
-    },
-    'silver': {
-        'price_per_gram_usd': 0.82,
-        'nisab_grams': 595,
-        'nisab_value_usd': 487.90,
-    },
-    'currency': {
-        'base': 'USD',
-        'rates': {
-            'USD': 1.0,
-            'EUR': 0.92,
-            'GBP': 0.79,
-            'SAR': 3.75,
-            'AED': 3.67,
-            'MYR': 4.47,
-            'PKR': 278.50,
-            'INR': 83.12,
-        },
-    },
-    'zakat_rate': 0.025,  # 2.5%
-    'last_updated': '2025-01-04T00:00:00Z',
-}
-
 
 @api_bp.route('/pricing')
-def get_pricing():
-    """Return current pricing data for gold, silver, and currencies."""
-    return jsonify(STUB_PRICING)
+def pricing():
+    """Return current pricing data with cache status."""
+    data, status = get_pricing()
+    return jsonify(format_pricing_response(data, status))
+
+
+@api_bp.route('/pricing/refresh', methods=['POST'])
+def pricing_refresh():
+    """Force refresh pricing data, bypassing cache."""
+    data, status = get_pricing(force_refresh=True)
+    return jsonify(format_pricing_response(data, status))
+
+
+@api_bp.route('/calculate', methods=['POST'])
+def calculate():
+    """Calculate zakat from submitted assets.
+
+    Expected JSON body:
+    {
+        "master_currency": "CAD",
+        "gold": [{"name": "Ring", "weight_grams": 10, "purity_karat": 22}],
+        "cash": [{"name": "Wallet", "amount": 500, "currency": "CAD"}],
+        "bank": [{"name": "Savings", "amount": 10000, "currency": "CAD"}]
+    }
+    """
+    body = request.get_json() or {}
+
+    master_currency = body.get('master_currency', 'CAD')
+    if master_currency not in SUPPORTED_CURRENCIES:
+        return jsonify({'error': f'Unsupported currency: {master_currency}'}), 400
+
+    gold_items = body.get('gold', [])
+    cash_items = body.get('cash', [])
+    bank_items = body.get('bank', [])
+
+    # Validate gold items
+    for item in gold_items:
+        if 'weight_grams' not in item or 'purity_karat' not in item:
+            return jsonify({'error': 'Gold items require weight_grams and purity_karat'}), 400
+
+    # Validate cash items
+    for item in cash_items:
+        if 'amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Cash items require amount and currency'}), 400
+        if item['currency'] not in SUPPORTED_CURRENCIES:
+            return jsonify({'error': f"Unsupported currency: {item['currency']}"}), 400
+
+    # Validate bank items
+    for item in bank_items:
+        if 'amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Bank items require amount and currency'}), 400
+        if item['currency'] not in SUPPORTED_CURRENCIES:
+            return jsonify({'error': f"Unsupported currency: {item['currency']}"}), 400
+
+    # Get current pricing
+    pricing_data, _ = get_pricing()
+
+    # Calculate zakat
+    result = calculate_zakat(gold_items, cash_items, bank_items, master_currency, pricing_data)
+
+    return jsonify(result)

@@ -13,58 +13,87 @@
     </div>
 
     <form id="zakatForm">
-        <div class="section-title">Cash & Savings</div>
-
         <div class="form-group">
-            <label for="cash">Cash & Bank Accounts</label>
-            <input type="number" id="cash" name="cash" step="0.01" min="0" placeholder="0.00">
-            <p class="hint">Checking, savings, cash on hand</p>
+            <label for="masterCurrency">Master Currency</label>
+            <select id="masterCurrency" name="masterCurrency">
+                <option value="CAD" selected>CAD - Canadian Dollar</option>
+                <option value="USD">USD - US Dollar</option>
+                <option value="BDT">BDT - Bangladeshi Taka</option>
+            </select>
+            <p class="hint">All values will be converted to this currency</p>
         </div>
 
-        <div class="form-group">
-            <label for="investments">Investments</label>
-            <input type="number" id="investments" name="investments" step="0.01" min="0" placeholder="0.00">
-            <p class="hint">Stocks, bonds, mutual funds</p>
+        <div class="section-title">Gold Assets</div>
+        <div id="goldItems">
+            <div class="asset-row" data-type="gold">
+                <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
+                <input type="number" name="gold_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
+                <select name="gold_karat" class="input-karat">
+                    <option value="24">24K</option>
+                    <option value="22" selected>22K</option>
+                    <option value="21">21K</option>
+                    <option value="18">18K</option>
+                    <option value="14">14K</option>
+                    <option value="10">10K</option>
+                    <option value="9">9K</option>
+                </select>
+                <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
+            </div>
         </div>
+        <button type="button" class="btn-add" onclick="addGoldRow()">+ Add Gold Item</button>
 
-        <div class="section-title">Precious Metals</div>
-
-        <div class="form-group">
-            <label for="goldGrams">Gold (grams)</label>
-            <input type="number" id="goldGrams" name="goldGrams" step="0.01" min="0" placeholder="0.00">
-            <p class="hint">Weight of gold in grams (any karat)</p>
+        <div class="section-title">Cash on Hand</div>
+        <div id="cashItems">
+            <div class="asset-row" data-type="cash">
+                <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
+                <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                <select name="cash_currency" class="input-currency">
+                    <option value="CAD" selected>CAD</option>
+                    <option value="USD">USD</option>
+                    <option value="BDT">BDT</option>
+                </select>
+                <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
+            </div>
         </div>
+        <button type="button" class="btn-add" onclick="addCashRow()">+ Add Cash Item</button>
 
-        <div class="form-group">
-            <label for="silverGrams">Silver (grams)</label>
-            <input type="number" id="silverGrams" name="silverGrams" step="0.01" min="0" placeholder="0.00">
-            <p class="hint">Weight of silver in grams</p>
+        <div class="section-title">Bank Accounts</div>
+        <div id="bankItems">
+            <div class="asset-row" data-type="bank">
+                <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
+                <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                <select name="bank_currency" class="input-currency">
+                    <option value="CAD" selected>CAD</option>
+                    <option value="USD">USD</option>
+                    <option value="BDT">BDT</option>
+                </select>
+                <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
+            </div>
         </div>
-
-        <div class="section-title">Other Assets</div>
-
-        <div class="form-group">
-            <label for="business">Business Assets</label>
-            <input type="number" id="business" name="business" step="0.01" min="0" placeholder="0.00">
-            <p class="hint">Inventory, receivables, business cash</p>
-        </div>
-
-        <div class="form-group">
-            <label for="other">Other Zakatable Assets</label>
-            <input type="number" id="other" name="other" step="0.01" min="0" placeholder="0.00">
-            <p class="hint">Loans given, rental income due</p>
-        </div>
+        <button type="button" class="btn-add" onclick="addBankRow()">+ Add Bank Account</button>
 
         <button type="submit">Calculate Zakat</button>
     </form>
 
     <div id="result" class="result">
         <div class="result-row">
-            <span class="result-label">Total Wealth</span>
-            <span class="result-value" id="totalWealth">$0.00</span>
+            <span class="result-label">Gold Total</span>
+            <span class="result-value" id="goldTotal">$0.00</span>
         </div>
         <div class="result-row">
-            <span class="result-label">Nisab Threshold (Gold)</span>
+            <span class="result-label">Cash Total</span>
+            <span class="result-value" id="cashTotal">$0.00</span>
+        </div>
+        <div class="result-row">
+            <span class="result-label">Bank Total</span>
+            <span class="result-value" id="bankTotal">$0.00</span>
+        </div>
+        <div class="result-row">
+            <span class="result-label">Grand Total</span>
+            <span class="result-value" id="grandTotal">$0.00</span>
+        </div>
+        <div class="result-row">
+            <span class="result-label">Nisab Threshold (85g Gold)</span>
             <span class="result-value" id="nisabThreshold">$0.00</span>
         </div>
         <div class="result-row">
@@ -80,71 +109,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    // Pricing data cache
-    let pricingData = null;
-
-    // Fetch pricing data on load
-    async function fetchPricing() {
-        try {
-            const response = await fetch('/api/v1/pricing');
-            pricingData = await response.json();
-        } catch (error) {
-            console.error('Failed to fetch pricing:', error);
-            // Fallback values
-            pricingData = {
-                gold: { price_per_gram_usd: 65.50, nisab_grams: 85 },
-                silver: { price_per_gram_usd: 0.82 },
-                zakat_rate: 0.025
-            };
-        }
-    }
-
-    // Format currency
-    function formatCurrency(amount) {
-        return '$' + amount.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    }
-
-    // Calculate Zakat
-    function calculateZakat(event) {
-        event.preventDefault();
-
-        const cash = parseFloat(document.getElementById('cash').value) || 0;
-        const investments = parseFloat(document.getElementById('investments').value) || 0;
-        const goldGrams = parseFloat(document.getElementById('goldGrams').value) || 0;
-        const silverGrams = parseFloat(document.getElementById('silverGrams').value) || 0;
-        const business = parseFloat(document.getElementById('business').value) || 0;
-        const other = parseFloat(document.getElementById('other').value) || 0;
-
-        // Calculate precious metals value
-        const goldValue = goldGrams * pricingData.gold.price_per_gram_usd;
-        const silverValue = silverGrams * pricingData.silver.price_per_gram_usd;
-
-        // Total wealth
-        const totalWealth = cash + investments + goldValue + silverValue + business + other;
-
-        // Nisab threshold (based on gold)
-        const nisabThreshold = pricingData.gold.nisab_grams * pricingData.gold.price_per_gram_usd;
-
-        // Calculate Zakat if above Nisab
-        const aboveNisab = totalWealth >= nisabThreshold;
-        const zakatDue = aboveNisab ? totalWealth * pricingData.zakat_rate : 0;
-
-        // Display results
-        document.getElementById('totalWealth').textContent = formatCurrency(totalWealth);
-        document.getElementById('nisabThreshold').textContent = formatCurrency(nisabThreshold);
-        document.getElementById('aboveNisab').textContent = aboveNisab ? 'Yes' : 'No';
-        document.getElementById('zakatDue').textContent = formatCurrency(zakatDue);
-        document.getElementById('result').classList.add('show');
-    }
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', async () => {
-        await fetchPricing();
-        document.getElementById('zakatForm').addEventListener('submit', calculateZakat);
-    });
-</script>
+<script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
 {% endblock %}

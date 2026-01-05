@@ -19,7 +19,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 600px;
+            max-width: 700px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -51,19 +51,25 @@
             color: #718096;
             margin-top: 4px;
         }
-        input[type="number"] {
-            width: 100%;
+        input[type="number"], input[type="text"], select {
             padding: 12px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
             font-size: 16px;
             transition: border-color 0.2s;
         }
-        input[type="number"]:focus {
+        input[type="number"]:focus, input[type="text"]:focus, select:focus {
             outline: none;
             border-color: #667eea;
         }
-        button {
+        select {
+            background: white;
+            cursor: pointer;
+        }
+        #masterCurrency {
+            width: 100%;
+        }
+        button[type="submit"] {
             width: 100%;
             padding: 14px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -74,8 +80,9 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
         }
-        button:hover {
+        button[type="submit"]:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
@@ -129,6 +136,67 @@
             margin: 25px 0 15px;
             padding-bottom: 8px;
             border-bottom: 2px solid #e2e8f0;
+        }
+        .asset-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .asset-row .input-name {
+            flex: 2;
+            min-width: 100px;
+        }
+        .asset-row .input-weight,
+        .asset-row .input-amount {
+            flex: 1;
+            min-width: 80px;
+        }
+        .asset-row .input-karat,
+        .asset-row .input-currency {
+            width: 70px;
+        }
+        .btn-remove {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-remove:hover {
+            background: #c53030;
+        }
+        .btn-add {
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .btn-add:hover {
+            background: #38a169;
+        }
+        .error-message {
+            background: #fed7d7;
+            border-left: 4px solid #e53e3e;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 15px;
+            color: #742a2a;
+        }
+        @media (max-width: 600px) {
+            .asset-row {
+                flex-wrap: wrap;
+            }
+            .asset-row .input-name {
+                flex: 1 1 100%;
+            }
         }
     </style>
 </head>

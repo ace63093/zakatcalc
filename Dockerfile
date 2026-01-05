@@ -7,7 +7,8 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DATA_DIR=/app/data
 
 # Install dependencies
 COPY requirements.txt .
@@ -18,8 +19,9 @@ COPY app/ ./app/
 COPY tests/ ./tests/
 COPY wsgi.py gunicorn.conf.py pyproject.toml ./
 
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash appuser && \
+# Create data directory and non-root user for security
+RUN mkdir -p /app/data && \
+    useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app
 USER appuser
 

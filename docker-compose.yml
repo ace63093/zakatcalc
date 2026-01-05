@@ -7,6 +7,9 @@ services:
       - "8080:8080"
     environment:
       - FLASK_ENV=production
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
