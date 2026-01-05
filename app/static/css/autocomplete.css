@@ -1,0 +1,170 @@
+/* Currency and Crypto Autocomplete Styles */
+
+.autocomplete-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.autocomplete-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.autocomplete-input:focus {
+    border-color: #4a90d9;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.25);
+}
+
+.autocomplete-input::placeholder {
+    color: #999;
+}
+
+.autocomplete-listbox {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.autocomplete-listbox[hidden] {
+    display: none;
+}
+
+.autocomplete-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.autocomplete-option:hover,
+.autocomplete-option.active {
+    background-color: #f0f7ff;
+}
+
+.autocomplete-option[aria-selected="true"] {
+    background-color: #e6f2ff;
+}
+
+.autocomplete-option .currency-code,
+.autocomplete-option .crypto-symbol {
+    font-weight: 600;
+    min-width: 3.5rem;
+    color: #333;
+}
+
+.autocomplete-option .currency-name,
+.autocomplete-option .crypto-name {
+    color: #666;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.autocomplete-option .crypto-rank {
+    font-size: 0.75rem;
+    color: #999;
+    min-width: 2rem;
+    text-align: right;
+}
+
+/* Scrollbar styling for the listbox */
+.autocomplete-listbox::-webkit-scrollbar {
+    width: 8px;
+}
+
+.autocomplete-listbox::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.autocomplete-listbox::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.autocomplete-listbox::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .autocomplete-input {
+        background-color: #2d2d2d;
+        border-color: #444;
+        color: #eee;
+    }
+
+    .autocomplete-input:focus {
+        border-color: #5c9ce6;
+        box-shadow: 0 0 0 3px rgba(92, 156, 230, 0.25);
+    }
+
+    .autocomplete-input::placeholder {
+        color: #888;
+    }
+
+    .autocomplete-listbox {
+        background-color: #2d2d2d;
+        border-color: #444;
+    }
+
+    .autocomplete-option:hover,
+    .autocomplete-option.active {
+        background-color: #3d3d3d;
+    }
+
+    .autocomplete-option[aria-selected="true"] {
+        background-color: #354a5f;
+    }
+
+    .autocomplete-option .currency-code,
+    .autocomplete-option .crypto-symbol {
+        color: #eee;
+    }
+
+    .autocomplete-option .currency-name,
+    .autocomplete-option .crypto-name {
+        color: #aaa;
+    }
+
+    .autocomplete-listbox::-webkit-scrollbar-track {
+        background: #2d2d2d;
+    }
+
+    .autocomplete-listbox::-webkit-scrollbar-thumb {
+        background: #555;
+    }
+}
+
+/* Mobile-friendly adjustments */
+@media (max-width: 600px) {
+    .autocomplete-listbox {
+        max-height: 200px;
+    }
+
+    .autocomplete-option {
+        padding: 0.625rem 0.75rem;
+    }
+}
