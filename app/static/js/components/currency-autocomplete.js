@@ -377,9 +377,21 @@ const CurrencyAutocomplete = (function() {
         return instances;
     }
 
+    /**
+     * Set value on an existing autocomplete container
+     * @param {Element} container - Container element with initialized autocomplete
+     * @param {string} code - Currency code to set
+     */
+    function setValue(container, code) {
+        if (container && container._currencyAutocomplete) {
+            container._currencyAutocomplete.setValue(code);
+        }
+    }
+
     return {
         create: create,
         initAll: initAll,
+        setValue: setValue,
         filterCurrencies: filterCurrencies,
         normalizeQuery: normalizeQuery
     };

@@ -800,6 +800,366 @@ const ZakatCalculator = (function() {
         recalculate();
     }
 
+    /**
+     * Get the current state of the calculator form
+     * @returns {Object} Current form state
+     */
+    function getState() {
+        return {
+            base_currency: baseCurrency,
+            calculation_date: calculationDate,
+            nisab_basis: typeof NisabIndicator !== 'undefined' ? NisabIndicator.getBasis() : nisabBasis,
+            gold_items: collectGoldItemsFull(),
+            cash_items: collectCashItemsFull(),
+            bank_items: collectBankItemsFull(),
+            metal_items: collectMetalItemsFull(),
+            crypto_items: collectCryptoItemsFull()
+        };
+    }
+
+    /**
+     * Collect gold items with all fields (including empty)
+     */
+    function collectGoldItemsFull() {
+        var items = [];
+        document.querySelectorAll('#goldItems .asset-row').forEach(function(row) {
+            items.push({
+                name: row.querySelector('[name="gold_name"]')?.value || '',
+                weight_grams: parseFloat(row.querySelector('[name="gold_weight"]')?.value) || 0,
+                purity_karat: parseInt(row.querySelector('[name="gold_karat"]')?.value) || 22
+            });
+        });
+        return items;
+    }
+
+    /**
+     * Collect cash items with all fields (including empty)
+     */
+    function collectCashItemsFull() {
+        var items = [];
+        document.querySelectorAll('#cashItems .asset-row').forEach(function(row) {
+            items.push({
+                name: row.querySelector('[name="cash_name"]')?.value || '',
+                amount: parseFloat(row.querySelector('[name="cash_amount"]')?.value) || 0,
+                currency: row.querySelector('[name="cash_currency"]')?.value || baseCurrency
+            });
+        });
+        return items;
+    }
+
+    /**
+     * Collect bank items with all fields (including empty)
+     */
+    function collectBankItemsFull() {
+        var items = [];
+        document.querySelectorAll('#bankItems .asset-row').forEach(function(row) {
+            items.push({
+                name: row.querySelector('[name="bank_name"]')?.value || '',
+                amount: parseFloat(row.querySelector('[name="bank_amount"]')?.value) || 0,
+                currency: row.querySelector('[name="bank_currency"]')?.value || baseCurrency
+            });
+        });
+        return items;
+    }
+
+    /**
+     * Collect metal items with all fields (including empty)
+     */
+    function collectMetalItemsFull() {
+        var items = [];
+        document.querySelectorAll('#metalItems .asset-row').forEach(function(row) {
+            items.push({
+                name: row.querySelector('[name="metal_name"]')?.value || '',
+                metal: row.querySelector('[name="metal_type"]')?.value || 'silver',
+                weight_grams: parseFloat(row.querySelector('[name="metal_weight"]')?.value) || 0
+            });
+        });
+        return items;
+    }
+
+    /**
+     * Collect crypto items with all fields (including empty)
+     */
+    function collectCryptoItemsFull() {
+        var items = [];
+        document.querySelectorAll('#cryptoItems .asset-row').forEach(function(row) {
+            items.push({
+                name: row.querySelector('[name="crypto_name"]')?.value || '',
+                symbol: row.querySelector('[name="crypto_symbol"]')?.value || '',
+                amount: parseFloat(row.querySelector('[name="crypto_amount"]')?.value) || 0
+            });
+        });
+        return items;
+    }
+
+    /**
+     * Set the calculator state from a state object
+     * @param {Object} state - State object to restore
+     */
+    function setState(state) {
+        if (!state) return;
+
+        // Set base currency
+        if (state.base_currency) {
+            baseCurrency = state.base_currency;
+            var baseCurrencyContainer = document.getElementById('baseCurrencyContainer');
+            if (baseCurrencyContainer && typeof CurrencyAutocomplete !== 'undefined') {
+                CurrencyAutocomplete.setValue(baseCurrencyContainer, state.base_currency);
+            }
+            if (typeof NisabIndicator !== 'undefined') {
+                NisabIndicator.setBaseCurrency(state.base_currency);
+            }
+        }
+
+        // Set calculation date
+        if (state.calculation_date) {
+            calculationDate = state.calculation_date;
+            var datePicker = document.getElementById('calculationDate');
+            if (datePicker) {
+                datePicker.value = state.calculation_date;
+            }
+        }
+
+        // Set nisab basis
+        if (state.nisab_basis && typeof NisabIndicator !== 'undefined') {
+            NisabIndicator.setBasis(state.nisab_basis);
+            nisabBasis = state.nisab_basis;
+        }
+
+        // Restore gold items
+        if (state.gold_items) {
+            restoreGoldItems(state.gold_items);
+        }
+
+        // Restore cash items
+        if (state.cash_items) {
+            restoreCashItems(state.cash_items);
+        }
+
+        // Restore bank items
+        if (state.bank_items) {
+            restoreBankItems(state.bank_items);
+        }
+
+        // Restore metal items
+        if (state.metal_items) {
+            restoreMetalItems(state.metal_items);
+        }
+
+        // Restore crypto items
+        if (state.crypto_items) {
+            restoreCryptoItems(state.crypto_items);
+        }
+
+        // Reload pricing for the new date/currency and recalculate
+        loadPricing().then(function() {
+            recalculate();
+        });
+    }
+
+    /**
+     * Restore gold items from state
+     */
+    function restoreGoldItems(items) {
+        var container = document.getElementById('goldItems');
+        if (!container) return;
+
+        // Clear existing rows
+        container.innerHTML = '';
+
+        // Add rows for each item (or at least one empty row)
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', weight_grams: 0, purity_karat: 22 }];
+        itemsToRestore.forEach(function(item) {
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'gold';
+            row.innerHTML = [
+                '<input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '<input type="number" name="gold_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight" value="' + (item.weight_grams || '') + '">',
+                '<select name="gold_karat" class="input-karat">',
+                '    <option value="24"' + (item.purity_karat === 24 ? ' selected' : '') + '>24K</option>',
+                '    <option value="22"' + (item.purity_karat === 22 || !item.purity_karat ? ' selected' : '') + '>22K</option>',
+                '    <option value="21"' + (item.purity_karat === 21 ? ' selected' : '') + '>21K</option>',
+                '    <option value="18"' + (item.purity_karat === 18 ? ' selected' : '') + '>18K</option>',
+                '    <option value="14"' + (item.purity_karat === 14 ? ' selected' : '') + '>14K</option>',
+                '    <option value="10"' + (item.purity_karat === 10 ? ' selected' : '') + '>10K</option>',
+                '    <option value="9"' + (item.purity_karat === 9 ? ' selected' : '') + '>9K</option>',
+                '</select>',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+    }
+
+    /**
+     * Restore cash items from state
+     */
+    function restoreCashItems(items) {
+        var container = document.getElementById('cashItems');
+        if (!container) return;
+
+        // Clear existing rows
+        container.innerHTML = '';
+
+        // Add rows for each item
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', amount: 0, currency: baseCurrency }];
+        itemsToRestore.forEach(function(item) {
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'cash';
+            row.innerHTML = [
+                '<input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '<input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
+                '<div class="currency-autocomplete" data-name="cash_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+
+        // Initialize currency autocompletes for the new rows
+        initCurrencyAutocompletesWithValue();
+    }
+
+    /**
+     * Restore bank items from state
+     */
+    function restoreBankItems(items) {
+        var container = document.getElementById('bankItems');
+        if (!container) return;
+
+        // Clear existing rows
+        container.innerHTML = '';
+
+        // Add rows for each item
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', amount: 0, currency: baseCurrency }];
+        itemsToRestore.forEach(function(item) {
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'bank';
+            row.innerHTML = [
+                '<input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '<input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
+                '<div class="currency-autocomplete" data-name="bank_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+
+        // Initialize currency autocompletes for the new rows
+        initCurrencyAutocompletesWithValue();
+    }
+
+    /**
+     * Restore metal items from state
+     */
+    function restoreMetalItems(items) {
+        var container = document.getElementById('metalItems');
+        if (!container) return;
+
+        // Clear existing rows
+        container.innerHTML = '';
+
+        // Add rows for each item
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', metal: 'silver', weight_grams: 0 }];
+        itemsToRestore.forEach(function(item) {
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'metal';
+            row.innerHTML = [
+                '<input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '<input type="number" name="metal_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight" value="' + (item.weight_grams || '') + '">',
+                '<select name="metal_type" class="input-metal">',
+                '    <option value="silver"' + (item.metal === 'silver' || !item.metal ? ' selected' : '') + '>Silver</option>',
+                '    <option value="platinum"' + (item.metal === 'platinum' ? ' selected' : '') + '>Platinum</option>',
+                '    <option value="palladium"' + (item.metal === 'palladium' ? ' selected' : '') + '>Palladium</option>',
+                '</select>',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+    }
+
+    /**
+     * Restore crypto items from state
+     */
+    function restoreCryptoItems(items) {
+        var container = document.getElementById('cryptoItems');
+        if (!container) return;
+
+        // Clear existing rows
+        container.innerHTML = '';
+
+        // Add rows for each item
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', symbol: '', amount: 0 }];
+        itemsToRestore.forEach(function(item) {
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'crypto';
+            row.innerHTML = [
+                '<input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '<div class="crypto-autocomplete" data-name="crypto_symbol" data-initial="' + (item.symbol || '') + '"></div>',
+                '<input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+
+        // Initialize crypto autocompletes for the new rows
+        initCryptoAutocompletesWithValue();
+    }
+
+    /**
+     * Initialize currency autocompletes with initial values from data attributes
+     */
+    function initCurrencyAutocompletesWithValue() {
+        if (typeof CurrencyAutocomplete === 'undefined') return;
+
+        document.querySelectorAll('.currency-autocomplete:not([data-initialized])').forEach(function(container) {
+            var initialValue = container.dataset.initial || baseCurrency;
+            CurrencyAutocomplete.create(container, {
+                currencies: currencies,
+                initialValue: initialValue,
+                name: container.dataset.name || 'currency',
+                onSelect: function() {
+                    recalculate();
+                }
+            });
+            container.dataset.initialized = 'true';
+        });
+    }
+
+    /**
+     * Initialize crypto autocompletes with initial values from data attributes
+     */
+    function initCryptoAutocompletesWithValue() {
+        if (typeof CryptoAutocomplete === 'undefined') return;
+
+        document.querySelectorAll('.crypto-autocomplete:not([data-initialized])').forEach(function(container) {
+            var initialValue = container.dataset.initial || '';
+            CryptoAutocomplete.create(container, {
+                cryptos: cryptos,
+                initialValue: initialValue,
+                name: container.dataset.name || 'crypto',
+                onSelect: function() {
+                    recalculate();
+                }
+            });
+            container.dataset.initialized = 'true';
+        });
+    }
+
+    /**
+     * Escape HTML special characters
+     */
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#039;');
+    }
+
     // Public API
     return {
         init: init,
@@ -809,7 +1169,9 @@ const ZakatCalculator = (function() {
         addBankRow: addBankRow,
         addMetalRow: addMetalRow,
         addCryptoRow: addCryptoRow,
-        removeRow: removeRow
+        removeRow: removeRow,
+        getState: getState,
+        setState: setState
     };
 })();
 

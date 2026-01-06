@@ -5,6 +5,7 @@
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/autocomplete.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/nisab-indicator.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -120,6 +121,16 @@
                     </div>
                 </div>
                 <button type="button" class="btn-add" onclick="addCryptoRow()">+ Add Crypto Asset</button>
+
+                <!-- Tools Section -->
+                <div class="tools-section">
+                    <h3>Tools</h3>
+                    <div class="tools-buttons">
+                        <button type="button" id="save-draft-btn">Save Draft</button>
+                        <button type="button" id="load-draft-btn">Load Draft</button>
+                    </div>
+                    <div id="draft-list-container"></div>
+                </div>
             </form>
         </div>
 
@@ -184,5 +195,12 @@
 <script src="{{ url_for('static', filename='js/components/currency-autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/crypto-autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/nisab-indicator.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/draft-manager.js') }}"></script>
 <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
+<script>
+    // Initialize DraftManager after calculator is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        DraftManager.init('draft-list-container');
+    });
+</script>
 {% endblock %}
