@@ -25,6 +25,7 @@ const ZakatCalculator = (function() {
     let calculationDate = new Date().toISOString().split('T')[0];
     let nisabBasis = 'gold';
     let debounceTimer = null;
+    let lastCalculationResult = null;
 
     // Currency symbols for display
     const CURRENCY_SYMBOLS = {
@@ -545,6 +546,9 @@ const ZakatCalculator = (function() {
      * Update the display with calculated values
      */
     function updateDisplay(results) {
+        // Store the last calculation result for PDF export
+        lastCalculationResult = results;
+
         const symbol = CURRENCY_SYMBOLS[baseCurrency] || baseCurrency + ' ';
 
         setElementText('goldTotal', formatCurrency(results.goldTotal, symbol));
@@ -1160,6 +1164,14 @@ const ZakatCalculator = (function() {
                   .replace(/'/g, '&#039;');
     }
 
+    /**
+     * Get the last calculation result
+     * @returns {Object|null} Last calculation result or null if none
+     */
+    function getLastResult() {
+        return lastCalculationResult;
+    }
+
     // Public API
     return {
         init: init,
@@ -1171,7 +1183,8 @@ const ZakatCalculator = (function() {
         addCryptoRow: addCryptoRow,
         removeRow: removeRow,
         getState: getState,
-        setState: setState
+        setState: setState,
+        getLastResult: getLastResult
     };
 })();
 

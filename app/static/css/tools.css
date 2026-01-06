@@ -309,3 +309,425 @@
         min-width: 350px;
     }
 }
+
+/* ==============================================
+   Share Link Modal Styles
+   ============================================== */
+
+/* Modal Container */
+.share-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.share-modal.visible {
+    display: flex;
+    animation: shareModalFadeIn 0.2s ease-out;
+}
+
+@keyframes shareModalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Modal Backdrop */
+.share-modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Modal Content */
+.share-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: shareModalSlideIn 0.3s ease-out;
+}
+
+@keyframes shareModalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal Header */
+.share-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f7fafc;
+}
+
+.share-modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #2d3748;
+}
+
+.share-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #718096;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.share-modal-close:hover {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+/* Modal Body */
+.share-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Privacy Warning */
+.share-privacy-warning {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    background: #fef3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.share-warning-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    background: #ffc107;
+    color: #856404;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.share-warning-text {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #856404;
+    line-height: 1.5;
+}
+
+.share-warning-text strong {
+    color: #664d03;
+}
+
+/* URL Container */
+.share-url-container {
+    margin-bottom: 16px;
+}
+
+.share-url-container label {
+    display: block;
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.share-url-row {
+    display: flex;
+    gap: 8px;
+}
+
+.share-url-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #4a5568;
+    background: #f7fafc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.share-url-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.share-copy-btn {
+    padding: 10px 20px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.share-copy-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+.share-copy-btn:active {
+    transform: translateY(0);
+}
+
+/* Length Warning */
+.share-length-warning {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    background: #fff3e0;
+    border: 1px solid #ff9800;
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+.share-length-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    background: #ff9800;
+    color: #e65100;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.share-length-text {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #e65100;
+    line-height: 1.5;
+}
+
+.share-length-text strong {
+    color: #bf360c;
+}
+
+/* Modal Footer */
+.share-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid #e2e8f0;
+    background: #f7fafc;
+}
+
+.share-btn-primary,
+.share-btn-secondary {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.share-btn-primary {
+    background: #667eea;
+    color: white;
+    border: 2px solid #667eea;
+}
+
+.share-btn-primary:hover {
+    background: #5a67d8;
+    border-color: #5a67d8;
+}
+
+.share-btn-secondary {
+    background: white;
+    color: #4a5568;
+    border: 2px solid #e2e8f0;
+}
+
+.share-btn-secondary:hover {
+    background: #f7fafc;
+    border-color: #cbd5e0;
+}
+
+/* Load Confirmation Modal */
+.share-load-message {
+    margin: 0 0 16px 0;
+    color: #4a5568;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.share-load-preview {
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.share-preview-item {
+    padding: 6px 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+    color: #4a5568;
+}
+
+.share-preview-item:last-child {
+    border-bottom: none;
+}
+
+.share-preview-item strong {
+    color: #2d3748;
+}
+
+/* Share Notification (extends draft notification) */
+.share-notification {
+    /* Uses .draft-notification styles */
+}
+
+/* Responsive adjustments for share modal */
+@media (max-width: 600px) {
+    .share-modal-content {
+        width: 95%;
+        max-height: 85vh;
+        margin: 0 auto;
+    }
+
+    .share-url-row {
+        flex-direction: column;
+    }
+
+    .share-copy-btn {
+        width: 100%;
+    }
+
+    .share-modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .share-btn-primary,
+    .share-btn-secondary {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* ==========================================================================
+   PDF Export Styles
+   ========================================================================== */
+
+/* Export PDF button loading state */
+#export-pdf-btn.loading {
+    background: #f7fafc;
+    color: #a0aec0;
+    cursor: wait;
+    position: relative;
+}
+
+#export-pdf-btn.loading::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border: 2px solid #a0aec0;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: pdfSpinner 0.8s linear infinite;
+}
+
+@keyframes pdfSpinner {
+    to {
+        transform: translateY(-50%) rotate(360deg);
+    }
+}
+
+/* PDF Notification Toast */
+.pdf-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 90%;
+    text-align: center;
+}
+
+.pdf-notification.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.pdf-notification-success {
+    background: #48bb78;
+    color: white;
+}
+
+.pdf-notification-error {
+    background: #e53e3e;
+    color: white;
+}
+
+/* Responsive: PDF button on mobile */
+@media (max-width: 600px) {
+    .pdf-notification {
+        bottom: 80px;
+        left: 10px;
+        right: 10px;
+        transform: translateY(20px);
+        max-width: none;
+    }
+
+    .pdf-notification.visible {
+        transform: translateY(0);
+    }
+}
