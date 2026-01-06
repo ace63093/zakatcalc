@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from app import create_app
 from app.db import get_db, get_schema
 from app.services.time_provider import TimeProvider
+from tests.fakes.fake_r2 import FakeR2
 
 
 # Fixed "today" for deterministic tests - 2026-01-15 is a Wednesday
@@ -165,3 +166,42 @@ def monthly_test_dates(frozen_today):
         old_date_1.replace(day=1),  # 1st of month
         old_date_2.replace(day=1),  # 1st of month
     ]
+
+
+@pytest.fixture
+def fake_r2():
+    """Provide FakeR2 instance for testing without network calls."""
+    return FakeR2()
+
+
+@pytest.fixture
+def r2_client_fixture(fake_r2, monkeypatch):
+    """Provide R2Client with fake backend for testing.
+
+    Sets up environment variables and returns R2Client with FakeR2 backend.
+    """
+    from app.services.r2_client import R2Client
+
+    monkeypatch.setenv('R2_ENABLED', '1')
+    monkeypatch.setenv('R2_BUCKET', 'test-bucket')
+    monkeypatch.setenv('R2_ENDPOINT_URL', 'https://fake.r2.dev')
+    monkeypatch.setenv('R2_ACCESS_KEY_ID', 'fake-key')
+    monkeypatch.setenv('R2_SECRET_ACCESS_KEY', 'fake-secret')
+    monkeypatch.setenv('R2_PREFIX', '')
+
+    return R2Client(s3_client=fake_r2)
+
+
+@pytest.fixture
+def snapshot_repository(r2_client_fixture):
+    """Provide SnapshotRepository with fake R2 and no upstream.
+
+    Use for tests that need snapshot repository without network calls.
+    """
+    from app.services.snapshot_repository import SnapshotRepository
+
+    return SnapshotRepository(
+        r2_client=r2_client_fixture,
+        sync_service=None,
+        allow_network=False,
+    )
