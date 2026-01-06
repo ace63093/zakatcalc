@@ -54,213 +54,6 @@
     transform: none;
 }
 
-/* Draft List Container */
-#draft-list-container {
-    position: relative;
-    margin-top: 15px;
-}
-
-/* Draft List Dropdown */
-.draft-list {
-    display: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    z-index: 100;
-    max-height: 400px;
-    overflow: hidden;
-}
-
-.draft-list.visible {
-    display: block;
-    animation: draftListSlideIn 0.2s ease-out;
-}
-
-@keyframes draftListSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Draft List Header */
-.draft-list-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    background: #f7fafc;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.draft-list-title {
-    font-weight: 600;
-    color: #4a5568;
-    font-size: 0.95rem;
-}
-
-.draft-list-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: #718096;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.draft-list-close:hover {
-    background: #e2e8f0;
-    color: #4a5568;
-}
-
-/* Draft List Content */
-.draft-list-content {
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-/* Empty State */
-.draft-empty {
-    padding: 30px 20px;
-    text-align: center;
-    color: #718096;
-    font-size: 0.9rem;
-}
-
-/* Draft Item */
-.draft-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid #e2e8f0;
-    transition: background 0.2s;
-}
-
-.draft-item:last-child {
-    border-bottom: none;
-}
-
-.draft-item:hover {
-    background: #f7fafc;
-}
-
-.draft-item-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.draft-item-name {
-    display: block;
-    font-weight: 500;
-    color: #2d3748;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.draft-item-date {
-    display: block;
-    font-size: 0.8rem;
-    color: #a0aec0;
-    margin-top: 2px;
-}
-
-/* Draft Item Actions */
-.draft-item-actions {
-    display: flex;
-    gap: 6px;
-    margin-left: 12px;
-    flex-shrink: 0;
-}
-
-.draft-action-btn {
-    padding: 6px 10px;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    background: white;
-    color: #4a5568;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.draft-action-btn:hover {
-    border-color: #667eea;
-    color: #667eea;
-}
-
-.draft-load-btn:hover {
-    background: #667eea;
-    border-color: #667eea;
-    color: white;
-}
-
-.draft-delete-btn:hover {
-    border-color: #e53e3e;
-    color: #e53e3e;
-}
-
-/* Draft List Footer */
-.draft-list-footer {
-    padding: 10px 16px;
-    background: #f7fafc;
-    border-top: 1px solid #e2e8f0;
-}
-
-.draft-count {
-    font-size: 0.8rem;
-    color: #718096;
-}
-
-/* Notification Toast */
-.draft-notification {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
-    opacity: 0;
-    transition: all 0.3s ease;
-}
-
-.draft-notification.visible {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
-
-.draft-notification-success {
-    background: #48bb78;
-    color: white;
-}
-
-.draft-notification-error {
-    background: #e53e3e;
-    color: white;
-}
-
 /* Responsive adjustments */
 @media (max-width: 600px) {
     .tools-buttons {
@@ -270,32 +63,6 @@
     .tools-buttons button {
         width: 100%;
     }
-
-    .draft-list {
-        position: fixed;
-        top: auto;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        max-height: 70vh;
-        border-radius: 16px 16px 0 0;
-    }
-
-    .draft-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .draft-item-actions {
-        width: 100%;
-        margin-left: 0;
-    }
-
-    .draft-action-btn {
-        flex: 1;
-        text-align: center;
-    }
 }
 
 /* Desktop adjustments */
@@ -303,10 +70,6 @@
     .tools-section {
         margin-top: 25px;
         padding-top: 25px;
-    }
-
-    .draft-list {
-        min-width: 350px;
     }
 }
 
@@ -620,11 +383,6 @@
     color: #2d3748;
 }
 
-/* Share Notification (extends draft notification) */
-.share-notification {
-    /* Uses .draft-notification styles */
-}
-
 /* Responsive adjustments for share modal */
 @media (max-width: 600px) {
     .share-modal-content {
@@ -652,40 +410,11 @@
     }
 }
 
-/* ==========================================================================
-   PDF Export Styles
-   ========================================================================== */
+/* ==============================================
+   Toast Notification Styles (shared)
+   ============================================== */
 
-/* Export PDF button loading state */
-#export-pdf-btn.loading {
-    background: #f7fafc;
-    color: #a0aec0;
-    cursor: wait;
-    position: relative;
-}
-
-#export-pdf-btn.loading::after {
-    content: '';
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 14px;
-    height: 14px;
-    border: 2px solid #a0aec0;
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: pdfSpinner 0.8s linear infinite;
-}
-
-@keyframes pdfSpinner {
-    to {
-        transform: translateY(-50%) rotate(360deg);
-    }
-}
-
-/* PDF Notification Toast */
-.pdf-notification {
+.tools-notification {
     position: fixed;
     bottom: 20px;
     left: 50%;
@@ -702,24 +431,23 @@
     text-align: center;
 }
 
-.pdf-notification.visible {
+.tools-notification.visible {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
 
-.pdf-notification-success {
+.tools-notification-success {
     background: #48bb78;
     color: white;
 }
 
-.pdf-notification-error {
+.tools-notification-error {
     background: #e53e3e;
     color: white;
 }
 
-/* Responsive: PDF button on mobile */
 @media (max-width: 600px) {
-    .pdf-notification {
+    .tools-notification {
         bottom: 80px;
         left: 10px;
         right: 10px;
@@ -727,7 +455,7 @@
         max-width: none;
     }
 
-    .pdf-notification.visible {
+    .tools-notification.visible {
         transform: translateY(0);
     }
 }

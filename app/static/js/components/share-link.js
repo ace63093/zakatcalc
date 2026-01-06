@@ -507,19 +507,14 @@ var ShareLink = (function() {
      * @param {string} type - 'success' or 'error'
      */
     function showNotification(message, type) {
-        // Use DraftManager's notification if available
-        if (typeof DraftManager !== 'undefined' && DraftManager.showNotification) {
-            // DraftManager doesn't expose showNotification, create our own
-        }
-
         // Remove existing notifications
-        var existing = document.querySelector('.share-notification');
+        var existing = document.querySelector('.tools-notification');
         if (existing) {
             existing.remove();
         }
 
         var notification = document.createElement('div');
-        notification.className = 'draft-notification share-notification draft-notification-' + type;
+        notification.className = 'tools-notification tools-notification-' + type;
         notification.textContent = message;
         document.body.appendChild(notification);
 
