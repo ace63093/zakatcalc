@@ -24,6 +24,7 @@ from app.services.sync import get_sync_service
 from app.services.providers.registry import get_provider_status
 from app.services.cadence import get_effective_snapshot_date, get_cadence_boundaries
 from app.services.time_provider import get_today
+from app.services.r2_config import is_r2_enabled
 
 api_bp = Blueprint('api', __name__)
 
@@ -85,6 +86,7 @@ def pricing():
     # Check if snapshot exists
     coverage = get_coverage_flags(effective_date_str)
     jit_synced = False
+    data_source = 'sqlite'  # Default: data from local SQLite cache
 
     # JIT sync if snapshot missing and auto-sync enabled
     if not coverage['fx_available'] and is_auto_sync_enabled():
@@ -94,6 +96,7 @@ def pricing():
             sync_service.sync_date(effective_snapshot_date, snapshot_type=cadence)
             coverage = get_coverage_flags(effective_date_str)
             jit_synced = True
+            data_source = 'upstream'  # Data was just fetched from provider
         except Exception as e:
             current_app.logger.warning(f"JIT sync failed for {effective_date_str}: {e}")
 
@@ -162,7 +165,7 @@ def pricing():
         },
         'zakat_rate': ZAKAT_RATE,
         'generated_at': datetime.now(timezone.utc).isoformat(),
-        'data_source': 'local_store',
+        'data_source': data_source,
     }
 
     return jsonify(response)
@@ -470,6 +473,7 @@ def pricing_sync_status():
     {
         "sync_enabled": true,
         "auto_sync_enabled": false,
+        "r2_enabled": false,
         "providers": {...},
         "data_coverage": {...},
         "cadence": {...},
@@ -481,6 +485,7 @@ def pricing_sync_status():
     return jsonify({
         'sync_enabled': is_sync_enabled(),
         'auto_sync_enabled': is_auto_sync_enabled(),
+        'r2_enabled': is_r2_enabled(),
         'providers': get_provider_status(),
         'data_coverage': sync_service.get_data_coverage(),
         'cadence': get_cadence_boundaries(),

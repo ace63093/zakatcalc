@@ -89,7 +89,14 @@ class PricingSyncDaemon:
             logger.info("Database created")
 
     def sync_cycle(self):
-        """Execute one sync cycle."""
+        """Execute one sync cycle.
+
+        Uses SnapshotRepository to check SQLite -> R2 -> upstream,
+        ensuring we don't hit upstream providers unnecessarily.
+        """
+        from app.services.snapshot_repository import get_snapshot_repository
+        from app.services.sync import SyncService
+
         logger.info("=" * 50)
         logger.info("Starting sync cycle")
 
@@ -120,19 +127,40 @@ class PricingSyncDaemon:
             self.update_state('success', None, 0)
             return
 
-        # Sync missing snapshots
+        # Create repository with upstream fetch capability
+        # This will check SQLite -> R2 -> upstream for each missing snapshot
+        sync_service = SyncService()
+        repo = get_snapshot_repository(allow_network=True, sync_service=sync_service)
+
+        # Sync missing snapshots using repository
         synced = 0
         errors = []
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
 
         for snapshot_date, cadence in missing:
             try:
-                logger.info(f"Syncing {snapshot_date} ({cadence})...")
-                self.sync_snapshot(snapshot_date, cadence)
-                synced += 1
+                logger.info(f"Ensuring {snapshot_date} ({cadence}) via repository...")
+                # Repository will check SQLite -> R2 -> upstream
+                # If found in R2, it populates SQLite automatically
+                fx_ok = repo.ensure_fx_snapshot(snapshot_date, cadence, db=conn)
+                metals_ok = repo.ensure_metals_snapshot(snapshot_date, cadence, db=conn)
+                crypto_ok = repo.ensure_crypto_snapshot(snapshot_date, cadence, db=conn)
+
+                if fx_ok or metals_ok or crypto_ok:
+                    synced += 1
+                    logger.info(f"  Ensured: fx={bool(fx_ok)}, metals={bool(metals_ok)}, crypto={bool(crypto_ok)}")
+                else:
+                    error_msg = f"{snapshot_date}: All sources failed"
+                    errors.append(error_msg)
+                    logger.warning(f"  All sources failed for {snapshot_date}")
+
             except Exception as e:
                 error_msg = f"{snapshot_date}: {e}"
                 errors.append(error_msg)
-                logger.error(f"Failed to sync {snapshot_date}: {e}")
+                logger.error(f"Failed to ensure {snapshot_date}: {e}")
+
+        conn.close()
 
         # Update state
         if not errors:

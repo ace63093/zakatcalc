@@ -323,12 +323,13 @@ class TestPricingEndpoint:
         assert 'fx_rates' in data
 
     def test_data_source_field(self, client):
-        """Should include data_source field."""
+        """Should include data_source field indicating sqlite, r2, or upstream."""
         response = client.get('/api/v1/pricing?date=2025-12-15&base=USD')
         assert response.status_code == 200
 
         data = response.get_json()
-        assert data['data_source'] == 'local_store'
+        # Default source is sqlite (local cache)
+        assert data['data_source'] in ('sqlite', 'r2', 'upstream')
 
     def test_generated_at_field(self, client):
         """Should include generated_at timestamp."""

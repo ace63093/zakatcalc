@@ -43,6 +43,14 @@ class TestSyncStatusEndpoint:
         assert 'metals' in coverage
         assert 'crypto' in coverage
 
+    def test_r2_enabled_field(self, db_client):
+        """Sync status includes r2_enabled field."""
+        response = db_client.get('/api/v1/pricing/sync-status')
+        data = response.get_json()
+
+        assert 'r2_enabled' in data
+        assert isinstance(data['r2_enabled'], bool)
+
 
 class TestSyncDateEndpoint:
     """Tests for POST /api/v1/pricing/sync-date."""

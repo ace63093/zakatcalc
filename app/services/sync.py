@@ -1,4 +1,5 @@
 """Pricing data sync service."""
+import logging
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -8,15 +9,24 @@ from app.db import get_db
 from app.services.config import is_sync_enabled, is_auto_sync_enabled
 from app.services.providers.registry import get_fx_provider, get_metal_provider, get_crypto_provider
 from app.services.providers import ProviderError, RateLimitError, NetworkError
+from app.services.r2_client import get_r2_client
+
+logger = logging.getLogger(__name__)
 
 
 class SyncService:
     """Service for syncing pricing data from external providers."""
 
-    def __init__(self):
+    def __init__(self, r2_client=None):
+        """Initialize SyncService.
+
+        Args:
+            r2_client: Optional R2Client for mirroring. None = auto-detect.
+        """
         self.fx_provider = get_fx_provider()
         self.metal_provider = get_metal_provider()
         self.crypto_provider = get_crypto_provider()
+        self._r2 = r2_client if r2_client is not None else get_r2_client()
 
     def can_sync(self) -> bool:
         """Check if sync is allowed based on configuration."""
@@ -51,16 +61,33 @@ class SyncService:
         results = {}
         db = get_db()
 
+        fx_data = None
+        metals_data = None
+        crypto_data = None
+
         if 'fx' in types:
             results['fx'] = self._sync_fx_date(db, target_date, snapshot_type)
+            if results['fx'].get('status') == 'success':
+                fx_data = results['fx'].get('_data')
 
         if 'metals' in types:
             results['metals'] = self._sync_metals_date(db, target_date, snapshot_type)
+            if results['metals'].get('status') == 'success':
+                metals_data = results['metals'].get('_data')
 
         if 'crypto' in types:
             results['crypto'] = self._sync_crypto_date(db, target_date, snapshot_type)
+            if results['crypto'].get('status') == 'success':
+                crypto_data = results['crypto'].get('_data')
 
         db.commit()
+
+        # Mirror to R2 (best-effort, after SQLite commit)
+        self._mirror_to_r2(target_date, snapshot_type, fx_data, metals_data, crypto_data)
+
+        # Remove internal _data keys from response
+        for r in results.values():
+            r.pop('_data', None)
 
         return {
             'success': all(r.get('status') == 'success' for r in results.values()),
@@ -134,18 +161,20 @@ class SyncService:
 
             date_str = target_date.isoformat()
             count = 0
+            fx_data = {}  # Collect data for R2 mirroring
 
             for rate in rates:
                 db.execute('''
                     INSERT OR REPLACE INTO fx_rates (date, currency, rate_to_usd, source, snapshot_type)
                     VALUES (?, ?, ?, ?, ?)
                 ''', (date_str, rate.currency, rate.rate_to_usd, rate.source, snapshot_type))
+                fx_data[rate.currency] = rate.rate_to_usd
                 count += 1
 
             # Log the sync
             self._log_sync(db, date_str, 'fx', self.fx_provider.name, 'success', count, snapshot_type=snapshot_type)
 
-            return {'status': 'success', 'records': count, 'provider': self.fx_provider.name}
+            return {'status': 'success', 'records': count, 'provider': self.fx_provider.name, '_data': fx_data}
 
         except RateLimitError:
             return {'status': 'failed', 'error': 'Rate limit exceeded', 'records': 0}
@@ -163,17 +192,19 @@ class SyncService:
 
             date_str = target_date.isoformat()
             count = 0
+            metals_data = {}  # Collect data for R2 mirroring
 
             for price in prices:
                 db.execute('''
                     INSERT OR REPLACE INTO metal_prices (date, metal, price_per_gram_usd, source, snapshot_type)
                     VALUES (?, ?, ?, ?, ?)
                 ''', (date_str, price.metal, price.price_per_gram_usd, price.source, snapshot_type))
+                metals_data[price.metal] = price.price_per_gram_usd
                 count += 1
 
             self._log_sync(db, date_str, 'metals', self.metal_provider.name, 'success', count, snapshot_type=snapshot_type)
 
-            return {'status': 'success', 'records': count, 'provider': self.metal_provider.name}
+            return {'status': 'success', 'records': count, 'provider': self.metal_provider.name, '_data': metals_data}
 
         except RateLimitError:
             return {'status': 'failed', 'error': 'Rate limit exceeded', 'records': 0}
@@ -191,12 +222,18 @@ class SyncService:
 
             date_str = target_date.isoformat()
             count = 0
+            crypto_data = {}  # Collect data for R2 mirroring
 
             for price in prices:
                 db.execute('''
                     INSERT OR REPLACE INTO crypto_prices (date, symbol, name, price_usd, rank, source, snapshot_type)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (date_str, price.symbol, price.name, price.price_usd, price.rank, price.source, snapshot_type))
+                crypto_data[price.symbol] = {
+                    'name': price.name,
+                    'price': price.price_usd,
+                    'rank': price.rank,
+                }
                 count += 1
 
                 # Also update crypto_assets table
@@ -208,7 +245,7 @@ class SyncService:
 
             self._log_sync(db, date_str, 'crypto', self.crypto_provider.name, 'success', count, snapshot_type=snapshot_type)
 
-            return {'status': 'success', 'records': count, 'provider': self.crypto_provider.name}
+            return {'status': 'success', 'records': count, 'provider': self.crypto_provider.name, '_data': crypto_data}
 
         except RateLimitError:
             return {'status': 'failed', 'error': 'Rate limit exceeded', 'records': 0}
@@ -337,6 +374,56 @@ class SyncService:
             (date_str,)
         ).fetchone()
         return row['cnt'] > 0
+
+    def _mirror_to_r2(
+        self,
+        target_date: date,
+        cadence: str,
+        fx_data: dict | None,
+        metals_data: dict | None,
+        crypto_data: dict | None,
+    ):
+        """Mirror successfully synced data to R2 (best-effort).
+
+        Args:
+            target_date: The snapshot date
+            cadence: 'daily', 'weekly', or 'monthly'
+            fx_data: FX rates dict or None if not synced
+            metals_data: Metals prices dict or None if not synced
+            crypto_data: Crypto prices dict or None if not synced
+        """
+        if not self._r2:
+            return
+
+        if fx_data:
+            try:
+                self._r2.put_snapshot('fx', cadence, target_date, {
+                    'source': 'upstream',
+                    'data': fx_data,
+                })
+                logger.info(f"R2: Mirrored FX snapshot {target_date} ({cadence})")
+            except Exception as e:
+                logger.warning(f"R2: Failed to mirror FX {target_date}: {e}")
+
+        if metals_data:
+            try:
+                self._r2.put_snapshot('metals', cadence, target_date, {
+                    'source': 'upstream',
+                    'data': metals_data,
+                })
+                logger.info(f"R2: Mirrored metals snapshot {target_date} ({cadence})")
+            except Exception as e:
+                logger.warning(f"R2: Failed to mirror metals {target_date}: {e}")
+
+        if crypto_data:
+            try:
+                self._r2.put_snapshot('crypto', cadence, target_date, {
+                    'source': 'upstream',
+                    'data': crypto_data,
+                })
+                logger.info(f"R2: Mirrored crypto snapshot {target_date} ({cadence})")
+            except Exception as e:
+                logger.warning(f"R2: Failed to mirror crypto {target_date}: {e}")
 
 
 def get_sync_service() -> SyncService:
