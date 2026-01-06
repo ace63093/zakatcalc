@@ -224,8 +224,12 @@ def calculate_zakat_v2(
     crypto_prices = pricing.get('crypto', {})
 
     # Get gold price for gold calculation
-    gold_price = metal_prices.get('gold', 0)
-    silver_price = metal_prices.get('silver', 0)
+    # Fallback prices in USD per gram (approximate) if unavailable
+    FALLBACK_GOLD_PRICE = 85.0   # ~$2,650/oz
+    FALLBACK_SILVER_PRICE = 1.05  # ~$33/oz
+
+    gold_price = metal_prices.get('gold', 0) or FALLBACK_GOLD_PRICE
+    silver_price = metal_prices.get('silver', 0) or FALLBACK_SILVER_PRICE
 
     # Calculate subtotals
     gold_sub = calculate_gold_subtotal(gold_items, gold_price, base_currency, fx_rates)

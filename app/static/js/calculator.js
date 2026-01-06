@@ -526,11 +526,27 @@ const ZakatCalculator = (function() {
 
     /**
      * Get metal price in base currency
+     * Falls back to approximate USD prices if unavailable
      */
     function getMetalPrice(metal) {
+        // Fallback prices in USD per gram (approximate)
+        const FALLBACK_PRICES = {
+            gold: 85,      // ~$2,650/oz
+            silver: 1.05,  // ~$33/oz
+            platinum: 32,  // ~$1,000/oz
+            palladium: 32  // ~$1,000/oz
+        };
+
         const metals = pricingSnapshot?.metals || {};
         const metalInfo = metals[metal] || {};
-        return metalInfo.price_per_gram || 0;
+        const price = metalInfo.price_per_gram || 0;
+
+        // Use fallback if price is 0 or unavailable
+        if (price === 0 && FALLBACK_PRICES[metal]) {
+            return FALLBACK_PRICES[metal];
+        }
+
+        return price;
     }
 
     /**

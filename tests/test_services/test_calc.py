@@ -349,10 +349,11 @@ class TestCalculateZakatV2:
 
         # Gold nisab: 85 * 65 = 5525
         # Silver nisab: 595 * 0.85 = 505.75
-        # Lower of the two (silver) should be used
-        assert result['nisab']['gold_value'] == pytest.approx(5525.0, rel=0.01)
-        assert result['nisab']['silver_value'] == pytest.approx(505.75, rel=0.01)
-        assert result['nisab']['threshold_used'] == pytest.approx(505.75, rel=0.01)
+        # Default basis is gold
+        assert result['nisab']['gold_threshold'] == pytest.approx(5525.0, rel=0.01)
+        assert result['nisab']['silver_threshold'] == pytest.approx(505.75, rel=0.01)
+        assert result['nisab']['basis_used'] == 'gold'
+        assert result['nisab']['threshold_used'] == pytest.approx(5525.0, rel=0.01)
 
     def test_above_nisab_with_crypto(self):
         """Above nisab with crypto triggers zakat."""

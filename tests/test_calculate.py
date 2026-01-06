@@ -214,10 +214,15 @@ class TestCalculateV2Endpoint:
 
         assert 'nisab' in data
         assert 'gold_grams' in data['nisab']
-        assert 'gold_value' in data['nisab']
+        assert 'gold_threshold' in data['nisab']
         assert 'silver_grams' in data['nisab']
-        assert 'silver_value' in data['nisab']
+        assert 'silver_threshold' in data['nisab']
         assert 'threshold_used' in data['nisab']
+        assert 'basis_used' in data['nisab']
+        assert 'status' in data['nisab']
+        assert 'ratio' in data['nisab']
+        assert 'difference' in data['nisab']
+        assert 'difference_text' in data['nisab']
 
     def test_v2_all_asset_types(self, db_client):
         """V2 format handles all asset types together."""
