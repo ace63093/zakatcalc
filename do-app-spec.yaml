@@ -1,0 +1,91 @@
+# DigitalOcean App Platform Specification
+# Deploy with: doctl apps create --spec do-app-spec.yaml
+# Or import via DO Console from GitHub
+
+name: zakat-calculator
+
+region: tor  # Toronto
+
+services:
+  - name: web
+    # GitHub repo settings (update if your repo is different)
+    github:
+      repo: ace63093/zakatcalc
+      branch: production
+      deploy_on_push: true
+
+    # Build settings
+    dockerfile_path: Dockerfile
+
+    # Instance size ($5/month)
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+
+    # Health check
+    health_check:
+      http_path: /healthz
+      initial_delay_seconds: 10
+      period_seconds: 30
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+
+    # HTTP settings
+    http_port: 8080
+
+    # Routes
+    routes:
+      - path: /
+
+    # Environment variables
+    # IMPORTANT: Set SECRET values in DO Console, not here!
+    envs:
+      # Flask
+      - key: FLASK_ENV
+        value: "production"
+      - key: SECRET_KEY
+        type: SECRET
+        value: "CHANGE_ME_IN_DO_CONSOLE"
+
+      # Data directory (App Platform ephemeral storage)
+      - key: DATA_DIR
+        value: "/app/data"
+
+      # Pricing sync (in-process background thread)
+      - key: PRICING_BACKGROUND_SYNC
+        value: "1"
+      - key: PRICING_ALLOW_NETWORK
+        value: "1"
+      - key: PRICING_AUTO_SYNC
+        value: "1"
+      - key: PRICING_SYNC_INTERVAL_SECONDS
+        value: "21600"
+
+      # R2 Remote Cache (set actual values in DO Console)
+      - key: R2_ENABLED
+        value: "1"
+      - key: R2_BUCKET
+        type: SECRET
+        value: "SET_IN_DO_CONSOLE"
+      - key: R2_ENDPOINT_URL
+        type: SECRET
+        value: "SET_IN_DO_CONSOLE"
+      - key: R2_ACCESS_KEY_ID
+        type: SECRET
+        value: "SET_IN_DO_CONSOLE"
+      - key: R2_SECRET_ACCESS_KEY
+        type: SECRET
+        value: "SET_IN_DO_CONSOLE"
+      - key: R2_PREFIX
+        value: "zakat-app/pricing/"
+
+# Domains (configure after initial deploy)
+# domains:
+#   - domain: whatismyzakat.ca
+#     type: PRIMARY
+#   - domain: www.whatismyzakat.ca
+#     type: ALIAS
+#   - domain: whatismyzakat.com
+#     type: ALIAS
+#   - domain: www.whatismyzakat.com
+#     type: ALIAS

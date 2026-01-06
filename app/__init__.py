@@ -46,4 +46,10 @@ def create_app(config: dict | None = None) -> Flask:
     app.register_blueprint(health_bp)
     app.register_blueprint(api_bp, url_prefix='/api/v1')
 
+    # Start background pricing sync (for single-container deployments)
+    # Only starts if PRICING_AUTO_SYNC=1 (checked inside start_background_sync)
+    if os.environ.get('PRICING_BACKGROUND_SYNC', '0').lower() in ('1', 'true', 'yes'):
+        from app.services.background_sync import start_background_sync
+        start_background_sync()
+
     return app
