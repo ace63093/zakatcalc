@@ -206,6 +206,42 @@ Calculate Zakat based on provided assets. Supports both legacy and v2 formats.
 }
 ```
 
+## R2 Remote Cache (Optional)
+
+The app supports Cloudflare R2 as a shared remote cache for pricing snapshots.
+This allows multiple deployments to share pricing data without each hitting
+upstream providers.
+
+### Setup
+
+1. Create a Cloudflare R2 bucket
+2. Create an API token with R2 read/write permissions
+3. Set environment variables:
+
+```bash
+R2_ENABLED=1
+R2_BUCKET=your-bucket-name
+R2_ENDPOINT_URL=https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com
+R2_ACCESS_KEY_ID=your-access-key-id
+R2_SECRET_ACCESS_KEY=your-secret-access-key
+R2_PREFIX=zakat-app/pricing/  # optional
+```
+
+### How It Works
+
+- Pricing snapshots are stored as gzip-compressed JSON in R2
+- Key format: `{prefix}pricing/{type}/{cadence}/{date}.json.gz`
+- Lookup order: SQLite (local) -> R2 (remote) -> Upstream provider
+- New upstream fetches are automatically mirrored to R2
+- R2 is best-effort; failures don't break the app
+
+### Security Notes
+
+- R2 credentials are read from environment variables only
+- Credentials are never logged
+- R2 bucket should be private (no public access)
+- Only pricing data is stored (no user data)
+
 ## Development
 
 ### Project Structure
