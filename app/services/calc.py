@@ -187,7 +187,8 @@ def calculate_zakat_v2(
     metal_items: list,
     crypto_items: list,
     base_currency: str,
-    pricing: dict
+    pricing: dict,
+    nisab_basis: str = 'gold'
 ) -> dict:
     """Calculate zakat with all asset categories.
 
@@ -199,11 +200,16 @@ def calculate_zakat_v2(
         crypto_items: List of crypto items with name, symbol, amount
         base_currency: Target currency for all calculations
         pricing: Pricing snapshot with fx_rates, metals, crypto all in base_currency
+        nisab_basis: "gold" or "silver" - which metal to use for nisab threshold
 
     Returns:
         Complete calculation result with all subtotals and zakat due
     """
     fx_rates = pricing.get('fx_rates', {})
+
+    # Validate nisab_basis
+    if nisab_basis not in ('gold', 'silver'):
+        nisab_basis = 'gold'
 
     # Extract metal prices (already in base currency)
     metals_data = pricing.get('metals', {})
@@ -219,6 +225,7 @@ def calculate_zakat_v2(
 
     # Get gold price for gold calculation
     gold_price = metal_prices.get('gold', 0)
+    silver_price = metal_prices.get('silver', 0)
 
     # Calculate subtotals
     gold_sub = calculate_gold_subtotal(gold_items, gold_price, base_currency, fx_rates)
@@ -236,14 +243,38 @@ def calculate_zakat_v2(
         crypto_sub['total']
     )
 
-    # Calculate nisab threshold (using gold standard)
+    # Calculate nisab thresholds
     nisab_gold_value = NISAB_GOLD_GRAMS * gold_price
-    nisab_silver_value = NISAB_SILVER_GRAMS * metal_prices.get('silver', 0)
+    nisab_silver_value = NISAB_SILVER_GRAMS * silver_price
 
-    # Use the lower of gold or silver nisab (more conservative)
-    nisab_threshold = nisab_gold_value
-    if nisab_silver_value > 0 and nisab_silver_value < nisab_gold_value:
+    # Determine threshold based on selected basis
+    if nisab_basis == 'silver':
         nisab_threshold = nisab_silver_value
+    else:
+        nisab_threshold = nisab_gold_value
+
+    # Calculate ratio (clamped 0-1 for display purposes)
+    if nisab_threshold > 0:
+        raw_ratio = grand / nisab_threshold
+        display_ratio = min(max(raw_ratio, 0), 1)
+    else:
+        raw_ratio = 0
+        display_ratio = 0
+
+    # Determine status based on ratio
+    if raw_ratio < 0.90:
+        status = 'below'
+    elif raw_ratio < 1.0:
+        status = 'near'
+    else:
+        status = 'above'
+
+    # Calculate difference and text
+    difference = abs(grand - nisab_threshold)
+    if grand >= nisab_threshold:
+        difference_text = f"{round(difference, 2)} above nisab"
+    else:
+        difference_text = f"{round(difference, 2)} more to reach nisab"
 
     above = grand >= nisab_threshold
     zakat = round(grand * ZAKAT_RATE, 2) if above else 0.0
@@ -259,11 +290,16 @@ def calculate_zakat_v2(
         },
         'grand_total': round(grand, 2),
         'nisab': {
+            'basis_used': nisab_basis,
             'gold_grams': NISAB_GOLD_GRAMS,
-            'gold_value': round(nisab_gold_value, 2),
+            'gold_threshold': round(nisab_gold_value, 2),
             'silver_grams': NISAB_SILVER_GRAMS,
-            'silver_value': round(nisab_silver_value, 2),
+            'silver_threshold': round(nisab_silver_value, 2),
             'threshold_used': round(nisab_threshold, 2),
+            'ratio': round(display_ratio, 4),
+            'status': status,
+            'difference': round(difference, 2),
+            'difference_text': difference_text,
         },
         'above_nisab': above,
         'zakat_due': zakat,

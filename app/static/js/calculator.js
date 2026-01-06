@@ -23,6 +23,7 @@ const ZakatCalculator = (function() {
     let pricingSnapshot = null;
     let baseCurrency = 'CAD';
     let calculationDate = new Date().toISOString().split('T')[0];
+    let nisabBasis = 'gold';
     let debounceTimer = null;
 
     // Currency symbols for display
@@ -47,6 +48,7 @@ const ZakatCalculator = (function() {
             // Initialize UI components
             initBaseCurrencySelector();
             initDatePicker();
+            initNisabIndicator();
             initAssetRows();
             bindEvents();
 
@@ -58,6 +60,25 @@ const ZakatCalculator = (function() {
             console.error('Failed to initialize calculator:', error);
             showError('Failed to load pricing data. Please refresh the page.');
         }
+    }
+
+    /**
+     * Initialize the Nisab Indicator component
+     */
+    function initNisabIndicator() {
+        if (typeof NisabIndicator === 'undefined') {
+            console.warn('NisabIndicator component not available');
+            return;
+        }
+
+        NisabIndicator.init('nisabIndicatorContainer', {
+            basis: nisabBasis,
+            baseCurrency: baseCurrency,
+            onBasisChange: function(newBasis) {
+                nisabBasis = newBasis;
+                recalculate();
+            }
+        });
     }
 
     /**
@@ -128,6 +149,10 @@ const ZakatCalculator = (function() {
             name: 'baseCurrency',
             onSelect: function(currency) {
                 baseCurrency = currency.code;
+                // Update NisabIndicator's base currency
+                if (typeof NisabIndicator !== 'undefined') {
+                    NisabIndicator.setBaseCurrency(baseCurrency);
+                }
                 loadPricing().then(recalculate);
             }
         });
@@ -255,15 +280,56 @@ const ZakatCalculator = (function() {
 
         const grandTotal = goldTotal + cashTotal + bankTotal + metalTotal + cryptoTotal;
 
-        // Calculate nisab threshold
+        // Calculate nisab thresholds
         const goldPrice = getMetalPrice('gold');
         const silverPrice = getMetalPrice('silver');
         const nisabGoldValue = NISAB_GOLD_GRAMS * goldPrice;
         const nisabSilverValue = NISAB_SILVER_GRAMS * silverPrice;
-        const nisabThreshold = nisabGoldValue; // Use gold nisab
+
+        // Use threshold based on selected basis
+        const nisabThreshold = nisabBasis === 'silver' ? nisabSilverValue : nisabGoldValue;
+
+        // Calculate ratio and status for nisab indicator
+        let ratio = 0;
+        let status = 'below';
+        if (nisabThreshold > 0) {
+            const rawRatio = grandTotal / nisabThreshold;
+            ratio = Math.min(Math.max(rawRatio, 0), 1);
+            if (rawRatio >= 1.0) {
+                status = 'above';
+            } else if (rawRatio >= 0.90) {
+                status = 'near';
+            }
+        }
+
+        const difference = Math.abs(grandTotal - nisabThreshold);
+        const differenceText = grandTotal >= nisabThreshold
+            ? difference.toFixed(2) + ' above nisab'
+            : difference.toFixed(2) + ' more to reach nisab';
 
         const aboveNisab = grandTotal >= nisabThreshold;
         const zakatDue = aboveNisab ? grandTotal * ZAKAT_RATE : 0;
+
+        // Update NisabIndicator with calculated data
+        if (typeof NisabIndicator !== 'undefined') {
+            NisabIndicator.update({
+                basis_used: nisabBasis,
+                gold_grams: NISAB_GOLD_GRAMS,
+                gold_threshold: nisabGoldValue,
+                silver_grams: NISAB_SILVER_GRAMS,
+                silver_threshold: nisabSilverValue,
+                threshold_used: nisabThreshold,
+                ratio: ratio,
+                status: status,
+                difference: difference,
+                difference_text: differenceText
+            }, baseCurrency);
+
+            // Set effective date if available
+            if (pricingSnapshot.effective_date) {
+                NisabIndicator.setEffectiveDate(pricingSnapshot.effective_date);
+            }
+        }
 
         // Update display
         updateDisplay({
@@ -274,6 +340,7 @@ const ZakatCalculator = (function() {
             cryptoTotal,
             grandTotal,
             nisabThreshold,
+            nisabBasis,
             aboveNisab,
             zakatDue
         });
@@ -489,6 +556,12 @@ const ZakatCalculator = (function() {
         setElementText('nisabThreshold', formatCurrency(results.nisabThreshold, symbol));
         setElementText('aboveNisab', results.aboveNisab ? 'Yes' : 'No');
         setElementText('zakatDue', formatCurrency(results.zakatDue, symbol));
+
+        // Update nisab threshold label based on current basis
+        const nisabLabel = results.nisabBasis === 'silver'
+            ? 'Nisab Threshold (' + NISAB_SILVER_GRAMS + 'g Silver)'
+            : 'Nisab Threshold (' + NISAB_GOLD_GRAMS + 'g Gold)';
+        setElementText('nisabThresholdLabel', nisabLabel);
 
         // Show result section
         const resultSection = document.getElementById('result');

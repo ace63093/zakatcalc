@@ -272,6 +272,11 @@ def _calculate_v2(body: dict):
     except ValueError:
         return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
 
+    # Parse nisab_basis (gold or silver, default gold)
+    nisab_basis = body.get('nisab_basis', 'gold').lower()
+    if nisab_basis not in ('gold', 'silver'):
+        nisab_basis = 'gold'
+
     # Get items (support both new and legacy field names)
     gold_items = body.get('gold_items', body.get('gold', []))
     cash_items = body.get('cash_items', body.get('cash', []))
@@ -349,6 +354,7 @@ def _calculate_v2(body: dict):
         crypto_items=crypto_items,
         base_currency=base_currency,
         pricing=pricing,
+        nisab_basis=nisab_basis,
     )
 
     # Add calculation metadata

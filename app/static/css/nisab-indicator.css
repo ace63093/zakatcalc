@@ -1,0 +1,229 @@
+/* Nisab Indicator Component Styles */
+
+.nisab-indicator {
+    background: #f7fafc;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.nisab-indicator h3 {
+    color: #4a5568;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Toggle Button Group (pill-style) */
+.nisab-toggle-group {
+    display: inline-flex;
+    background: #e2e8f0;
+    border-radius: 20px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.nisab-toggle-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #718096;
+    cursor: pointer;
+    border-radius: 16px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.nisab-toggle-btn:hover {
+    color: #4a5568;
+}
+
+.nisab-toggle-btn.active {
+    background: white;
+    color: #667eea;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.nisab-toggle-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.4);
+}
+
+/* Progress Bar Container */
+.nisab-progress-container {
+    margin-bottom: 16px;
+}
+
+.nisab-progress-bar {
+    height: 12px;
+    background: #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.nisab-progress-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.4s ease-out, background-color 0.3s ease;
+    min-width: 2%;
+}
+
+/* Progress bar colors based on status */
+.nisab-progress-fill.status-below {
+    background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+}
+
+.nisab-progress-fill.status-near {
+    background: linear-gradient(90deg, #eab308 0%, #facc15 100%);
+}
+
+.nisab-progress-fill.status-above {
+    background: linear-gradient(90deg, #22c55e 0%, #4ade80 100%);
+}
+
+/* Progress labels */
+.nisab-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: #718096;
+}
+
+.nisab-progress-labels .current-amount {
+    font-weight: 600;
+    color: #4a5568;
+}
+
+/* Status Text */
+.nisab-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.nisab-status.status-below {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+}
+
+.nisab-status.status-near {
+    background: #fefce8;
+    border-left: 4px solid #eab308;
+}
+
+.nisab-status.status-above {
+    background: #f0fdf4;
+    border-left: 4px solid #22c55e;
+}
+
+.nisab-status-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.nisab-status-text {
+    flex: 1;
+}
+
+.nisab-status-text .difference {
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.nisab-status-text .description {
+    font-size: 0.85rem;
+    color: #718096;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Status-specific text colors */
+.nisab-status.status-below .difference {
+    color: #b91c1c;
+}
+
+.nisab-status.status-near .difference {
+    color: #a16207;
+}
+
+.nisab-status.status-above .difference {
+    color: #15803d;
+}
+
+/* Threshold Info */
+.nisab-threshold-info {
+    font-size: 0.85rem;
+    color: #718096;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.nisab-threshold-info .threshold-value {
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.nisab-threshold-info .effective-date {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #a0aec0;
+}
+
+/* Animated fill effect */
+@keyframes nisab-fill {
+    from {
+        width: 0;
+    }
+}
+
+.nisab-progress-fill.animate {
+    animation: nisab-fill 0.6s ease-out;
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+    .nisab-indicator h3 {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .nisab-toggle-group {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .nisab-toggle-btn {
+        flex: 1;
+        text-align: center;
+    }
+
+    .nisab-status {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .nisab-progress-labels {
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+/* Desktop adjustments for results panel */
+@media (min-width: 1024px) {
+    .nisab-indicator {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+}
