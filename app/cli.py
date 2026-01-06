@@ -166,6 +166,102 @@ def import_crypto_csv(csv_path: str) -> int:
     return count
 
 
+@click.command('mirror-to-r2')
+@click.option('--cadence', default='daily', help='Cadence label (daily, weekly, monthly)')
+@click.option('--limit', default=0, help='Max dates to mirror (0 = all)')
+@with_appcontext
+def mirror_to_r2_command(cadence, limit):
+    """Mirror existing SQLite pricing data to R2.
+
+    Reads all unique dates from SQLite and pushes FX, metals, and crypto
+    snapshots to R2 for each date.
+    """
+    from app.services.r2_client import get_r2_client
+    from app.services.r2_config import is_r2_enabled
+
+    if not is_r2_enabled():
+        click.echo('Error: R2 is not enabled. Set R2_ENABLED=1 and configure credentials.')
+        return
+
+    r2 = get_r2_client()
+    if not r2:
+        click.echo('Error: Could not create R2 client.')
+        return
+
+    db = get_db()
+
+    # Get all unique dates with data
+    fx_dates = db.execute('SELECT DISTINCT date FROM fx_rates ORDER BY date').fetchall()
+    metal_dates = db.execute('SELECT DISTINCT date FROM metal_prices ORDER BY date').fetchall()
+    crypto_dates = db.execute('SELECT DISTINCT date FROM crypto_prices ORDER BY date').fetchall()
+
+    all_dates = sorted(set(
+        [r['date'] for r in fx_dates] +
+        [r['date'] for r in metal_dates] +
+        [r['date'] for r in crypto_dates]
+    ))
+
+    if limit > 0:
+        all_dates = all_dates[-limit:]  # Most recent N dates
+
+    click.echo(f'Found {len(all_dates)} dates to mirror (cadence: {cadence})')
+
+    fx_count = 0
+    metals_count = 0
+    crypto_count = 0
+
+    for date_str in all_dates:
+        # Mirror FX rates
+        fx_rows = db.execute(
+            'SELECT currency, rate_to_usd FROM fx_rates WHERE date = ?',
+            (date_str,)
+        ).fetchall()
+        if fx_rows:
+            fx_data = {row['currency']: row['rate_to_usd'] for row in fx_rows}
+            try:
+                from datetime import date as dt_date
+                r2.put_snapshot('fx', cadence, dt_date.fromisoformat(date_str), {'data': fx_data})
+                fx_count += 1
+            except Exception as e:
+                click.echo(f'  Error uploading FX {date_str}: {e}')
+
+        # Mirror metal prices
+        metal_rows = db.execute(
+            'SELECT metal, price_per_gram_usd FROM metal_prices WHERE date = ?',
+            (date_str,)
+        ).fetchall()
+        if metal_rows:
+            metals_data = {row['metal']: row['price_per_gram_usd'] for row in metal_rows}
+            try:
+                from datetime import date as dt_date
+                r2.put_snapshot('metals', cadence, dt_date.fromisoformat(date_str), {'data': metals_data})
+                metals_count += 1
+            except Exception as e:
+                click.echo(f'  Error uploading metals {date_str}: {e}')
+
+        # Mirror crypto prices
+        crypto_rows = db.execute(
+            'SELECT symbol, name, price_usd, rank FROM crypto_prices WHERE date = ?',
+            (date_str,)
+        ).fetchall()
+        if crypto_rows:
+            crypto_data = {
+                row['symbol']: {
+                    'name': row['name'],
+                    'price': row['price_usd'],
+                    'rank': row['rank']
+                } for row in crypto_rows
+            }
+            try:
+                from datetime import date as dt_date
+                r2.put_snapshot('crypto', cadence, dt_date.fromisoformat(date_str), {'data': crypto_data})
+                crypto_count += 1
+            except Exception as e:
+                click.echo(f'  Error uploading crypto {date_str}: {e}')
+
+    click.echo(f'Mirrored to R2: {fx_count} FX, {metals_count} metals, {crypto_count} crypto snapshots')
+
+
 def register_cli(app):
     """Register CLI commands with the Flask app."""
     app.cli.add_command(init_db_command)
@@ -173,3 +269,4 @@ def register_cli(app):
     app.cli.add_command(import_metals_csv_command)
     app.cli.add_command(import_crypto_csv_command)
     app.cli.add_command(seed_all_command)
+    app.cli.add_command(mirror_to_r2_command)
