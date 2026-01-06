@@ -2,6 +2,10 @@
 
 {% block title %}Zakat Calculator - Calculate Your Islamic Wealth Tax{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/autocomplete.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <h1>Zakat Calculator</h1>
@@ -12,102 +16,168 @@
         (equivalent to 85g of gold or 595g of silver). Enter your assets below to calculate.</p>
     </div>
 
-    <form id="zakatForm">
-        <div class="form-group">
-            <label for="masterCurrency">Master Currency</label>
-            <select id="masterCurrency" name="masterCurrency">
-                <option value="CAD" selected>CAD - Canadian Dollar</option>
-                <option value="USD">USD - US Dollar</option>
-                <option value="BDT">BDT - Bangladeshi Taka</option>
-            </select>
-            <p class="hint">All values will be converted to this currency</p>
+    <!-- Cadence Info Banner - shows effective snapshot date and cadence type -->
+    <div id="cadenceBanner" class="cadence-banner" style="display: none;">
+        <div class="cadence-banner-content">
+            <span class="cadence-banner-icon">i</span>
+            <span class="cadence-banner-message">
+                Using <strong id="cadenceType">weekly</strong> snapshot from <strong id="cadenceEffectiveDate"></strong>.
+                <span id="cadenceNote" class="cadence-note"></span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Two-column layout wrapper (desktop: inputs left, results right) -->
+    <div class="calculator-layout">
+        <!-- Left column: Input Form -->
+        <div class="calculator-inputs">
+            <form id="zakatForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="baseCurrency">Base Currency</label>
+                        <div id="baseCurrencyContainer" class="currency-autocomplete" data-name="baseCurrency"></div>
+                        <p class="hint">All values will be converted to this currency</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="calculationDate">Calculation Date</label>
+                        <input type="date" id="calculationDate" name="calculationDate">
+                        <p class="hint">Historical prices will be used for this date</p>
+                    </div>
+                </div>
+
+                <div id="effectiveDate" class="effective-date-notice" style="display: none;"></div>
+
+                <!-- Gold Assets -->
+                <div class="section-title">Gold Assets</div>
+                <div id="goldItems">
+                    <div class="asset-row" data-type="gold">
+                        <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
+                        <input type="number" name="gold_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
+                        <select name="gold_karat" class="input-karat">
+                            <option value="24">24K</option>
+                            <option value="22" selected>22K</option>
+                            <option value="21">21K</option>
+                            <option value="18">18K</option>
+                            <option value="14">14K</option>
+                            <option value="10">10K</option>
+                            <option value="9">9K</option>
+                        </select>
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addGoldRow()">+ Add Gold Item</button>
+
+                <!-- Other Precious Metals -->
+                <div class="section-title">Other Precious Metals</div>
+                <div id="metalItems">
+                    <div class="asset-row" data-type="metal">
+                        <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
+                        <input type="number" name="metal_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
+                        <select name="metal_type" class="input-metal">
+                            <option value="silver">Silver</option>
+                            <option value="platinum">Platinum</option>
+                            <option value="palladium">Palladium</option>
+                        </select>
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addMetalRow()">+ Add Metal Item</button>
+
+                <!-- Cash on Hand -->
+                <div class="section-title">Cash on Hand</div>
+                <div id="cashItems">
+                    <div class="asset-row" data-type="cash">
+                        <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
+                        <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                        <div class="currency-autocomplete" data-name="cash_currency"></div>
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addCashRow()">+ Add Cash Item</button>
+
+                <!-- Bank Accounts -->
+                <div class="section-title">Bank Accounts</div>
+                <div id="bankItems">
+                    <div class="asset-row" data-type="bank">
+                        <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
+                        <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                        <div class="currency-autocomplete" data-name="bank_currency"></div>
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addBankRow()">+ Add Bank Account</button>
+
+                <!-- Cryptocurrency -->
+                <div class="section-title">Cryptocurrency</div>
+                <div id="cryptoItems">
+                    <div class="asset-row" data-type="crypto">
+                        <input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name">
+                        <div class="crypto-autocomplete" data-name="crypto_symbol"></div>
+                        <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount">
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addCryptoRow()">+ Add Crypto Asset</button>
+            </form>
         </div>
 
-        <div class="section-title">Gold Assets</div>
-        <div id="goldItems">
-            <div class="asset-row" data-type="gold">
-                <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
-                <input type="number" name="gold_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
-                <select name="gold_karat" class="input-karat">
-                    <option value="24">24K</option>
-                    <option value="22" selected>22K</option>
-                    <option value="21">21K</option>
-                    <option value="18">18K</option>
-                    <option value="14">14K</option>
-                    <option value="10">10K</option>
-                    <option value="9">9K</option>
-                </select>
-                <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
+        <!-- Right column: Results Panel (sticky on desktop) -->
+        <div class="calculator-results">
+            <div id="result" class="result show">
+                <h2>Calculation Results</h2>
+
+                <div class="result-section">
+                    <h3>Asset Subtotals</h3>
+                    <div class="result-row">
+                        <span class="result-label">Gold Total</span>
+                        <span class="result-value" id="goldTotal">$0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Other Metals Total</span>
+                        <span class="result-value" id="metalTotal">$0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Cash Total</span>
+                        <span class="result-value" id="cashTotal">$0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Bank Total</span>
+                        <span class="result-value" id="bankTotal">$0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Crypto Total</span>
+                        <span class="result-value" id="cryptoTotal">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="result-section">
+                    <h3>Zakat Calculation</h3>
+                    <div class="result-row grand-total">
+                        <span class="result-label">Grand Total</span>
+                        <span class="result-value" id="grandTotal">$0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Nisab Threshold (85g Gold)</span>
+                        <span class="result-value" id="nisabThreshold">$0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Above Nisab</span>
+                        <span class="result-value" id="aboveNisab">-</span>
+                    </div>
+                    <div class="result-row zakat-row">
+                        <span class="result-label">Zakat Due (2.5%)</span>
+                        <span class="result-value zakat-due" id="zakatDue">$0.00</span>
+                    </div>
+                </div>
             </div>
-        </div>
-        <button type="button" class="btn-add" onclick="addGoldRow()">+ Add Gold Item</button>
-
-        <div class="section-title">Cash on Hand</div>
-        <div id="cashItems">
-            <div class="asset-row" data-type="cash">
-                <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
-                <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
-                <select name="cash_currency" class="input-currency">
-                    <option value="CAD" selected>CAD</option>
-                    <option value="USD">USD</option>
-                    <option value="BDT">BDT</option>
-                </select>
-                <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
-            </div>
-        </div>
-        <button type="button" class="btn-add" onclick="addCashRow()">+ Add Cash Item</button>
-
-        <div class="section-title">Bank Accounts</div>
-        <div id="bankItems">
-            <div class="asset-row" data-type="bank">
-                <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
-                <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
-                <select name="bank_currency" class="input-currency">
-                    <option value="CAD" selected>CAD</option>
-                    <option value="USD">USD</option>
-                    <option value="BDT">BDT</option>
-                </select>
-                <button type="button" class="btn-remove" onclick="removeRow(this)">X</button>
-            </div>
-        </div>
-        <button type="button" class="btn-add" onclick="addBankRow()">+ Add Bank Account</button>
-
-        <button type="submit">Calculate Zakat</button>
-    </form>
-
-    <div id="result" class="result">
-        <div class="result-row">
-            <span class="result-label">Gold Total</span>
-            <span class="result-value" id="goldTotal">$0.00</span>
-        </div>
-        <div class="result-row">
-            <span class="result-label">Cash Total</span>
-            <span class="result-value" id="cashTotal">$0.00</span>
-        </div>
-        <div class="result-row">
-            <span class="result-label">Bank Total</span>
-            <span class="result-value" id="bankTotal">$0.00</span>
-        </div>
-        <div class="result-row">
-            <span class="result-label">Grand Total</span>
-            <span class="result-value" id="grandTotal">$0.00</span>
-        </div>
-        <div class="result-row">
-            <span class="result-label">Nisab Threshold (85g Gold)</span>
-            <span class="result-value" id="nisabThreshold">$0.00</span>
-        </div>
-        <div class="result-row">
-            <span class="result-label">Above Nisab</span>
-            <span class="result-value" id="aboveNisab">-</span>
-        </div>
-        <div class="result-row">
-            <span class="result-label">Zakat Due (2.5%)</span>
-            <span class="result-value zakat-due" id="zakatDue">$0.00</span>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/components/currency-autocomplete.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/crypto-autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
 {% endblock %}
