@@ -8,8 +8,16 @@ services:
     environment:
       - FLASK_ENV=production
       - DATA_DIR=/app/data
+      # Auto-sync is ON by default
+      - PRICING_ALLOW_NETWORK=${PRICING_ALLOW_NETWORK:-1}
+      - PRICING_AUTO_SYNC=${PRICING_AUTO_SYNC:-1}
+      - PRICING_RECENT_DAYS=${PRICING_RECENT_DAYS:-31}
+      # Optional: Provider API keys (uncomment and set if needed)
+      # - OPENEXCHANGERATES_APP_ID=${OPENEXCHANGERATES_APP_ID:-}
+      # - GOLDAPI_KEY=${GOLDAPI_KEY:-}
+      # - COINMARKETCAP_API_KEY=${COINMARKETCAP_API_KEY:-}
     volumes:
-      - ./data:/app/data
+      - pricing-data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
@@ -17,3 +25,26 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
+  pricing-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python scripts/pricing_sync_daemon.py
+    environment:
+      - DATA_DIR=/app/data
+      - PRICING_ALLOW_NETWORK=1
+      - PRICING_RECENT_DAYS=${PRICING_RECENT_DAYS:-31}
+      - PRICING_SYNC_INTERVAL_SECONDS=${PRICING_SYNC_INTERVAL_SECONDS:-21600}
+      - PRICING_LOOKBACK_MONTHS=${PRICING_LOOKBACK_MONTHS:-12}
+      # Provider API keys (same as web service)
+      # - OPENEXCHANGERATES_APP_ID=${OPENEXCHANGERATES_APP_ID:-}
+      # - GOLDAPI_KEY=${GOLDAPI_KEY:-}
+      # - COINMARKETCAP_API_KEY=${COINMARKETCAP_API_KEY:-}
+    volumes:
+      - pricing-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  pricing-data:
+    driver: local

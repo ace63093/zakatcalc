@@ -19,6 +19,10 @@ def create_app(config: dict | None = None) -> Flask:
         SECRET_KEY='dev-secret-key-change-in-production',
         JSON_SORT_KEYS=False,
         DATA_DIR=os.environ.get('DATA_DIR', os.path.join(os.path.dirname(__file__), '..', 'data')),
+        # Pricing sync configuration
+        PRICING_ALLOW_NETWORK=os.environ.get('PRICING_ALLOW_NETWORK', '0').lower() in ('1', 'true', 'yes'),
+        PRICING_AUTO_FETCH_MISSING=os.environ.get('PRICING_AUTO_FETCH_MISSING', '0').lower() in ('1', 'true', 'yes'),
+        PRICING_DATA_BASE_CCY='USD',
     )
 
     # Override with provided config

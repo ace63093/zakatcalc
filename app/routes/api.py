@@ -1,6 +1,6 @@
 """API routes for pricing and calculation."""
 from datetime import date, datetime, timezone
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 
 from app.services.pricing import get_pricing, format_pricing_response
 from app.services.calc import calculate_zakat, calculate_zakat_v2
@@ -19,6 +19,11 @@ from app.data.currencies import (
     is_valid_currency,
     DEFAULT_CURRENCY,
 )
+from app.services.config import is_sync_enabled, is_auto_sync_enabled
+from app.services.sync import get_sync_service
+from app.services.providers.registry import get_provider_status
+from app.services.cadence import get_effective_snapshot_date, get_cadence_boundaries
+from app.services.time_provider import get_today
 
 api_bp = Blueprint('api', __name__)
 
@@ -55,16 +60,17 @@ def pricing():
 
     Returns:
         JSON with FX rates, metal prices, crypto prices, and nisab values
-        all converted to the base currency. Includes coverage flags indicating
-        whether exact date matches were found or fallback dates were used.
+        all converted to the base currency. Includes cadence type (weekly/monthly)
+        and coverage flags indicating whether exact date matches were found.
     """
     # Parse query parameters
-    requested_date = request.args.get('date', date.today().isoformat())
+    today = get_today()
+    requested_date_str = request.args.get('date', today.isoformat())
     base_currency = request.args.get('base', DEFAULT_CURRENCY).upper()
 
     # Validate date format
     try:
-        datetime.strptime(requested_date, '%Y-%m-%d')
+        requested_date = datetime.strptime(requested_date_str, '%Y-%m-%d').date()
     except ValueError:
         return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
 
@@ -72,23 +78,41 @@ def pricing():
     if not is_valid_currency(base_currency):
         return jsonify({'error': f'Invalid currency: {base_currency}'}), 400
 
-    # Get coverage flags first
-    coverage = get_coverage_flags(requested_date)
+    # Calculate effective snapshot date based on cadence
+    effective_snapshot_date, cadence = get_effective_snapshot_date(requested_date, today)
+    effective_date_str = effective_snapshot_date.isoformat()
 
-    # Check if any data is available
-    if not coverage['fx_available'] and not coverage['metals_available'] and not coverage['crypto_available']:
+    # Check if snapshot exists
+    coverage = get_coverage_flags(effective_date_str)
+    jit_synced = False
+
+    # JIT sync if snapshot missing and auto-sync enabled
+    if not coverage['fx_available'] and is_auto_sync_enabled():
+        try:
+            current_app.logger.info(f"JIT sync for {effective_date_str} ({cadence})")
+            sync_service = get_sync_service()
+            sync_service.sync_date(effective_snapshot_date, snapshot_type=cadence)
+            coverage = get_coverage_flags(effective_date_str)
+            jit_synced = True
+        except Exception as e:
+            current_app.logger.warning(f"JIT sync failed for {effective_date_str}: {e}")
+
+    # If still no data after JIT sync, try to find any available data
+    if not coverage['fx_available'] and not coverage['metals_available']:
         min_date, max_date = get_available_date_range()
-        return jsonify({
-            'error': 'No pricing data available for requested date range',
-            'requested_date': requested_date,
-            'earliest_available': min_date,
-            'latest_available': max_date,
-        }), 404
+        if not min_date:
+            return jsonify({
+                'error': 'No pricing data available',
+                'requested_date': requested_date_str,
+                'effective_date': effective_date_str,
+                'cadence': cadence,
+                'auto_sync_enabled': is_auto_sync_enabled(),
+            }), 404
 
-    # Get pricing snapshots
-    fx_effective, fx_rates = get_fx_snapshot(requested_date, base_currency)
-    metals_effective, metals = get_metal_snapshot(requested_date, base_currency)
-    crypto_effective, crypto = get_crypto_snapshot(requested_date, base_currency)
+    # Get pricing snapshots using effective date
+    fx_effective, fx_rates = get_fx_snapshot(effective_date_str, base_currency)
+    metals_effective, metals = get_metal_snapshot(effective_date_str, base_currency)
+    crypto_effective, crypto = get_crypto_snapshot(effective_date_str, base_currency)
 
     # Calculate nisab values in base currency
     gold_price = metals.get('gold', 0)
@@ -96,13 +120,23 @@ def pricing():
     nisab_gold_value = round(NISAB_GOLD_GRAMS * gold_price, 2)
     nisab_silver_value = round(NISAB_SILVER_GRAMS * silver_price, 2)
 
+    # Determine actual effective date from data
+    actual_effective = fx_effective or metals_effective or crypto_effective or effective_date_str
+
+    # Build auto-sync status
+    auto_sync_status = {
+        'enabled': is_auto_sync_enabled(),
+        'jit_synced': jit_synced,
+    }
+
     # Build response
     response = {
         'request': {
-            'date': requested_date,
+            'date': requested_date_str,
             'base_currency': base_currency,
         },
-        'effective_date': fx_effective or metals_effective or crypto_effective,
+        'effective_date': actual_effective,
+        'cadence': cadence,
         'coverage': {
             'fx_available': coverage['fx_available'],
             'fx_date_exact': coverage['fx_date_exact'],
@@ -111,6 +145,7 @@ def pricing():
             'crypto_available': coverage['crypto_available'],
             'crypto_date_exact': coverage['crypto_date_exact'],
         },
+        'auto_sync': auto_sync_status,
         'fx_rates': fx_rates,
         'metals': {
             'gold': {'price_per_gram': gold_price, 'unit': base_currency},
@@ -231,7 +266,7 @@ def _calculate_v2(body: dict):
         return jsonify({'error': f'Invalid currency: {base_currency}'}), 400
 
     # Parse and validate calculation_date
-    calculation_date = body.get('calculation_date', date.today().isoformat())
+    calculation_date = body.get('calculation_date', get_today().isoformat())
     try:
         datetime.strptime(calculation_date, '%Y-%m-%d')
     except ValueError:
@@ -331,3 +366,117 @@ def _calculate_v2(body: dict):
     }
 
     return jsonify(result)
+
+
+@api_bp.route('/pricing/sync', methods=['POST'])
+def pricing_sync():
+    """Sync pricing data for a date range.
+
+    Request body:
+    {
+        "start_date": "2026-01-01",
+        "end_date": "2026-01-05",
+        "types": ["fx", "metals", "crypto"]  // optional, defaults to all
+    }
+
+    Returns summary of sync results or 403 if sync is disabled.
+    """
+    if not is_sync_enabled():
+        return jsonify({
+            'error': 'Network sync disabled',
+            'message': 'Set PRICING_ALLOW_NETWORK=1 to enable pricing sync'
+        }), 403
+
+    body = request.get_json() or {}
+
+    # Parse dates
+    start_str = body.get('start_date')
+    end_str = body.get('end_date')
+
+    if not start_str or not end_str:
+        return jsonify({'error': 'start_date and end_date are required'}), 400
+
+    try:
+        start_date = datetime.strptime(start_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_str, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
+    if start_date > end_date:
+        return jsonify({'error': 'start_date must be before or equal to end_date'}), 400
+
+    types = body.get('types')
+    if types and not isinstance(types, list):
+        return jsonify({'error': 'types must be a list'}), 400
+
+    # Perform sync
+    sync_service = get_sync_service()
+    result = sync_service.sync_range(start_date, end_date, types)
+
+    return jsonify(result)
+
+
+@api_bp.route('/pricing/sync-date', methods=['POST'])
+def pricing_sync_date():
+    """Sync pricing data for a single date.
+
+    Request body:
+    {
+        "date": "2026-01-05",
+        "types": ["fx", "metals", "crypto"]  // optional, defaults to all
+    }
+
+    Used by UI "Download pricing for this date" button.
+    """
+    if not is_sync_enabled():
+        return jsonify({
+            'error': 'Network sync disabled',
+            'message': 'Set PRICING_ALLOW_NETWORK=1 to enable pricing sync'
+        }), 403
+
+    body = request.get_json() or {}
+
+    date_str = body.get('date')
+    if not date_str:
+        return jsonify({'error': 'date is required'}), 400
+
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
+    types = body.get('types')
+    if types and not isinstance(types, list):
+        return jsonify({'error': 'types must be a list'}), 400
+
+    # Perform sync
+    sync_service = get_sync_service()
+    result = sync_service.sync_date(target_date, types)
+
+    return jsonify(result)
+
+
+@api_bp.route('/pricing/sync-status')
+def pricing_sync_status():
+    """Get sync configuration and data coverage status.
+
+    Returns:
+    {
+        "sync_enabled": true,
+        "auto_sync_enabled": false,
+        "providers": {...},
+        "data_coverage": {...},
+        "cadence": {...},
+        "daemon": {...}
+    }
+    """
+    sync_service = get_sync_service()
+
+    return jsonify({
+        'sync_enabled': is_sync_enabled(),
+        'auto_sync_enabled': is_auto_sync_enabled(),
+        'providers': get_provider_status(),
+        'data_coverage': sync_service.get_data_coverage(),
+        'cadence': get_cadence_boundaries(),
+        'daemon': sync_service.get_daemon_state(),
+    })
