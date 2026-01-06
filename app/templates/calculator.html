@@ -126,12 +126,9 @@
                 <div class="tools-section">
                     <h3>Tools</h3>
                     <div class="tools-buttons">
-                        <button type="button" id="save-draft-btn">Save Draft</button>
-                        <button type="button" id="load-draft-btn">Load Draft</button>
-                        <button type="button" id="share-link-btn">Share Link</button>
-                        <button type="button" id="export-pdf-btn">Export PDF</button>
+                        <button type="button" id="share-link-btn">Copy Share Link</button>
+                        <button type="button" id="export-csv-btn">Export CSV</button>
                     </div>
-                    <div id="draft-list-container"></div>
                 </div>
             </form>
         </div>
@@ -198,16 +195,14 @@
 <script src="{{ url_for('static', filename='js/components/currency-autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/crypto-autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/nisab-indicator.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/draft-manager.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/share-link.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/pdf-export.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/csv-export.js') }}"></script>
 <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
 <script>
-    // Initialize DraftManager, ShareLink, and PdfExport after calculator is ready
+    // Initialize ShareLink and CsvExport after calculator is ready
     document.addEventListener('DOMContentLoaded', function() {
-        DraftManager.init('draft-list-container');
         ShareLink.init();
-        PdfExport.init();
+        CsvExport.init();
     });
 </script>
 {% endblock %}
