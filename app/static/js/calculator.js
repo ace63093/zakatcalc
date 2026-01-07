@@ -27,10 +27,33 @@ const ZakatCalculator = (function() {
     let debounceTimer = null;
     let lastCalculationResult = null;
 
-    // Currency symbols for display
+    // Currency symbols for display (expanded set)
     const CURRENCY_SYMBOLS = {
         CAD: 'C$', USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5',
-        AUD: 'A$', CHF: 'CHF', CNY: '\u00A5', INR: '\u20B9', BDT: '\u09F3'
+        AUD: 'A$', CHF: 'CHF', CNY: '\u00A5', INR: '\u20B9', BDT: '\u09F3',
+        // Additional common currencies
+        AED: 'د.إ', AFN: '؋', ALL: 'L', ARS: '$', BAM: 'KM',
+        BGN: 'лв', BHD: '.د.ب', BRL: 'R$', BSD: '$', BWP: 'P',
+        BYN: 'Br', CLP: '$', COP: '$', CRC: '₡', CZK: 'Kč',
+        DKK: 'kr', DOP: 'RD$', EGP: 'E£', ETB: 'Br', FJD: '$',
+        GEL: '₾', GHS: '₵', GTQ: 'Q', HKD: 'HK$', HNL: 'L',
+        HRK: 'kn', HUF: 'Ft', IDR: 'Rp', ILS: '₪', IQD: 'ع.د',
+        IRR: '﷼', ISK: 'kr', JMD: 'J$', JOD: 'د.ا', KES: 'KSh',
+        KGS: 'лв', KHR: '៛', KRW: '₩', KWD: 'د.ك', KYD: '$',
+        KZT: '₸', LAK: '₭', LBP: 'ل.ل', LKR: '₨', MAD: 'د.م.',
+        MDL: 'L', MKD: 'ден', MMK: 'K', MNT: '₮', MOP: 'MOP$',
+        MUR: '₨', MVR: 'Rf', MWK: 'MK', MXN: '$', MYR: 'RM',
+        MZN: 'MT', NAD: '$', NGN: '₦', NIO: 'C$', NOK: 'kr',
+        NPR: '₨', NZD: 'NZ$', OMR: '﷼', PAB: 'B/.', PEN: 'S/',
+        PGK: 'K', PHP: '₱', PKR: '₨', PLN: 'zł', PYG: '₲',
+        QAR: '﷼', RON: 'lei', RSD: 'Дин.', RUB: '₽', RWF: 'FRw',
+        SAR: '﷼', SCR: '₨', SDG: 'ج.س.', SEK: 'kr', SGD: 'S$',
+        SOS: 'S', SRD: '$', SSP: '£', SYP: '£', THB: '฿',
+        TJS: 'SM', TMT: 'T', TND: 'د.ت', TOP: 'T$', TRY: '₺',
+        TTD: 'TT$', TWD: 'NT$', TZS: 'TSh', UAH: '₴', UGX: 'USh',
+        UYU: '$U', UZS: 'лв', VES: 'Bs', VND: '₫', VUV: 'VT',
+        WST: 'WS$', XAF: 'FCFA', XCD: '$', XOF: 'CFA', XPF: '₣',
+        YER: '﷼', ZAR: 'R', ZMW: 'ZK', ZWL: '$'
     };
 
     /**
@@ -345,6 +368,9 @@ const ZakatCalculator = (function() {
             aboveNisab,
             zakatDue
         });
+
+        // Update per-row base value pills
+        updateRowBaseValues();
     }
 
     /**
@@ -664,6 +690,116 @@ const ZakatCalculator = (function() {
     }
 
     /**
+     * Format money with currency symbol for base value pills
+     * @param {string} currencyCode - The currency code (e.g., 'CAD')
+     * @param {number|undefined} value - The value to format
+     * @returns {string} Formatted string like "$1,234.56" or "—"
+     */
+    function formatMoney(currencyCode, value) {
+        if (value === undefined || value === null || isNaN(value)) {
+            return '—';
+        }
+        const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode + ' ';
+        return symbol + value.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    /**
+     * Compute the base currency value for a single asset row
+     * @param {HTMLElement} row - The asset row element
+     * @returns {number|undefined} The value in base currency, or undefined if missing data
+     */
+    function computeRowBaseValue(row) {
+        if (!pricingSnapshot) return undefined;
+
+        const type = row.dataset.type;
+
+        switch (type) {
+            case 'gold': {
+                const weight = parseFloat(row.querySelector('[name="gold_weight"]')?.value);
+                const karat = parseInt(row.querySelector('[name="gold_karat"]')?.value) || 22;
+                if (!weight || weight === 0) return undefined;
+                if (isNaN(weight)) return undefined;
+                const pureGrams = weight * (karat / 24);
+                const goldPrice = getMetalPrice('gold');
+                return pureGrams * goldPrice;
+            }
+            case 'metal': {
+                const weight = parseFloat(row.querySelector('[name="metal_weight"]')?.value);
+                const metal = row.querySelector('[name="metal_type"]')?.value || 'silver';
+                if (!weight || weight === 0) return undefined;
+                if (isNaN(weight)) return undefined;
+                const metalPrice = getMetalPrice(metal);
+                return weight * metalPrice;
+            }
+            case 'cash': {
+                const amount = parseFloat(row.querySelector('[name="cash_amount"]')?.value);
+                const currency = row.querySelector('[name="cash_currency"]')?.value || baseCurrency;
+                if (!amount || amount === 0) return undefined;
+                if (isNaN(amount)) return undefined;
+                return convertToBase(amount, currency);
+            }
+            case 'bank': {
+                const amount = parseFloat(row.querySelector('[name="bank_amount"]')?.value);
+                const currency = row.querySelector('[name="bank_currency"]')?.value || baseCurrency;
+                if (!amount || amount === 0) return undefined;
+                if (isNaN(amount)) return undefined;
+                return convertToBase(amount, currency);
+            }
+            case 'crypto': {
+                const amount = parseFloat(row.querySelector('[name="crypto_amount"]')?.value);
+                const symbol = row.querySelector('[name="crypto_symbol"]')?.value || '';
+                if (!amount || amount === 0) return undefined;
+                if (isNaN(amount)) return undefined;
+                if (!symbol) return undefined;
+                const cryptoPrice = getCryptoPrice(symbol);
+                if (!cryptoPrice) return undefined;
+                return amount * cryptoPrice;
+            }
+            default:
+                return undefined;
+        }
+    }
+
+    /**
+     * Update base value pills for all asset rows
+     */
+    function updateRowBaseValues() {
+        document.querySelectorAll('.asset-row').forEach(function(row) {
+            const pill = row.querySelector('.base-value-pill');
+            if (!pill) return;
+
+            const value = computeRowBaseValue(row);
+
+            // Show explicit 0 if value is 0 and there's input, else show dash for blank
+            const type = row.dataset.type;
+            let hasInput = false;
+
+            if (type === 'gold' || type === 'metal') {
+                const weightInput = row.querySelector('[name$="_weight"]');
+                hasInput = weightInput && weightInput.value !== '';
+            } else if (type === 'cash' || type === 'bank') {
+                const amountInput = row.querySelector('[name$="_amount"]');
+                hasInput = amountInput && amountInput.value !== '';
+            } else if (type === 'crypto') {
+                const amountInput = row.querySelector('[name="crypto_amount"]');
+                const symbolInput = row.querySelector('[name="crypto_symbol"]');
+                hasInput = amountInput && amountInput.value !== '' && symbolInput && symbolInput.value !== '';
+            }
+
+            if (value === 0 && hasInput) {
+                pill.textContent = formatMoney(baseCurrency, 0);
+            } else if (value !== undefined && !isNaN(value)) {
+                pill.textContent = formatMoney(baseCurrency, value);
+            } else {
+                pill.textContent = '—';
+            }
+        });
+    }
+
+    /**
      * Set text content of an element
      */
     function setElementText(id, text) {
@@ -724,6 +860,7 @@ const ZakatCalculator = (function() {
                 <option value="10">10K</option>
                 <option value="9">9K</option>
             </select>
+            <span class="base-value-pill" data-field="base_value">—</span>
             <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>
         `;
         container.appendChild(row);
@@ -741,6 +878,7 @@ const ZakatCalculator = (function() {
             <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
             <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
             <div class="currency-autocomplete" data-name="cash_currency"></div>
+            <span class="base-value-pill" data-field="base_value">—</span>
             <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>
         `;
         container.appendChild(row);
@@ -758,6 +896,7 @@ const ZakatCalculator = (function() {
             <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
             <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
             <div class="currency-autocomplete" data-name="bank_currency"></div>
+            <span class="base-value-pill" data-field="base_value">—</span>
             <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>
         `;
         container.appendChild(row);
@@ -779,6 +918,7 @@ const ZakatCalculator = (function() {
                 <option value="platinum">Platinum</option>
                 <option value="palladium">Palladium</option>
             </select>
+            <span class="base-value-pill" data-field="base_value">—</span>
             <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>
         `;
         container.appendChild(row);
@@ -795,6 +935,7 @@ const ZakatCalculator = (function() {
             <input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name">
             <div class="crypto-autocomplete" data-name="crypto_symbol"></div>
             <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount">
+            <span class="base-value-pill" data-field="base_value">—</span>
             <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>
         `;
         container.appendChild(row);
@@ -1005,6 +1146,7 @@ const ZakatCalculator = (function() {
                 '    <option value="10"' + (item.purity_karat === 10 ? ' selected' : '') + '>10K</option>',
                 '    <option value="9"' + (item.purity_karat === 9 ? ' selected' : '') + '>9K</option>',
                 '</select>',
+                '<span class="base-value-pill" data-field="base_value">—</span>',
                 '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
             ].join('\n');
             container.appendChild(row);
@@ -1031,6 +1173,7 @@ const ZakatCalculator = (function() {
                 '<input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
                 '<input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
                 '<div class="currency-autocomplete" data-name="cash_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '<span class="base-value-pill" data-field="base_value">—</span>',
                 '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
             ].join('\n');
             container.appendChild(row);
@@ -1060,6 +1203,7 @@ const ZakatCalculator = (function() {
                 '<input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
                 '<input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
                 '<div class="currency-autocomplete" data-name="bank_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '<span class="base-value-pill" data-field="base_value">—</span>',
                 '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
             ].join('\n');
             container.appendChild(row);
@@ -1093,6 +1237,7 @@ const ZakatCalculator = (function() {
                 '    <option value="platinum"' + (item.metal === 'platinum' ? ' selected' : '') + '>Platinum</option>',
                 '    <option value="palladium"' + (item.metal === 'palladium' ? ' selected' : '') + '>Palladium</option>',
                 '</select>',
+                '<span class="base-value-pill" data-field="base_value">—</span>',
                 '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
             ].join('\n');
             container.appendChild(row);
@@ -1119,6 +1264,7 @@ const ZakatCalculator = (function() {
                 '<input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
                 '<div class="crypto-autocomplete" data-name="crypto_symbol" data-initial="' + (item.symbol || '') + '"></div>',
                 '<input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
+                '<span class="base-value-pill" data-field="base_value">—</span>',
                 '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">X</button>'
             ].join('\n');
             container.appendChild(row);
