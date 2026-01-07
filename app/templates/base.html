@@ -383,9 +383,50 @@
                 text-align: center;
             }
         }
+        /* Navigation styles */
+        .site-nav {
+            max-width: 1200px;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .site-nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .site-nav a:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+        .site-nav a.active {
+            background: rgba(255, 255, 255, 0.95);
+            color: #667eea;
+        }
+        @media (max-width: 600px) {
+            .site-nav {
+                gap: 6px;
+            }
+            .site-nav a {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
+    <nav class="site-nav">
+        <a href="{{ url_for('main.calculator') }}" {% if request.endpoint == 'main.calculator' %}class="active"{% endif %}>Calculator</a>
+        <a href="{{ url_for('main.about_zakat') }}" {% if request.endpoint == 'main.about_zakat' %}class="active"{% endif %}>About Zakat</a>
+        <a href="{{ url_for('main.faq') }}" {% if request.endpoint == 'main.faq' %}class="active"{% endif %}>FAQ</a>
+    </nav>
     {% block content %}{% endblock %}
     {% block scripts %}{% endblock %}
 </body>

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Zakat FAQ - Frequently Asked Questions About Islamic Charity{% endblock %}
+
+{% block head %}
+<meta name="description" content="Find answers to common questions about Zakat calculation, nisab thresholds, eligible assets, payment timing, and more. A comprehensive guide for Muslims.">
+<style>
+    .faq-item {
+        margin-bottom: 25px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 25px;
+    }
+    .faq-item:last-child {
+        border-bottom: none;
+    }
+    .faq-question {
+        color: #667eea;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+        cursor: default;
+    }
+    .faq-answer {
+        color: #4a5568;
+    }
+    .faq-answer p {
+        margin-bottom: 10px;
+    }
+    .faq-answer ul {
+        margin-left: 20px;
+        margin-bottom: 10px;
+    }
+    .faq-answer li {
+        margin-bottom: 6px;
+    }
+    .faq-category {
+        color: #667eea;
+        font-size: 1.3rem;
+        margin: 35px 0 20px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .faq-category:first-of-type {
+        margin-top: 25px;
+    }
+    .disclaimer {
+        background: #fefcbf;
+        border-left: 4px solid #d69e2e;
+        padding: 15px;
+        border-radius: 0 8px 8px 0;
+        margin-top: 30px;
+    }
+    .disclaimer p {
+        color: #744210;
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+</style>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "What is the current Nisab threshold?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The Nisab threshold is based on 85 grams of gold or 595 grams of silver. The monetary value changes with market prices. Our calculator uses real-time gold and silver prices to determine the current Nisab in your chosen currency."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Is Zakat due on gold jewelry that I wear regularly?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Scholars have different opinions on this matter. The Hanafi school considers all gold and silver zakatable regardless of use. The Maliki, Shafi'i, and Hanbali schools generally exempt jewelry worn regularly within customary amounts. Consult a scholar for guidance specific to your situation."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "When should I pay my Zakat?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Zakat becomes due once your wealth has been above the Nisab threshold for one complete lunar year (Hawl). Many Muslims choose to pay during Ramadan for increased blessings, but you can pay whenever your Hawl is complete."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Is cryptocurrency subject to Zakat?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Most contemporary scholars agree that cryptocurrency holdings are zakatable. They are treated similarly to cash or tradeable assets. If you hold cryptocurrency for investment, calculate 2.5% of its value at your Zakat due date."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Can I pay Zakat in installments?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "While Zakat is ideally paid in full when due, if paying the full amount would cause hardship, some scholars permit paying in installments. It's best to consult a scholar and ensure the full amount is paid within a reasonable timeframe."
+            }
+        }
+    ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Zakat FAQ</h1>
+    <p class="subtitle">Frequently Asked Questions About Zakat</p>
+
+    <h2 class="faq-category">Basic Concepts</h2>
+
+    <div class="faq-item">
+        <h3 class="faq-question">What is the current Nisab threshold?</h3>
+        <div class="faq-answer">
+            <p>The Nisab threshold is based on 85 grams of gold or 595 grams of silver. The monetary value changes with market prices. Our calculator uses real-time gold and silver prices to determine the current Nisab in your chosen currency.</p>
+            <p>Most scholars recommend using the silver Nisab as it results in a lower threshold, allowing more people to participate in giving Zakat.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">What is the difference between Zakat and Sadaqah?</h3>
+        <div class="faq-answer">
+            <p><strong>Zakat</strong> is obligatory charity with specific rules about who must pay, how much, and who can receive it. It is one of the Five Pillars of Islam.</p>
+            <p><strong>Sadaqah</strong> is voluntary charity with no minimum amount or specific recipients. It can be given at any time and in any amount.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">Why is the rate 2.5%?</h3>
+        <div class="faq-answer">
+            <p>The 2.5% rate (1/40th of wealth) for cash, gold, silver, and trade goods is established in Islamic jurisprudence based on Prophetic traditions. Agricultural produce and livestock have different rates. This rate balances helping those in need while not overburdening the giver.</p>
+        </div>
+    </div>
+
+    <h2 class="faq-category">Calculating Zakat</h2>
+
+    <div class="faq-item">
+        <h3 class="faq-question">When should I pay my Zakat?</h3>
+        <div class="faq-answer">
+            <p>Zakat becomes due once your wealth has been above the Nisab threshold for one complete lunar year (Hawl). Many Muslims choose to pay during Ramadan for increased blessings, but you can pay whenever your Hawl is complete.</p>
+            <p>Some Muslims use a fixed annual date (like the 1st of Ramadan) to simplify tracking, calculating Zakat on all wealth held at that time.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">Is Zakat due on gold jewelry that I wear regularly?</h3>
+        <div class="faq-answer">
+            <p>Scholars have different opinions on this matter:</p>
+            <ul>
+                <li><strong>Hanafi school:</strong> All gold and silver is zakatable regardless of use.</li>
+                <li><strong>Maliki, Shafi'i, and Hanbali schools:</strong> Generally exempt jewelry worn regularly within customary amounts.</li>
+            </ul>
+            <p>Consult a scholar for guidance specific to your situation and school of thought.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">Do I include my home and car in Zakat calculations?</h3>
+        <div class="faq-answer">
+            <p>No. Personal assets used for daily living such as your primary residence, personal vehicle, furniture, and clothing are not subject to Zakat. Only surplus wealth beyond your basic needs is zakatable.</p>
+            <p>However, if you own properties as investments or for rental income, the income and trade value may be zakatable.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">How do I calculate Zakat on stocks and investments?</h3>
+        <div class="faq-answer">
+            <p>There are two main approaches:</p>
+            <ul>
+                <li><strong>For trading stocks:</strong> Calculate 2.5% of the market value at your Zakat due date.</li>
+                <li><strong>For long-term investments:</strong> Some scholars say to pay on dividends only, while others recommend paying on the full market value. The more cautious approach is to pay on the full value.</li>
+            </ul>
+        </div>
+    </div>
+
+    <h2 class="faq-category">Special Cases</h2>
+
+    <div class="faq-item">
+        <h3 class="faq-question">Is cryptocurrency subject to Zakat?</h3>
+        <div class="faq-answer">
+            <p>Most contemporary scholars agree that cryptocurrency holdings are zakatable. They are treated similarly to cash or tradeable assets. If you hold cryptocurrency for investment, calculate 2.5% of its value at your Zakat due date.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">What about debts I owe?</h3>
+        <div class="faq-answer">
+            <p>Many scholars allow you to deduct immediate debts (due within the year) from your total wealth before calculating Zakat. Long-term debts like mortgages are typically not fully deductible, though you may deduct the portion due within the coming year.</p>
+            <p>Different schools have varying opinions, so consult a scholar for your specific situation.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">Can I pay Zakat in installments?</h3>
+        <div class="faq-answer">
+            <p>While Zakat is ideally paid in full when due, if paying the full amount would cause hardship, some scholars permit paying in installments. It's best to consult a scholar and ensure the full amount is paid within a reasonable timeframe.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">Can I give Zakat to family members?</h3>
+        <div class="faq-answer">
+            <p>You cannot give Zakat to dependents you are obligated to support (spouse, parents, children). However, you may give Zakat to other relatives who qualify as recipients, such as siblings, cousins, aunts, or uncles, if they meet the eligibility criteria.</p>
+        </div>
+    </div>
+
+    <h2 class="faq-category">Using This Calculator</h2>
+
+    <div class="faq-item">
+        <h3 class="faq-question">Where do the gold and silver prices come from?</h3>
+        <div class="faq-answer">
+            <p>Our calculator uses real-time spot prices from reliable market data sources, updated regularly. For historical calculations, we use archived price data from the selected date.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">Can I save my calculation?</h3>
+        <div class="faq-answer">
+            <p>Yes! Use the "Copy Share Link" button to generate a URL that preserves all your entered values. You can bookmark this link or share it across devices.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <h3 class="faq-question">What currency should I use?</h3>
+        <div class="faq-answer">
+            <p>Use the currency you're most comfortable with or the currency you'll use to pay your Zakat. All assets are converted to your chosen base currency for the final calculation.</p>
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        <p><strong>Disclaimer:</strong> This FAQ is provided for educational purposes only and does not constitute a religious ruling (fatwa). For specific questions about your Zakat obligations, please consult a qualified Islamic scholar who can consider your individual circumstances.</p>
+    </div>
+</div>
+{% endblock %}
