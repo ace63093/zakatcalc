@@ -170,6 +170,29 @@
         .btn-remove:hover {
             background: #c53030;
         }
+        /* Base value pill styling */
+        .base-value-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 16px;
+            min-width: 80px;
+            text-align: center;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.25);
+            flex-shrink: 0;
+        }
+        /* Section helper text */
+        .section-helper {
+            color: #718096;
+            font-size: 0.875rem;
+            margin: -8px 0 12px 0;
+        }
         .btn-add {
             background: #48bb78;
             color: white;
@@ -373,6 +396,11 @@
             .asset-row .currency-autocomplete,
             .asset-row .crypto-autocomplete {
                 flex: 1 1 100%;
+            }
+            .asset-row .base-value-pill {
+                flex: 0 0 auto;
+                order: 10;
+                margin-left: auto;
             }
             .sync-banner-content {
                 flex-direction: column;
