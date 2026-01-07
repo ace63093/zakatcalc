@@ -108,54 +108,22 @@
     background: #999;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .autocomplete-input {
-        background-color: #2d2d2d;
-        border-color: #444;
-        color: #eee;
-    }
+/*
+ * Force light mode for autocomplete inputs to match the rest of the app.
+ * The app does not have a dark theme, so we override system dark mode preferences.
+ */
+.autocomplete-input {
+    background-color: #fff !important;
+    border-color: #ccc !important;
+    color: #333 !important;
+}
 
-    .autocomplete-input:focus {
-        border-color: #5c9ce6;
-        box-shadow: 0 0 0 3px rgba(92, 156, 230, 0.25);
-    }
+.autocomplete-input:focus {
+    border-color: #4a90d9 !important;
+}
 
-    .autocomplete-input::placeholder {
-        color: #888;
-    }
-
-    .autocomplete-listbox {
-        background-color: #2d2d2d;
-        border-color: #444;
-    }
-
-    .autocomplete-option:hover,
-    .autocomplete-option.active {
-        background-color: #3d3d3d;
-    }
-
-    .autocomplete-option[aria-selected="true"] {
-        background-color: #354a5f;
-    }
-
-    .autocomplete-option .currency-code,
-    .autocomplete-option .crypto-symbol {
-        color: #eee;
-    }
-
-    .autocomplete-option .currency-name,
-    .autocomplete-option .crypto-name {
-        color: #aaa;
-    }
-
-    .autocomplete-listbox::-webkit-scrollbar-track {
-        background: #2d2d2d;
-    }
-
-    .autocomplete-listbox::-webkit-scrollbar-thumb {
-        background: #555;
-    }
+.autocomplete-input::placeholder {
+    color: #999 !important;
 }
 
 /* Mobile-friendly adjustments */
