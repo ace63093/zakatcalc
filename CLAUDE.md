@@ -71,11 +71,72 @@ Both use constants: `ZAKAT_RATE = 0.025`, `NISAB_GOLD_GRAMS = 85`, `NISAB_SILVER
 ### Frontend
 Single-page calculator at `/` using vanilla JS. Key components in `app/static/js/`:
 - `calculator.js`: Main calculation logic with live updates
-- `components/currency-autocomplete.js`: 179 ISO 4217 currencies
+- `components/currency-autocomplete.js`: 179 ISO 4217 currencies with compact mode
 - `components/crypto-autocomplete.js`: Top 100 cryptocurrencies
+- `components/nisab-indicator.js`: Visual nisab threshold indicator
+- `components/share-link.js`: Shareable URL generation with LZ-string compression
+- `components/csv-export.js`: Export assets to CSV
+
+#### Currency Autocomplete Modes
+- **Full mode** (base currency selector): Shows "CAD — Canadian Dollar"
+- **Compact mode** (row-level selectors): Shows "$ — CAD" using CURRENCY_SYMBOLS map
+
+#### Weight Units System
+Per-row weight unit selection for gold/metal assets. Supported units in `WEIGHT_UNITS`:
+- `g` (grams) - canonical storage unit
+- `ozt` (troy ounces) - 31.1035g
+- `tola` - 11.664g (South Asian)
+- `vori` - 11.664g (Bengali, same as tola)
+- `aana` - 0.729g (1/16 of tola, South Asian)
+
+Weight is always stored/transmitted in grams; UI shows a "grams pill" with converted value.
+
+### CSS Structure
+- `app/static/css/autocomplete.css`: Currency/crypto autocomplete styling, compact mode
+- `app/static/css/nisab-indicator.css`: Nisab threshold indicator card
+- `app/static/css/tools.css`: Share link and export buttons
+- `app/templates/base.html`: Main styles embedded (gradients, layout, responsive breakpoints)
+
+### Desktop Layout
+Two-column grid on >=1024px: inputs left (flex), sticky results panel right (320px). Mobile stacks vertically.
 
 ## Testing Guidelines
 
 - Every new endpoint needs a test
 - No network calls in tests (use fixtures and fakes)
 - Tests use frozen time (`FROZEN_TODAY = date(2026, 1, 15)`) for cadence determinism
+
+## Git Workflow
+
+### Branches
+- `dev`: Active development branch (commit here first)
+- `codex`: Mirror of dev for CI/automation
+- `main`: Stable release branch
+- `production`: Deployed to production server
+
+### Typical Flow
+1. Make changes on `dev`
+2. Test locally with `docker compose up --build`
+3. Commit and push to `dev`
+4. Fast-forward merge to `codex`, `main`, `production` as needed
+
+```bash
+# Push to all branches
+git checkout main && git merge dev && git push origin main
+git checkout production && git merge dev && git push origin production
+git checkout codex && git merge dev && git push origin codex
+git checkout dev
+```
+
+## Key Patterns
+
+### Asset Row Structure
+Each asset type (gold, metal, cash, bank, crypto) uses `.asset-row` containers with:
+- Name input (`.input-name`)
+- Type-specific inputs (weight, amount, karat, etc.)
+- Currency/crypto autocomplete (`.currency-autocomplete`, `.crypto-autocomplete`)
+- Base value pill (`.base-value-pill`) showing converted value
+- Remove button (`.btn-remove`)
+
+### Live Calculation
+`recalculate()` in calculator.js triggers on any input change, fetches pricing from `/api/v1/pricing`, and updates all value pills and totals in real-time.
