@@ -33,7 +33,6 @@ const ZakatCalculator = (function() {
     let baseCurrency = 'CAD';
     let calculationDate = new Date().toISOString().split('T')[0];
     let nisabBasis = 'gold';
-    let weightUnit = 'g';
     let debounceTimer = null;
     let lastCalculationResult = null;
 
@@ -105,112 +104,6 @@ const ZakatCalculator = (function() {
     }
 
     /**
-     * Get the placeholder text for weight inputs
-     * @returns {string} Placeholder text like "Weight (g)"
-     */
-    function getWeightPlaceholder() {
-        var unitInfo = WEIGHT_UNITS[weightUnit] || WEIGHT_UNITS.g;
-        return 'Weight (' + unitInfo.short + ')';
-    }
-
-    /**
-     * Update the weight unit hint to show conversion rate
-     */
-    function updateWeightUnitHint() {
-        var hint = document.getElementById('weightUnitHint');
-        if (!hint) return;
-
-        var unitInfo = WEIGHT_UNITS[weightUnit];
-        if (!unitInfo || weightUnit === 'g') {
-            hint.textContent = 'For gold and precious metals';
-        } else {
-            hint.textContent = '1 ' + unitInfo.short + ' = ' + unitInfo.gramsPerUnit + ' g';
-        }
-    }
-
-    /**
-     * Update all weight input placeholders to reflect current unit
-     */
-    function updateWeightPlaceholders() {
-        var placeholder = getWeightPlaceholder();
-        document.querySelectorAll('[name="gold_weight"], [name="metal_weight"]').forEach(function(input) {
-            input.placeholder = placeholder;
-        });
-    }
-
-    /**
-     * Initialize weight unit selector
-     */
-    function initWeightUnitSelector() {
-        // Load from localStorage
-        var savedUnit = localStorage.getItem('weightUnit');
-        if (savedUnit && WEIGHT_UNITS[savedUnit]) {
-            weightUnit = savedUnit;
-        }
-
-        var selector = document.getElementById('weightUnit');
-        if (selector) {
-            selector.value = weightUnit;
-            selector.addEventListener('change', function() {
-                var oldUnit = weightUnit;
-                weightUnit = this.value;
-
-                // Persist to localStorage
-                localStorage.setItem('weightUnit', weightUnit);
-
-                // Convert existing weight values to new unit for display
-                convertWeightDisplays(oldUnit, weightUnit);
-
-                // Update UI
-                updateWeightUnitHint();
-                updateWeightPlaceholders();
-                recalculate();
-            });
-        }
-
-        // Initial UI update
-        updateWeightUnitHint();
-        updateWeightPlaceholders();
-    }
-
-    /**
-     * Convert weight displays when unit changes
-     * The internal value (weight_grams) stays the same, but we update the displayed value
-     * @param {string} oldUnit - Previous unit
-     * @param {string} newUnit - New unit
-     */
-    function convertWeightDisplays(oldUnit, newUnit) {
-        // For gold rows
-        document.querySelectorAll('#goldItems .asset-row').forEach(function(row) {
-            var input = row.querySelector('[name="gold_weight"]');
-            if (input && input.value) {
-                // Current displayed value is in oldUnit, convert to grams then to newUnit
-                var displayedValue = parseFloat(input.value);
-                if (!isNaN(displayedValue) && displayedValue > 0) {
-                    var grams = toGrams(displayedValue, oldUnit);
-                    var newValue = fromGrams(grams, newUnit);
-                    var unitInfo = WEIGHT_UNITS[newUnit] || WEIGHT_UNITS.g;
-                    input.value = newValue.toFixed(unitInfo.decimals);
-                }
-            }
-        });
-
-        // For metal rows
-        document.querySelectorAll('#metalItems .asset-row').forEach(function(row) {
-            var input = row.querySelector('[name="metal_weight"]');
-            if (input && input.value) {
-                var displayedValue = parseFloat(input.value);
-                if (!isNaN(displayedValue) && displayedValue > 0) {
-                    var grams = toGrams(displayedValue, oldUnit);
-                    var newValue = fromGrams(grams, newUnit);
-                    var unitInfo = WEIGHT_UNITS[newUnit] || WEIGHT_UNITS.g;
-                    input.value = newValue.toFixed(unitInfo.decimals);
-                }
-            }
-        });
-    }
-
-    /**
      * Initialize the calculator
      */
     async function init() {
@@ -226,7 +119,6 @@ const ZakatCalculator = (function() {
             // Initialize UI components
             initBaseCurrencySelector();
             initDatePicker();
-            initWeightUnitSelector();
             initNisabIndicator();
             initAssetRows();
             bindEvents();
@@ -530,17 +422,18 @@ const ZakatCalculator = (function() {
 
     /**
      * Collect gold items from form
-     * Weight is entered in current display unit, converted to grams for storage
+     * Weight is entered in row's display unit, converted to grams for storage
      */
     function collectGoldItems() {
         const items = [];
         document.querySelectorAll('#goldItems .asset-row').forEach(function(row) {
             const displayWeight = parseFloat(row.querySelector('[name="gold_weight"]')?.value) || 0;
+            const rowUnit = row.querySelector('[name="gold_weight_unit"]')?.value || 'g';
             const karat = parseInt(row.querySelector('[name="gold_karat"]')?.value) || 22;
             if (displayWeight > 0) {
                 items.push({
                     name: row.querySelector('[name="gold_name"]')?.value || 'Gold',
-                    weight_grams: toGrams(displayWeight, weightUnit),
+                    weight_grams: toGrams(displayWeight, rowUnit),
                     purity_karat: karat
                 });
             }
@@ -588,18 +481,19 @@ const ZakatCalculator = (function() {
 
     /**
      * Collect metal items from form (silver, platinum, palladium)
-     * Weight is entered in current display unit, converted to grams for storage
+     * Weight is entered in row's display unit, converted to grams for storage
      */
     function collectMetalItems() {
         const items = [];
         document.querySelectorAll('#metalItems .asset-row').forEach(function(row) {
             const displayWeight = parseFloat(row.querySelector('[name="metal_weight"]')?.value) || 0;
+            const rowUnit = row.querySelector('[name="metal_weight_unit"]')?.value || 'g';
             const metal = row.querySelector('[name="metal_type"]')?.value || 'silver';
             if (displayWeight > 0) {
                 items.push({
                     name: row.querySelector('[name="metal_name"]')?.value || metal,
                     metal: metal,
-                    weight_grams: toGrams(displayWeight, weightUnit)
+                    weight_grams: toGrams(displayWeight, rowUnit)
                 });
             }
         });
@@ -876,22 +770,24 @@ const ZakatCalculator = (function() {
         switch (type) {
             case 'gold': {
                 const displayWeight = parseFloat(row.querySelector('[name="gold_weight"]')?.value);
+                const rowUnit = row.querySelector('[name="gold_weight_unit"]')?.value || 'g';
                 const karat = parseInt(row.querySelector('[name="gold_karat"]')?.value) || 22;
                 if (!displayWeight || displayWeight === 0) return undefined;
                 if (isNaN(displayWeight)) return undefined;
                 // Convert display weight to grams, then to pure gold grams
-                const weightGrams = toGrams(displayWeight, weightUnit);
+                const weightGrams = toGrams(displayWeight, rowUnit);
                 const pureGrams = weightGrams * (karat / 24);
                 const goldPrice = getMetalPrice('gold');
                 return pureGrams * goldPrice;
             }
             case 'metal': {
                 const displayWeight = parseFloat(row.querySelector('[name="metal_weight"]')?.value);
+                const rowUnit = row.querySelector('[name="metal_weight_unit"]')?.value || 'g';
                 const metal = row.querySelector('[name="metal_type"]')?.value || 'silver';
                 if (!displayWeight || displayWeight === 0) return undefined;
                 if (isNaN(displayWeight)) return undefined;
                 // Convert display weight to grams
-                const weightGrams = toGrams(displayWeight, weightUnit);
+                const weightGrams = toGrams(displayWeight, rowUnit);
                 const metalPrice = getMetalPrice(metal);
                 return weightGrams * metalPrice;
             }
@@ -957,7 +853,39 @@ const ZakatCalculator = (function() {
             } else {
                 pill.textContent = '—';
             }
+
+            // Update grams pill for gold/metal rows
+            if (type === 'gold' || type === 'metal') {
+                updateRowGramsPill(row);
+            }
         });
+    }
+
+    /**
+     * Update the grams pill for a gold or metal row
+     * @param {HTMLElement} row - The asset row element
+     */
+    function updateRowGramsPill(row) {
+        const gramsPill = row.querySelector('.weight-grams-pill');
+        if (!gramsPill) return;
+
+        const type = row.dataset.type;
+        const weightInput = row.querySelector('[name="' + type + '_weight"]');
+        const unitSelect = row.querySelector('[name="' + type + '_weight_unit"]');
+
+        if (!weightInput || !unitSelect) return;
+
+        const displayWeight = parseFloat(weightInput.value);
+        const rowUnit = unitSelect.value || 'g';
+
+        if (!displayWeight || isNaN(displayWeight) || displayWeight === 0) {
+            gramsPill.textContent = '—';
+            return;
+        }
+
+        const weightGrams = toGrams(displayWeight, rowUnit);
+        // Format with 2 decimal places and add 'g' suffix
+        gramsPill.textContent = weightGrams.toFixed(2) + 'g';
     }
 
     /**
@@ -1006,13 +934,19 @@ const ZakatCalculator = (function() {
         const container = document.getElementById('goldItems');
         if (!container) return;
 
-        const placeholder = getWeightPlaceholder();
         const row = document.createElement('div');
         row.className = 'asset-row';
         row.dataset.type = 'gold';
         row.innerHTML = `
             <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
-            <input type="number" name="gold_weight" step="0.0001" min="0" placeholder="${placeholder}" class="input-weight">
+            <input type="number" name="gold_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
+            <select name="gold_weight_unit" class="input-weight-unit">
+                <option value="g" selected>g</option>
+                <option value="ozt">oz t</option>
+                <option value="tola">tola</option>
+                <option value="vori">vori</option>
+                <option value="aana">aana</option>
+            </select>
             <select name="gold_karat" class="input-karat">
                 <option value="24">24K</option>
                 <option value="22" selected>22K</option>
@@ -1022,6 +956,7 @@ const ZakatCalculator = (function() {
                 <option value="10">10K</option>
                 <option value="9">9K</option>
             </select>
+            <span class="weight-grams-pill" data-field="weight_grams">—</span>
             <span class="base-value-pill" data-field="base_value">—</span>
             <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
         `;
@@ -1068,18 +1003,25 @@ const ZakatCalculator = (function() {
         const container = document.getElementById('metalItems');
         if (!container) return;
 
-        const placeholder = getWeightPlaceholder();
         const row = document.createElement('div');
         row.className = 'asset-row';
         row.dataset.type = 'metal';
         row.innerHTML = `
             <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
-            <input type="number" name="metal_weight" step="0.0001" min="0" placeholder="${placeholder}" class="input-weight">
+            <input type="number" name="metal_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
+            <select name="metal_weight_unit" class="input-weight-unit">
+                <option value="g" selected>g</option>
+                <option value="ozt">oz t</option>
+                <option value="tola">tola</option>
+                <option value="vori">vori</option>
+                <option value="aana">aana</option>
+            </select>
             <select name="metal_type" class="input-metal">
                 <option value="silver">Silver</option>
                 <option value="platinum">Platinum</option>
                 <option value="palladium">Palladium</option>
             </select>
+            <span class="weight-grams-pill" data-field="weight_grams">—</span>
             <span class="base-value-pill" data-field="base_value">—</span>
             <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
         `;
@@ -1144,7 +1086,6 @@ const ZakatCalculator = (function() {
         return {
             base_currency: baseCurrency,
             calculation_date: calculationDate,
-            weight_unit: weightUnit,
             nisab_basis: typeof NisabIndicator !== 'undefined' ? NisabIndicator.getBasis() : nisabBasis,
             gold_items: collectGoldItemsFull(),
             cash_items: collectCashItemsFull(),
@@ -1156,15 +1097,18 @@ const ZakatCalculator = (function() {
 
     /**
      * Collect gold items with all fields (including empty)
-     * Weights are stored in grams (converted from display unit)
+     * Stores display weight, unit, and calculated grams
      */
     function collectGoldItemsFull() {
         var items = [];
         document.querySelectorAll('#goldItems .asset-row').forEach(function(row) {
             var displayWeight = parseFloat(row.querySelector('[name="gold_weight"]')?.value) || 0;
+            var rowUnit = row.querySelector('[name="gold_weight_unit"]')?.value || 'g';
             items.push({
                 name: row.querySelector('[name="gold_name"]')?.value || '',
-                weight_grams: toGrams(displayWeight, weightUnit),
+                weight: displayWeight,
+                weight_unit: rowUnit,
+                weight_grams: toGrams(displayWeight, rowUnit),
                 purity_karat: parseInt(row.querySelector('[name="gold_karat"]')?.value) || 22
             });
         });
@@ -1203,16 +1147,19 @@ const ZakatCalculator = (function() {
 
     /**
      * Collect metal items with all fields (including empty)
-     * Weights are stored in grams (converted from display unit)
+     * Stores display weight, unit, and calculated grams
      */
     function collectMetalItemsFull() {
         var items = [];
         document.querySelectorAll('#metalItems .asset-row').forEach(function(row) {
             var displayWeight = parseFloat(row.querySelector('[name="metal_weight"]')?.value) || 0;
+            var rowUnit = row.querySelector('[name="metal_weight_unit"]')?.value || 'g';
             items.push({
                 name: row.querySelector('[name="metal_name"]')?.value || '',
                 metal: row.querySelector('[name="metal_type"]')?.value || 'silver',
-                weight_grams: toGrams(displayWeight, weightUnit)
+                weight: displayWeight,
+                weight_unit: rowUnit,
+                weight_grams: toGrams(displayWeight, rowUnit)
             });
         });
         return items;
@@ -1259,18 +1206,6 @@ const ZakatCalculator = (function() {
             if (datePicker) {
                 datePicker.value = state.calculation_date;
             }
-        }
-
-        // Set weight unit (must be set BEFORE restoring items so weights display correctly)
-        if (state.weight_unit && WEIGHT_UNITS[state.weight_unit]) {
-            weightUnit = state.weight_unit;
-            var weightUnitSelector = document.getElementById('weightUnit');
-            if (weightUnitSelector) {
-                weightUnitSelector.value = weightUnit;
-            }
-            localStorage.setItem('weightUnit', weightUnit);
-            updateWeightUnitHint();
-            updateWeightPlaceholders();
         }
 
         // Set nisab basis
@@ -1321,20 +1256,33 @@ const ZakatCalculator = (function() {
         // Clear existing rows
         container.innerHTML = '';
 
-        var placeholder = getWeightPlaceholder();
-        var unitInfo = WEIGHT_UNITS[weightUnit] || WEIGHT_UNITS.g;
-
         // Add rows for each item (or at least one empty row)
-        var itemsToRestore = items.length > 0 ? items : [{ name: '', weight_grams: 0, purity_karat: 22 }];
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', weight: 0, weight_unit: 'g', purity_karat: 22 }];
         itemsToRestore.forEach(function(item) {
-            // Convert grams to display unit
-            var displayWeight = item.weight_grams ? fromGrams(item.weight_grams, weightUnit).toFixed(unitInfo.decimals) : '';
+            // Use stored display weight and unit, or fall back to grams if only weight_grams exists (backward compat)
+            var rowUnit = item.weight_unit || 'g';
+            var displayWeight = '';
+            if (item.weight && item.weight > 0) {
+                displayWeight = item.weight;
+            } else if (item.weight_grams && item.weight_grams > 0) {
+                // Backward compatibility: convert grams to display unit
+                var unitInfo = WEIGHT_UNITS[rowUnit] || WEIGHT_UNITS.g;
+                displayWeight = fromGrams(item.weight_grams, rowUnit).toFixed(unitInfo.decimals);
+            }
+
             var row = document.createElement('div');
             row.className = 'asset-row';
             row.dataset.type = 'gold';
             row.innerHTML = [
                 '<input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
-                '<input type="number" name="gold_weight" step="0.0001" min="0" placeholder="' + placeholder + '" class="input-weight" value="' + displayWeight + '">',
+                '<input type="number" name="gold_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight" value="' + displayWeight + '">',
+                '<select name="gold_weight_unit" class="input-weight-unit">',
+                '    <option value="g"' + (rowUnit === 'g' ? ' selected' : '') + '>g</option>',
+                '    <option value="ozt"' + (rowUnit === 'ozt' ? ' selected' : '') + '>oz t</option>',
+                '    <option value="tola"' + (rowUnit === 'tola' ? ' selected' : '') + '>tola</option>',
+                '    <option value="vori"' + (rowUnit === 'vori' ? ' selected' : '') + '>vori</option>',
+                '    <option value="aana"' + (rowUnit === 'aana' ? ' selected' : '') + '>aana</option>',
+                '</select>',
                 '<select name="gold_karat" class="input-karat">',
                 '    <option value="24"' + (item.purity_karat === 24 ? ' selected' : '') + '>24K</option>',
                 '    <option value="22"' + (item.purity_karat === 22 || !item.purity_karat ? ' selected' : '') + '>22K</option>',
@@ -1344,6 +1292,7 @@ const ZakatCalculator = (function() {
                 '    <option value="10"' + (item.purity_karat === 10 ? ' selected' : '') + '>10K</option>',
                 '    <option value="9"' + (item.purity_karat === 9 ? ' selected' : '') + '>9K</option>',
                 '</select>',
+                '<span class="weight-grams-pill" data-field="weight_grams">—</span>',
                 '<span class="base-value-pill" data-field="base_value">—</span>',
                 '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>'
             ].join('\n');
@@ -1422,25 +1371,39 @@ const ZakatCalculator = (function() {
         // Clear existing rows
         container.innerHTML = '';
 
-        var placeholder = getWeightPlaceholder();
-        var unitInfo = WEIGHT_UNITS[weightUnit] || WEIGHT_UNITS.g;
-
         // Add rows for each item
-        var itemsToRestore = items.length > 0 ? items : [{ name: '', metal: 'silver', weight_grams: 0 }];
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', metal: 'silver', weight: 0, weight_unit: 'g' }];
         itemsToRestore.forEach(function(item) {
-            // Convert grams to display unit
-            var displayWeight = item.weight_grams ? fromGrams(item.weight_grams, weightUnit).toFixed(unitInfo.decimals) : '';
+            // Use stored display weight and unit, or fall back to grams if only weight_grams exists (backward compat)
+            var rowUnit = item.weight_unit || 'g';
+            var displayWeight = '';
+            if (item.weight && item.weight > 0) {
+                displayWeight = item.weight;
+            } else if (item.weight_grams && item.weight_grams > 0) {
+                // Backward compatibility: convert grams to display unit
+                var unitInfo = WEIGHT_UNITS[rowUnit] || WEIGHT_UNITS.g;
+                displayWeight = fromGrams(item.weight_grams, rowUnit).toFixed(unitInfo.decimals);
+            }
+
             var row = document.createElement('div');
             row.className = 'asset-row';
             row.dataset.type = 'metal';
             row.innerHTML = [
                 '<input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
-                '<input type="number" name="metal_weight" step="0.0001" min="0" placeholder="' + placeholder + '" class="input-weight" value="' + displayWeight + '">',
+                '<input type="number" name="metal_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight" value="' + displayWeight + '">',
+                '<select name="metal_weight_unit" class="input-weight-unit">',
+                '    <option value="g"' + (rowUnit === 'g' ? ' selected' : '') + '>g</option>',
+                '    <option value="ozt"' + (rowUnit === 'ozt' ? ' selected' : '') + '>oz t</option>',
+                '    <option value="tola"' + (rowUnit === 'tola' ? ' selected' : '') + '>tola</option>',
+                '    <option value="vori"' + (rowUnit === 'vori' ? ' selected' : '') + '>vori</option>',
+                '    <option value="aana"' + (rowUnit === 'aana' ? ' selected' : '') + '>aana</option>',
+                '</select>',
                 '<select name="metal_type" class="input-metal">',
                 '    <option value="silver"' + (item.metal === 'silver' || !item.metal ? ' selected' : '') + '>Silver</option>',
                 '    <option value="platinum"' + (item.metal === 'platinum' ? ' selected' : '') + '>Platinum</option>',
                 '    <option value="palladium"' + (item.metal === 'palladium' ? ' selected' : '') + '>Palladium</option>',
                 '</select>',
+                '<span class="weight-grams-pill" data-field="weight_grams">—</span>',
                 '<span class="base-value-pill" data-field="base_value">—</span>',
                 '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>'
             ].join('\n');

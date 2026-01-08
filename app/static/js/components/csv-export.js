@@ -35,7 +35,6 @@ const CsvExport = (function() {
         const baseCurrency = getBaseCurrency();
         const calculationDate = getCalculationDate();
         const effectiveDate = getEffectivePricingDate();
-        const weightUnit = getWeightUnit();
         const nisabInfo = getNisabInfo();
         const totals = getTotals();
 
@@ -47,7 +46,6 @@ const CsvExport = (function() {
         rows.push(['CalculationDate', calculationDate || 'Today']);
         rows.push(['EffectivePricingDate', effectiveDate || 'N/A']);
         rows.push(['BaseCurrency', baseCurrency]);
-        rows.push(['WeightUnit', weightUnit.label]);
         rows.push(['NisabBasis', nisabInfo.basis]);
         rows.push(['NisabThreshold', nisabInfo.threshold]);
         rows.push(['ZakatableTotal', totals.grandTotal]);
@@ -166,12 +164,11 @@ const CsvExport = (function() {
     };
 
     /**
-     * Get current weight unit from the form
+     * Get weight unit info by code
+     * @param {string} code - Weight unit code (g, ozt, tola, vori, aana)
      * @returns {Object} Weight unit info {code, label, short, gramsPerUnit}
      */
-    function getWeightUnit() {
-        const selector = document.getElementById('weightUnit');
-        const code = selector ? selector.value : 'g';
+    function getRowWeightUnit(code) {
         const unitInfo = WEIGHT_UNITS[code] || WEIGHT_UNITS.g;
         return {
             code: code,
@@ -245,30 +242,30 @@ const CsvExport = (function() {
     function collectGoldAssets(baseCurrency) {
         const rows = [];
         const goldItems = document.querySelectorAll('#goldItems .asset-row');
-        const weightUnit = getWeightUnit();
 
         goldItems.forEach(row => {
             const name = row.querySelector('[name="gold_name"]')?.value || '';
             const displayWeight = row.querySelector('[name="gold_weight"]')?.value || '';
+            const rowUnitCode = row.querySelector('[name="gold_weight_unit"]')?.value || 'g';
+            const rowUnit = getRowWeightUnit(rowUnitCode);
             const karat = row.querySelector('[name="gold_karat"]')?.value || '22';
 
             if (displayWeight && parseFloat(displayWeight) > 0) {
                 const purity = parseInt(karat) / 24;
                 const goldPrice = getMetalPriceFromSnapshot('gold');
                 // Convert display weight to grams for calculation
-                const weightGrams = toGrams(parseFloat(displayWeight), weightUnit);
+                const weightGrams = toGrams(parseFloat(displayWeight), rowUnit);
                 const value = weightGrams * purity * goldPrice;
 
                 // Show weight in current unit with grams in notes
-                const weightStr = displayWeight + ' ' + weightUnit.short;
-                const gramsNote = weightUnit.code !== 'g'
+                const gramsNote = rowUnit.code !== 'g'
                     ? '(' + formatNumber(weightGrams) + 'g), Purity: ' + (purity * 100).toFixed(1) + '%'
                     : 'Purity: ' + (purity * 100).toFixed(1) + '%';
 
                 rows.push([
                     'Gold',
                     name || 'Gold Item',
-                    weightUnit.short,
+                    rowUnit.short,
                     displayWeight,
                     karat + 'K Gold',
                     formatNumber(goldPrice * purity),
@@ -289,28 +286,29 @@ const CsvExport = (function() {
     function collectMetalAssets(baseCurrency) {
         const rows = [];
         const metalItems = document.querySelectorAll('#metalItems .asset-row');
-        const weightUnit = getWeightUnit();
 
         metalItems.forEach(row => {
             const name = row.querySelector('[name="metal_name"]')?.value || '';
             const displayWeight = row.querySelector('[name="metal_weight"]')?.value || '';
+            const rowUnitCode = row.querySelector('[name="metal_weight_unit"]')?.value || 'g';
+            const rowUnit = getRowWeightUnit(rowUnitCode);
             const metalType = row.querySelector('[name="metal_type"]')?.value || 'silver';
 
             if (displayWeight && parseFloat(displayWeight) > 0) {
                 const metalPrice = getMetalPriceFromSnapshot(metalType);
                 // Convert display weight to grams for calculation
-                const weightGrams = toGrams(parseFloat(displayWeight), weightUnit);
+                const weightGrams = toGrams(parseFloat(displayWeight), rowUnit);
                 const value = weightGrams * metalPrice;
 
                 // Show grams in notes if not using grams
-                const gramsNote = weightUnit.code !== 'g'
+                const gramsNote = rowUnit.code !== 'g'
                     ? '(' + formatNumber(weightGrams) + 'g)'
                     : '';
 
                 rows.push([
                     'Other Metals',
                     name || metalType.charAt(0).toUpperCase() + metalType.slice(1),
-                    weightUnit.short,
+                    rowUnit.short,
                     displayWeight,
                     metalType.charAt(0).toUpperCase() + metalType.slice(1),
                     formatNumber(metalPrice),

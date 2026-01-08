@@ -46,18 +46,6 @@
                         <input type="date" id="calculationDate" name="calculationDate">
                         <p class="hint">Historical prices will be used for this date</p>
                     </div>
-
-                    <div class="form-group">
-                        <label for="weightUnit">Weight Unit</label>
-                        <select id="weightUnit" name="weightUnit">
-                            <option value="g" selected>Grams (g)</option>
-                            <option value="ozt">Troy ounces (oz t)</option>
-                            <option value="tola">Tola</option>
-                            <option value="vori">Vori</option>
-                            <option value="aana">Aana</option>
-                        </select>
-                        <p class="hint" id="weightUnitHint">For gold and precious metals</p>
-                    </div>
                 </div>
 
                 <div id="effectiveDate" class="effective-date-notice" style="display: none;"></div>
@@ -68,6 +56,13 @@
                     <div class="asset-row" data-type="gold">
                         <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
                         <input type="number" name="gold_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
+                        <select name="gold_weight_unit" class="input-weight-unit">
+                            <option value="g" selected>g</option>
+                            <option value="ozt">oz t</option>
+                            <option value="tola">tola</option>
+                            <option value="vori">vori</option>
+                            <option value="aana">aana</option>
+                        </select>
                         <select name="gold_karat" class="input-karat">
                             <option value="24">24K</option>
                             <option value="22" selected>22K</option>
@@ -77,6 +72,7 @@
                             <option value="10">10K</option>
                             <option value="9">9K</option>
                         </select>
+                        <span class="weight-grams-pill" data-field="weight_grams">—</span>
                         <span class="base-value-pill" data-field="base_value">—</span>
                         <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                     </div>
@@ -89,11 +85,19 @@
                     <div class="asset-row" data-type="metal">
                         <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
                         <input type="number" name="metal_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
+                        <select name="metal_weight_unit" class="input-weight-unit">
+                            <option value="g" selected>g</option>
+                            <option value="ozt">oz t</option>
+                            <option value="tola">tola</option>
+                            <option value="vori">vori</option>
+                            <option value="aana">aana</option>
+                        </select>
                         <select name="metal_type" class="input-metal">
                             <option value="silver">Silver</option>
                             <option value="platinum">Platinum</option>
                             <option value="palladium">Palladium</option>
                         </select>
+                        <span class="weight-grams-pill" data-field="weight_grams">—</span>
                         <span class="base-value-pill" data-field="base_value">—</span>
                         <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                     </div>
