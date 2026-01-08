@@ -217,8 +217,12 @@
         .asset-row .input-weight-unit {
             width: 70px;
             flex-shrink: 0;
-            padding: 8px 4px;
-            font-size: 14px;
+        }
+        /* Consistent height for all asset row inputs */
+        .asset-row input,
+        .asset-row select {
+            height: 44px;
+            box-sizing: border-box;
         }
         /* Section helper text */
         .section-helper {
