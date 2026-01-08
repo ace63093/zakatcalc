@@ -46,6 +46,17 @@
                         <input type="date" id="calculationDate" name="calculationDate">
                         <p class="hint">Historical prices will be used for this date</p>
                     </div>
+
+                    <div class="form-group">
+                        <label for="weightUnit">Weight Unit</label>
+                        <select id="weightUnit" name="weightUnit">
+                            <option value="g" selected>Grams (g)</option>
+                            <option value="ozt">Troy ounces (oz t)</option>
+                            <option value="tola">Tola</option>
+                            <option value="vori">Vori</option>
+                        </select>
+                        <p class="hint" id="weightUnitHint">For gold and precious metals</p>
+                    </div>
                 </div>
 
                 <div id="effectiveDate" class="effective-date-notice" style="display: none;"></div>
@@ -55,7 +66,7 @@
                 <div id="goldItems">
                     <div class="asset-row" data-type="gold">
                         <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
-                        <input type="number" name="gold_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
+                        <input type="number" name="gold_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
                         <select name="gold_karat" class="input-karat">
                             <option value="24">24K</option>
                             <option value="22" selected>22K</option>
@@ -76,7 +87,7 @@
                 <div id="metalItems">
                     <div class="asset-row" data-type="metal">
                         <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
-                        <input type="number" name="metal_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
+                        <input type="number" name="metal_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
                         <select name="metal_type" class="input-metal">
                             <option value="silver">Silver</option>
                             <option value="platinum">Platinum</option>

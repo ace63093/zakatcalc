@@ -35,6 +35,7 @@ const CsvExport = (function() {
         const baseCurrency = getBaseCurrency();
         const calculationDate = getCalculationDate();
         const effectiveDate = getEffectivePricingDate();
+        const weightUnit = getWeightUnit();
         const nisabInfo = getNisabInfo();
         const totals = getTotals();
 
@@ -46,6 +47,7 @@ const CsvExport = (function() {
         rows.push(['CalculationDate', calculationDate || 'Today']);
         rows.push(['EffectivePricingDate', effectiveDate || 'N/A']);
         rows.push(['BaseCurrency', baseCurrency]);
+        rows.push(['WeightUnit', weightUnit.label]);
         rows.push(['NisabBasis', nisabInfo.basis]);
         rows.push(['NisabThreshold', nisabInfo.threshold]);
         rows.push(['ZakatableTotal', totals.grandTotal]);
@@ -153,6 +155,43 @@ const CsvExport = (function() {
     }
 
     /**
+     * Weight unit definitions (must match calculator.js)
+     */
+    const WEIGHT_UNITS = {
+        g: { gramsPerUnit: 1, label: 'Grams (g)', short: 'g' },
+        ozt: { gramsPerUnit: 31.1034768, label: 'Troy ounces (oz t)', short: 'oz t' },
+        tola: { gramsPerUnit: 11.6638038, label: 'Tola', short: 'tola' },
+        vori: { gramsPerUnit: 11.6638038, label: 'Vori', short: 'vori' }
+    };
+
+    /**
+     * Get current weight unit from the form
+     * @returns {Object} Weight unit info {code, label, short, gramsPerUnit}
+     */
+    function getWeightUnit() {
+        const selector = document.getElementById('weightUnit');
+        const code = selector ? selector.value : 'g';
+        const unitInfo = WEIGHT_UNITS[code] || WEIGHT_UNITS.g;
+        return {
+            code: code,
+            label: unitInfo.label,
+            short: unitInfo.short,
+            gramsPerUnit: unitInfo.gramsPerUnit
+        };
+    }
+
+    /**
+     * Convert display weight to grams
+     * @param {number} displayWeight - Weight in current display unit
+     * @param {Object} weightUnit - Weight unit info
+     * @returns {number} Weight in grams
+     */
+    function toGrams(displayWeight, weightUnit) {
+        if (!displayWeight || isNaN(displayWeight)) return 0;
+        return displayWeight * weightUnit.gramsPerUnit;
+    }
+
+    /**
      * Get nisab information from the results panel
      * @returns {Object} Nisab basis and threshold
      */
@@ -205,26 +244,35 @@ const CsvExport = (function() {
     function collectGoldAssets(baseCurrency) {
         const rows = [];
         const goldItems = document.querySelectorAll('#goldItems .asset-row');
+        const weightUnit = getWeightUnit();
 
         goldItems.forEach(row => {
             const name = row.querySelector('[name="gold_name"]')?.value || '';
-            const weight = row.querySelector('[name="gold_weight"]')?.value || '';
+            const displayWeight = row.querySelector('[name="gold_weight"]')?.value || '';
             const karat = row.querySelector('[name="gold_karat"]')?.value || '22';
 
-            if (weight && parseFloat(weight) > 0) {
+            if (displayWeight && parseFloat(displayWeight) > 0) {
                 const purity = parseInt(karat) / 24;
                 const goldPrice = getMetalPriceFromSnapshot('gold');
-                const value = parseFloat(weight) * purity * goldPrice;
+                // Convert display weight to grams for calculation
+                const weightGrams = toGrams(parseFloat(displayWeight), weightUnit);
+                const value = weightGrams * purity * goldPrice;
+
+                // Show weight in current unit with grams in notes
+                const weightStr = displayWeight + ' ' + weightUnit.short;
+                const gramsNote = weightUnit.code !== 'g'
+                    ? '(' + formatNumber(weightGrams) + 'g), Purity: ' + (purity * 100).toFixed(1) + '%'
+                    : 'Purity: ' + (purity * 100).toFixed(1) + '%';
 
                 rows.push([
                     'Gold',
                     name || 'Gold Item',
-                    'grams',
-                    weight,
+                    weightUnit.short,
+                    displayWeight,
                     karat + 'K Gold',
                     formatNumber(goldPrice * purity),
                     formatNumber(value),
-                    'Purity: ' + (purity * 100).toFixed(1) + '%'
+                    gramsNote
                 ]);
             }
         });
@@ -240,25 +288,33 @@ const CsvExport = (function() {
     function collectMetalAssets(baseCurrency) {
         const rows = [];
         const metalItems = document.querySelectorAll('#metalItems .asset-row');
+        const weightUnit = getWeightUnit();
 
         metalItems.forEach(row => {
             const name = row.querySelector('[name="metal_name"]')?.value || '';
-            const weight = row.querySelector('[name="metal_weight"]')?.value || '';
+            const displayWeight = row.querySelector('[name="metal_weight"]')?.value || '';
             const metalType = row.querySelector('[name="metal_type"]')?.value || 'silver';
 
-            if (weight && parseFloat(weight) > 0) {
+            if (displayWeight && parseFloat(displayWeight) > 0) {
                 const metalPrice = getMetalPriceFromSnapshot(metalType);
-                const value = parseFloat(weight) * metalPrice;
+                // Convert display weight to grams for calculation
+                const weightGrams = toGrams(parseFloat(displayWeight), weightUnit);
+                const value = weightGrams * metalPrice;
+
+                // Show grams in notes if not using grams
+                const gramsNote = weightUnit.code !== 'g'
+                    ? '(' + formatNumber(weightGrams) + 'g)'
+                    : '';
 
                 rows.push([
                     'Other Metals',
                     name || metalType.charAt(0).toUpperCase() + metalType.slice(1),
-                    'grams',
-                    weight,
+                    weightUnit.short,
+                    displayWeight,
                     metalType.charAt(0).toUpperCase() + metalType.slice(1),
                     formatNumber(metalPrice),
                     formatNumber(value),
-                    ''
+                    gramsNote
                 ]);
             }
         });
