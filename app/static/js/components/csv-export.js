@@ -161,7 +161,8 @@ const CsvExport = (function() {
         g: { gramsPerUnit: 1, label: 'Grams (g)', short: 'g' },
         ozt: { gramsPerUnit: 31.1034768, label: 'Troy ounces (oz t)', short: 'oz t' },
         tola: { gramsPerUnit: 11.6638038, label: 'Tola', short: 'tola' },
-        vori: { gramsPerUnit: 11.6638038, label: 'Vori', short: 'vori' }
+        vori: { gramsPerUnit: 11.6638038, label: 'Vori', short: 'vori' },
+        aana: { gramsPerUnit: 0.72898774, label: 'Aana', short: 'aana' }
     };
 
     /**

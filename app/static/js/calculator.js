@@ -22,7 +22,8 @@ const ZakatCalculator = (function() {
         g: { gramsPerUnit: 1, label: 'Grams (g)', short: 'g', decimals: 2 },
         ozt: { gramsPerUnit: 31.1034768, label: 'Troy ounces (oz t)', short: 'oz t', decimals: 4 },
         tola: { gramsPerUnit: 11.6638038, label: 'Tola', short: 'tola', decimals: 4 },
-        vori: { gramsPerUnit: 11.6638038, label: 'Vori', short: 'vori', decimals: 4 }
+        vori: { gramsPerUnit: 11.6638038, label: 'Vori', short: 'vori', decimals: 4 },
+        aana: { gramsPerUnit: 0.72898774, label: 'Aana', short: 'aana', decimals: 2 }
     };
 
     // State
