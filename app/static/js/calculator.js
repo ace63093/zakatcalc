@@ -849,10 +849,7 @@ const ZakatCalculator = (function() {
         row.className = 'asset-row';
         row.dataset.type = 'gold';
         row.innerHTML = `
-            <div class="name-wrapper">
-                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
-                <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
-            </div>
+            <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
             <input type="number" name="gold_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
             <select name="gold_karat" class="input-karat">
                 <option value="24">24K</option>
@@ -864,6 +861,7 @@ const ZakatCalculator = (function() {
                 <option value="9">9K</option>
             </select>
             <span class="base-value-pill" data-field="base_value">—</span>
+            <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
         `;
         container.appendChild(row);
     }
@@ -872,18 +870,15 @@ const ZakatCalculator = (function() {
         const container = document.getElementById('cashItems');
         if (!container) return;
 
-        const rowId = 'cash-row-' + Date.now();
         const row = document.createElement('div');
         row.className = 'asset-row';
         row.dataset.type = 'cash';
         row.innerHTML = `
-            <div class="name-wrapper">
-                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
-                <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
-            </div>
+            <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
             <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
             <div class="currency-autocomplete" data-name="cash_currency"></div>
             <span class="base-value-pill" data-field="base_value">—</span>
+            <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
         `;
         container.appendChild(row);
         initCurrencyAutocompletes();
@@ -897,13 +892,11 @@ const ZakatCalculator = (function() {
         row.className = 'asset-row';
         row.dataset.type = 'bank';
         row.innerHTML = `
-            <div class="name-wrapper">
-                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
-                <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
-            </div>
+            <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
             <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
             <div class="currency-autocomplete" data-name="bank_currency"></div>
             <span class="base-value-pill" data-field="base_value">—</span>
+            <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
         `;
         container.appendChild(row);
         initCurrencyAutocompletes();
@@ -917,10 +910,7 @@ const ZakatCalculator = (function() {
         row.className = 'asset-row';
         row.dataset.type = 'metal';
         row.innerHTML = `
-            <div class="name-wrapper">
-                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
-                <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
-            </div>
+            <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
             <input type="number" name="metal_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
             <select name="metal_type" class="input-metal">
                 <option value="silver">Silver</option>
@@ -928,6 +918,7 @@ const ZakatCalculator = (function() {
                 <option value="palladium">Palladium</option>
             </select>
             <span class="base-value-pill" data-field="base_value">—</span>
+            <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
         `;
         container.appendChild(row);
     }
@@ -940,13 +931,11 @@ const ZakatCalculator = (function() {
         row.className = 'asset-row';
         row.dataset.type = 'crypto';
         row.innerHTML = `
-            <div class="name-wrapper">
-                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
-                <input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name">
-            </div>
+            <input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name">
             <div class="crypto-autocomplete" data-name="crypto_symbol"></div>
             <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount">
             <span class="base-value-pill" data-field="base_value">—</span>
+            <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
         `;
         container.appendChild(row);
         initCryptoAutocompletes();
@@ -1158,10 +1147,7 @@ const ZakatCalculator = (function() {
             row.className = 'asset-row';
             row.dataset.type = 'gold';
             row.innerHTML = [
-                '<div class="name-wrapper">',
-                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
-                '    <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
-                '</div>',
+                '<input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
                 '<input type="number" name="gold_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight" value="' + (item.weight_grams || '') + '">',
                 '<select name="gold_karat" class="input-karat">',
                 '    <option value="24"' + (item.purity_karat === 24 ? ' selected' : '') + '>24K</option>',
@@ -1172,7 +1158,8 @@ const ZakatCalculator = (function() {
                 '    <option value="10"' + (item.purity_karat === 10 ? ' selected' : '') + '>10K</option>',
                 '    <option value="9"' + (item.purity_karat === 9 ? ' selected' : '') + '>9K</option>',
                 '</select>',
-                '<span class="base-value-pill" data-field="base_value">—</span>'
+                '<span class="base-value-pill" data-field="base_value">—</span>',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>'
             ].join('\n');
             container.appendChild(row);
         });
@@ -1195,13 +1182,11 @@ const ZakatCalculator = (function() {
             row.className = 'asset-row';
             row.dataset.type = 'cash';
             row.innerHTML = [
-                '<div class="name-wrapper">',
-                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
-                '    <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
-                '</div>',
+                '<input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
                 '<input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
                 '<div class="currency-autocomplete" data-name="cash_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
-                '<span class="base-value-pill" data-field="base_value">—</span>'
+                '<span class="base-value-pill" data-field="base_value">—</span>',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>'
             ].join('\n');
             container.appendChild(row);
         });
@@ -1227,13 +1212,11 @@ const ZakatCalculator = (function() {
             row.className = 'asset-row';
             row.dataset.type = 'bank';
             row.innerHTML = [
-                '<div class="name-wrapper">',
-                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
-                '    <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
-                '</div>',
+                '<input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
                 '<input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
                 '<div class="currency-autocomplete" data-name="bank_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
-                '<span class="base-value-pill" data-field="base_value">—</span>'
+                '<span class="base-value-pill" data-field="base_value">—</span>',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>'
             ].join('\n');
             container.appendChild(row);
         });
@@ -1259,17 +1242,15 @@ const ZakatCalculator = (function() {
             row.className = 'asset-row';
             row.dataset.type = 'metal';
             row.innerHTML = [
-                '<div class="name-wrapper">',
-                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
-                '    <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
-                '</div>',
+                '<input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
                 '<input type="number" name="metal_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight" value="' + (item.weight_grams || '') + '">',
                 '<select name="metal_type" class="input-metal">',
                 '    <option value="silver"' + (item.metal === 'silver' || !item.metal ? ' selected' : '') + '>Silver</option>',
                 '    <option value="platinum"' + (item.metal === 'platinum' ? ' selected' : '') + '>Platinum</option>',
                 '    <option value="palladium"' + (item.metal === 'palladium' ? ' selected' : '') + '>Palladium</option>',
                 '</select>',
-                '<span class="base-value-pill" data-field="base_value">—</span>'
+                '<span class="base-value-pill" data-field="base_value">—</span>',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>'
             ].join('\n');
             container.appendChild(row);
         });
@@ -1292,13 +1273,11 @@ const ZakatCalculator = (function() {
             row.className = 'asset-row';
             row.dataset.type = 'crypto';
             row.innerHTML = [
-                '<div class="name-wrapper">',
-                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
-                '    <input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
-                '</div>',
+                '<input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
                 '<div class="crypto-autocomplete" data-name="crypto_symbol" data-initial="' + (item.symbol || '') + '"></div>',
                 '<input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
-                '<span class="base-value-pill" data-field="base_value">—</span>'
+                '<span class="base-value-pill" data-field="base_value">—</span>',
+                '<button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>'
             ].join('\n');
             container.appendChild(row);
         });

@@ -54,10 +54,7 @@
                 <div class="section-title">Gold Assets</div>
                 <div id="goldItems">
                     <div class="asset-row" data-type="gold">
-                        <div class="name-wrapper">
-                            <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
-                            <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
-                        </div>
+                        <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
                         <input type="number" name="gold_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
                         <select name="gold_karat" class="input-karat">
                             <option value="24">24K</option>
@@ -69,6 +66,7 @@
                             <option value="9">9K</option>
                         </select>
                         <span class="base-value-pill" data-field="base_value">—</span>
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                     </div>
                 </div>
                 <button type="button" class="btn-add" onclick="addGoldRow()">+ Add Gold Item</button>
@@ -77,10 +75,7 @@
                 <div class="section-title">Other Precious Metals</div>
                 <div id="metalItems">
                     <div class="asset-row" data-type="metal">
-                        <div class="name-wrapper">
-                            <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
-                            <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
-                        </div>
+                        <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
                         <input type="number" name="metal_weight" step="0.01" min="0" placeholder="Weight (g)" class="input-weight">
                         <select name="metal_type" class="input-metal">
                             <option value="silver">Silver</option>
@@ -88,6 +83,7 @@
                             <option value="palladium">Palladium</option>
                         </select>
                         <span class="base-value-pill" data-field="base_value">—</span>
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                     </div>
                 </div>
                 <button type="button" class="btn-add" onclick="addMetalRow()">+ Add Metal Item</button>
@@ -96,13 +92,11 @@
                 <div class="section-title">Cash on Hand</div>
                 <div id="cashItems">
                     <div class="asset-row" data-type="cash">
-                        <div class="name-wrapper">
-                            <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
-                            <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
-                        </div>
+                        <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
                         <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
                         <div class="currency-autocomplete" data-name="cash_currency"></div>
                         <span class="base-value-pill" data-field="base_value">—</span>
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                     </div>
                 </div>
                 <button type="button" class="btn-add" onclick="addCashRow()">+ Add Cash Item</button>
@@ -112,13 +106,11 @@
                 <p class="section-helper">Enter the balances of your respective accounts.</p>
                 <div id="bankItems">
                     <div class="asset-row" data-type="bank">
-                        <div class="name-wrapper">
-                            <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
-                            <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
-                        </div>
+                        <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
                         <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
                         <div class="currency-autocomplete" data-name="bank_currency"></div>
                         <span class="base-value-pill" data-field="base_value">—</span>
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                     </div>
                 </div>
                 <button type="button" class="btn-add" onclick="addBankRow()">+ Add Account</button>
@@ -127,13 +119,11 @@
                 <div class="section-title">Cryptocurrency</div>
                 <div id="cryptoItems">
                     <div class="asset-row" data-type="crypto">
-                        <div class="name-wrapper">
-                            <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
-                            <input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name">
-                        </div>
+                        <input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name">
                         <div class="crypto-autocomplete" data-name="crypto_symbol"></div>
                         <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount">
                         <span class="base-value-pill" data-field="base_value">—</span>
+                        <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                     </div>
                 </div>
                 <button type="button" class="btn-add" onclick="addCryptoRow()">+ Add Crypto Asset</button>
