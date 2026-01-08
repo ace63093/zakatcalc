@@ -8,12 +8,15 @@
  * - Keyboard navigation (ArrowUp/Down, Enter, Esc)
  * - Robust blur validation with revert behavior
  * - Works with dynamically added rows
+ * - Compact display mode for row-level selectors
  *
  * Usage:
  *   CurrencyAutocomplete.create(containerElement, {
  *     currencies: [...],  // Array of {code, name, priority}
  *     onSelect: (currency) => {},
- *     initialValue: 'CAD'
+ *     initialValue: 'CAD',
+ *     compact: false,     // If true, display "$ — CAD" instead of "CAD — Canadian Dollar"
+ *     symbols: {}         // Currency symbol map for compact mode {CAD: 'C$', USD: '$', ...}
  *   });
  */
 
@@ -113,6 +116,8 @@ const CurrencyAutocomplete = (function() {
         const onSelect = options.onSelect || function() {};
         const initialValue = options.initialValue || '';
         const name = options.name || 'currency';
+        const compact = options.compact || false;
+        const symbols = options.symbols || {};
 
         const instanceId = ++instanceCounter;
         const inputId = `currency-input-${instanceId}`;
@@ -157,6 +162,11 @@ const CurrencyAutocomplete = (function() {
         const input = container.querySelector(`#${inputId}`);
         const hiddenInput = container.querySelector('input[type="hidden"]');
         const listbox = container.querySelector(`#${listboxId}`);
+
+        // Add compact class if enabled
+        if (compact) {
+            container.classList.add('currency-compact');
+        }
 
         // Set initial value if provided
         if (initialValue) {
@@ -389,9 +399,18 @@ const CurrencyAutocomplete = (function() {
         }
 
         /**
-         * Format currency for display: "CAD — Canadian Dollar"
+         * Format currency for display
+         * Full mode: "CAD — Canadian Dollar"
+         * Compact mode: "$ — CAD" or just "CAD" if no symbol
          */
         function formatDisplay(currency) {
+            if (compact) {
+                const symbol = symbols[currency.code];
+                if (symbol) {
+                    return `${symbol} \u2014 ${currency.code}`;
+                }
+                return currency.code;
+            }
             return `${currency.code} \u2014 ${currency.name}`;
         }
 

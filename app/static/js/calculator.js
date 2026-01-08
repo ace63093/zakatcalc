@@ -259,10 +259,14 @@ const ZakatCalculator = (function() {
         if (typeof CurrencyAutocomplete === 'undefined') return;
 
         document.querySelectorAll('.currency-autocomplete:not([data-initialized])').forEach(function(container) {
+            // Use compact mode for row-level selectors (inside .asset-row)
+            var isRowLevel = container.closest('.asset-row') !== null;
             CurrencyAutocomplete.create(container, {
                 currencies: currencies,
                 initialValue: baseCurrency,
                 name: container.dataset.name || 'currency',
+                compact: isRowLevel,
+                symbols: isRowLevel ? CURRENCY_SYMBOLS : {},
                 onSelect: function() {
                     recalculate();
                 }
@@ -1449,10 +1453,14 @@ const ZakatCalculator = (function() {
 
         document.querySelectorAll('.currency-autocomplete:not([data-initialized])').forEach(function(container) {
             var initialValue = container.dataset.initial || baseCurrency;
+            // Use compact mode for row-level selectors (inside .asset-row)
+            var isRowLevel = container.closest('.asset-row') !== null;
             CurrencyAutocomplete.create(container, {
                 currencies: currencies,
                 initialValue: initialValue,
                 name: container.dataset.name || 'currency',
+                compact: isRowLevel,
+                symbols: isRowLevel ? CURRENCY_SYMBOLS : {},
                 onSelect: function() {
                     recalculate();
                 }

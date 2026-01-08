@@ -126,6 +126,24 @@
     color: #999 !important;
 }
 
+/* Compact mode for row-level currency selectors */
+.currency-compact {
+    min-width: 90px;
+    max-width: 120px;
+}
+
+.currency-compact .autocomplete-input {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.currency-compact .autocomplete-listbox {
+    min-width: 200px;
+    /* Allow dropdown to extend beyond the compact input */
+    width: max-content;
+}
+
 /* Mobile-friendly adjustments */
 @media (max-width: 600px) {
     .autocomplete-listbox {
@@ -134,5 +152,10 @@
 
     .autocomplete-option {
         padding: 0.625rem 0.75rem;
+    }
+
+    .currency-compact {
+        min-width: 80px;
+        max-width: 100px;
     }
 }
