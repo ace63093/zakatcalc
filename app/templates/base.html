@@ -89,7 +89,7 @@
         }
         .result {
             margin-top: 30px;
-            padding: 20px;
+            padding: 16px;
             background: #f7fafc;
             border-radius: 8px;
             display: none;
@@ -100,18 +100,24 @@
         .result-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            align-items: baseline;
+            padding: 6px 0;
             border-bottom: 1px solid #e2e8f0;
+            gap: 12px;
         }
         .result-row:last-child {
             border-bottom: none;
         }
         .result-label {
             color: #718096;
+            flex: 0 0 auto;
+            min-width: 120px;
         }
         .result-value {
             font-weight: 600;
             color: #4a5568;
+            text-align: right;
+            flex: 1;
         }
         .zakat-due {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -291,32 +297,32 @@
         }
         .result h2 {
             color: #4a5568;
-            margin-bottom: 15px;
-            font-size: 1.25rem;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
         }
         .result-section {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         .result-section h3 {
             color: #667eea;
-            font-size: 0.95rem;
-            margin-bottom: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .grand-total {
             background: #f0f5ff;
-            margin: 0 -20px;
-            padding: 12px 20px;
+            margin: 0 -16px;
+            padding: 10px 16px;
             border-radius: 4px;
         }
         .grand-total .result-value {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
         .zakat-row {
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            margin: 0 -20px;
-            padding: 15px 20px;
+            margin: 0 -16px;
+            padding: 12px 16px;
             border-radius: 4px;
         }
         .asset-row .input-metal {
@@ -372,18 +378,18 @@
                 padding: 30px;
             }
             .container {
-                max-width: 60vw;
+                max-width: 1100px;
                 min-width: 900px;
-                max-width: 1200px;
             }
             .calculator-layout {
                 display: grid;
-                grid-template-columns: 1fr 380px;
-                gap: 30px;
+                grid-template-columns: 1fr 320px;
+                gap: 24px;
                 align-items: start;
             }
             .calculator-inputs {
                 /* Left column - form inputs */
+                min-width: 0; /* Prevent grid blowout */
             }
             .calculator-results {
                 /* Right column - sticky results */
