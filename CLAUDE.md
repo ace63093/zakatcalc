@@ -61,6 +61,16 @@ Both use constants: `ZAKAT_RATE = 0.025`, `NISAB_GOLD_GRAMS = 85`, `NISAB_SILVER
 - `POST /api/v1/calculate` - Calculate zakat from asset list
 - `GET /api/v1/currencies` - Currency list (CAD first, then high-volume, then alphabetical)
 
+### UI Routes & Content
+- `/` - Calculator UI
+- `/about-zakat` - About Zakat page
+- `/faq` - FAQ page
+- `/contact` - Contact page
+
+#### Content Links
+- Contribute button (global nav): https://buymeacoffee.com/zakatcalculator
+- Contact email (only): info@whatismyzakat.com
+
 ### Test Fixtures
 `tests/conftest.py` provides:
 - `client`: Basic Flask test client
@@ -76,6 +86,13 @@ Single-page calculator at `/` using vanilla JS. Key components in `app/static/js
 - `components/nisab-indicator.js`: Visual nisab threshold indicator
 - `components/share-link.js`: Shareable URL generation with LZ-string compression
 - `components/csv-export.js`: Export assets to CSV
+
+Templates in `app/templates/`:
+- `base.html`: Shared layout + nav (includes Contribute button)
+- `calculator.html`
+- `about_zakat.html`
+- `faq.html`
+- `contact.html`
 
 #### Currency Autocomplete Modes
 - **Full mode** (base currency selector): Shows "CAD — Canadian Dollar"
