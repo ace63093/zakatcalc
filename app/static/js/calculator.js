@@ -17,12 +17,6 @@ const ZakatCalculator = (function() {
     const ZAKAT_RATE = 0.025;
     const DEBOUNCE_DELAY = 100;
 
-    function getLocalDateISO() {
-        const now = new Date();
-        const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-        return local.toISOString().slice(0, 10);
-    }
-
     // Weight unit conversion constants (all values are grams per unit)
     const WEIGHT_UNITS = {
         g: { gramsPerUnit: 1, label: 'Grams (g)', short: 'g', decimals: 2 },
@@ -37,7 +31,7 @@ const ZakatCalculator = (function() {
     let cryptos = [];
     let pricingSnapshot = null;
     let baseCurrency = 'CAD';
-    let calculationDate = getLocalDateISO();
+    let calculationDate = new Date().toISOString().split('T')[0];
     let nisabBasis = 'gold';
     let debounceTimer = null;
     let lastCalculationResult = null;
