@@ -20,3 +20,9 @@ def about_zakat():
 def faq():
     """Render the Zakat FAQ page."""
     return render_template('faq.html')
+
+
+@main_bp.route('/contact')
+def contact():
+    """Render the Contact Us page."""
+    return render_template('contact.html')

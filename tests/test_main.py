@@ -41,3 +41,15 @@ def test_faq_contains_heading(client):
     """GET /faq should contain Zakat FAQ heading."""
     response = client.get('/faq')
     assert b'Zakat FAQ' in response.data
+
+
+def test_contact_returns_200(client):
+    """GET /contact should return status 200."""
+    response = client.get('/contact')
+    assert response.status_code == 200
+
+
+def test_contact_contains_heading(client):
+    """GET /contact should contain Contact Us heading."""
+    response = client.get('/contact')
+    assert b'Contact Us' in response.data

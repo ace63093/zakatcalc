@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us - Zakat Calculator{% endblock %}
+
+{% block head %}
+<meta name="description" content="Contact the Zakat Calculator team with questions, feedback, or corrections.">
+<style>
+    .contact-intro {
+        color: #4a5568;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .contact-grid {
+        display: grid;
+        gap: 16px;
+    }
+    .contact-card {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 18px;
+    }
+    .contact-card h2 {
+        color: #667eea;
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
+    .contact-card p,
+    .contact-card li {
+        color: #4a5568;
+        font-size: 0.95rem;
+    }
+    .contact-card ul {
+        margin-left: 18px;
+        margin-top: 8px;
+    }
+    .contact-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .contact-pill {
+        background: #ebf4ff;
+        color: #2c5282;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .response-note {
+        background: #e6fffa;
+        border-left: 4px solid #38b2ac;
+        padding: 12px 16px;
+        border-radius: 0 8px 8px 0;
+        color: #234e52;
+        margin-top: 20px;
+    }
+    .response-note strong {
+        color: #234e52;
+    }
+    @media (min-width: 768px) {
+        .contact-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .contact-card.full {
+            grid-column: 1 / -1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Contact Us</h1>
+    <p class="subtitle">Questions, feedback, or corrections are always welcome.</p>
+    <p class="contact-intro">We welcome any feedback and use your notes to improve accuracy, clarity, and the overall Zakat experience.</p>
+
+    <div class="contact-grid">
+        <div class="contact-card">
+            <h2>Contact</h2>
+            <p>For help using the calculator, understanding inputs, or clarifying results, email us anytime.</p>
+            <div class="contact-details">
+                <span class="contact-pill">info@whatismyzakat.com</span>
+            </div>
+        </div>
+
+        <div class="contact-card full">
+            <h2>What to Include</h2>
+            <p>The more context you provide, the faster we can help. Please include:</p>
+            <ul>
+                <li>The date you selected for the calculation</li>
+                <li>Your base currency and asset categories used</li>
+                <li>Any screenshots or copy of the final totals</li>
+                <li>Browser and device details if something looks off</li>
+            </ul>
+        </div>
+
+        <div class="contact-card">
+            <h2>Religious Guidance</h2>
+            <p>We are not a fatwa service. For personal rulings, consult a qualified local scholar.</p>
+        </div>
+
+        <div class="contact-card">
+            <h2>Privacy and Data</h2>
+            <p>We do not store your calculations on our servers unless you explicitly share a link.</p>
+        </div>
+    </div>
+
+    <div class="response-note">
+        <strong>Typical response time:</strong> within 2 business days (Monday through Friday).
+    </div>
+</div>
+{% endblock %}

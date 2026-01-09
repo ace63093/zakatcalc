@@ -481,6 +481,15 @@
             background: rgba(255, 255, 255, 0.95);
             color: #667eea;
         }
+        .site-nav .contribute-btn {
+            background: #f6e05e;
+            color: #744210;
+            font-weight: 700;
+        }
+        .site-nav .contribute-btn:hover {
+            background: #ecc94b;
+            color: #5f370e;
+        }
         @media (max-width: 600px) {
             .site-nav {
                 gap: 6px;
@@ -494,9 +503,11 @@
 </head>
 <body>
     <nav class="site-nav">
+        <a href="https://buymeacoffee.com/zakatcalculator" class="contribute-btn">Contribute</a>
         <a href="{{ url_for('main.calculator') }}" {% if request.endpoint == 'main.calculator' %}class="active"{% endif %}>Calculator</a>
         <a href="{{ url_for('main.about_zakat') }}" {% if request.endpoint == 'main.about_zakat' %}class="active"{% endif %}>About Zakat</a>
         <a href="{{ url_for('main.faq') }}" {% if request.endpoint == 'main.faq' %}class="active"{% endif %}>FAQ</a>
+        <a href="{{ url_for('main.contact') }}" {% if request.endpoint == 'main.contact' %}class="active"{% endif %}>Contact Us</a>
     </nav>
     {% block content %}{% endblock %}
     {% block scripts %}{% endblock %}
