@@ -38,6 +38,11 @@ app/
 │   │   └── components/      # Autocomplete, indicators
 │   └── css/                 # Stylesheets
 └── templates/               # Jinja2 templates
+    ├── base.html            # Shared layout + nav (includes Contribute button)
+    ├── calculator.html
+    ├── about_zakat.html
+    ├── faq.html
+    └── contact.html
 
 tests/
 ├── conftest.py              # Fixtures (client, db_client, frozen_time)
@@ -72,6 +77,19 @@ WEIGHT_UNITS = {
 | POST | `/api/v1/calculate` | Calculate zakat |
 | GET | `/api/v1/currencies` | Currency list |
 | GET | `/api/v1/cryptocurrencies` | Crypto list |
+
+## UI Routes & Content
+
+| Path | Description |
+|------|-------------|
+| `/` | Calculator UI |
+| `/about-zakat` | About Zakat page |
+| `/faq` | FAQ page |
+| `/contact` | Contact page |
+
+### Content Links
+- Contribute button (global nav): `https://buymeacoffee.com/zakatcalculator`
+- Contact email (only): `info@whatismyzakat.com`
 
 ## Frontend Patterns
 
