@@ -12,6 +12,12 @@ Zakat Calculator - A Flask web application for calculating Islamic wealth tax (Z
 # Run the app locally
 docker compose up --build
 
+# When UI changes don't show, rebuild/recreate the web container
+DOCKER_BUILDKIT=0 docker compose up --build -d web
+
+# Local app URL
+http://localhost:8080
+
 # Run tests (all tests must pass before committing)
 docker compose run --rm web pytest
 

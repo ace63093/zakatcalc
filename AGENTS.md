@@ -14,6 +14,12 @@ docker compose up --build              # Run locally
 docker compose run --rm web pytest     # Run all tests (MUST pass before commit)
 docker compose run --rm web pytest tests/test_main.py -v  # Single file
 
+# When UI changes don't show, rebuild/recreate the web container
+DOCKER_BUILDKIT=0 docker compose up --build -d web
+
+# Local app URL
+http://localhost:8080
+
 # Database
 docker compose run --rm web flask init-db
 docker compose run --rm web flask seed-all
