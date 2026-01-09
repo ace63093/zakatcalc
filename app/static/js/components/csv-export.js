@@ -499,6 +499,12 @@ const CsvExport = (function() {
         return value.toFixed(2);
     }
 
+    function getLocalDateISO() {
+        const now = new Date();
+        const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 10);
+    }
+
     /**
      * Download CSV content as a file
      * @param {string} csvContent - CSV string
@@ -508,7 +514,7 @@ const CsvExport = (function() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
 
-        const date = new Date().toISOString().slice(0, 10);
+        const date = getLocalDateISO();
         link.setAttribute('href', url);
         link.setAttribute('download', 'zakat-calculation-' + date + '.csv');
         link.style.visibility = 'hidden';
