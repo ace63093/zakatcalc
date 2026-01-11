@@ -22,8 +22,7 @@
             padding: 20px;
         }
         .container {
-            width: 100%;
-            max-width: 700px;
+            width: min(100%, clamp(900px, 60vw, 1400px));
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -397,31 +396,28 @@
             color: #319795;
             margin-top: 4px;
         }
+        .calculator-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        .calculator-results {
+            display: grid;
+            gap: 16px;
+        }
 
         /* Desktop two-column layout (>=1024px) */
         @media (min-width: 1024px) {
             body {
                 padding: 30px;
             }
-            .container {
-                max-width: 960px;
-            }
             .calculator-layout {
-                display: grid;
-                grid-template-columns: 1fr 320px;
-                gap: 24px;
-                align-items: start;
+                grid-template-columns: minmax(0, 1fr) 420px;
             }
             .calculator-inputs {
                 /* Left column - form inputs */
                 min-width: 0; /* Prevent grid blowout */
-            }
-            .calculator-results {
-                /* Right column - sticky results */
-                position: sticky;
-                top: 20px;
-                max-height: calc(100vh - 40px);
-                overflow-y: auto;
             }
             .calculator-results .result {
                 margin-top: 0;
@@ -444,17 +440,9 @@
             }
         }
 
-        /* Tablet (768px - 1023px) */
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .container {
-                max-width: 700px;
-            }
-        }
-
         /* Mobile (<768px) */
         @media (max-width: 767px) {
             .container {
-                max-width: 100%;
                 padding: 15px;
                 border-radius: 0;
                 margin: 0;
