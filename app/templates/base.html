@@ -405,6 +405,15 @@
         .calculator-results {
             display: grid;
             gap: 16px;
+            min-width: 0;
+        }
+        .calculator-results,
+        .calculator-results * {
+            max-width: 100%;
+        }
+        .calculator-results .result,
+        .nisab-indicator {
+            box-sizing: border-box;
         }
 
         /* Desktop two-column layout (>=1024px) */
