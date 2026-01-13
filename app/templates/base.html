@@ -27,7 +27,7 @@
         }
         .container {
             width: 100%;
-            max-width: 1240px;
+            max-width: 1320px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -194,7 +194,7 @@
         }
         .asset-row {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             gap: 10px;
             margin-bottom: 10px;
             align-items: center;
@@ -535,7 +535,7 @@
                 width: 100%;
             }
             .container {
-                max-width: 1240px;
+                max-width: 1320px;
             }
             .page-content {
                 width: 100%;
@@ -560,6 +560,37 @@
             .app-grid,
             .calculator-layout {
                 grid-template-columns: 1fr;
+            }
+            .asset-row {
+                flex-wrap: wrap;
+            }
+            .asset-row::after {
+                content: "";
+                flex-basis: 100%;
+                order: 70;
+                height: 0;
+            }
+            .group-middle-secondary {
+                order: 80;
+            }
+        }
+
+        @media (min-width: 1280px) and (max-width: 1359px) {
+            .asset-row {
+                flex-wrap: wrap;
+            }
+            .asset-row::after {
+                content: "";
+                flex-basis: 100%;
+                order: 70;
+                height: 0;
+            }
+            .group-middle-secondary {
+                order: 80;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 15px;
             }
         }
 
