@@ -1140,6 +1140,8 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-middle">
                 <div class="crypto-autocomplete" data-name="crypto_symbol"></div>
+            </div>
+            <div class="group-middle-secondary">
                 <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount">
             </div>
             <div class="group-value">
@@ -1576,6 +1578,8 @@ const ZakatCalculator = (function() {
                 '</div>',
                 '<div class="group-middle">',
                 '    <div class="crypto-autocomplete" data-name="crypto_symbol" data-initial="' + (item.symbol || '') + '"></div>',
+                '</div>',
+                '<div class="group-middle-secondary">',
                 '    <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
                 '</div>',
                 '<div class="group-value">',

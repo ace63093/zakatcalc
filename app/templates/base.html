@@ -554,7 +554,6 @@
                 min-width: 0;
                 flex-wrap: nowrap;
                 gap: 6px;
-                order: 85;
             }
             .asset-row .input-name {
                 min-width: 0;
@@ -595,7 +594,7 @@
                 row-gap: 4px;
             }
             .group-value {
-                margin-left: 0;
+                margin-left: auto;
             }
             .group-remove {
                 margin-left: 0;
@@ -623,6 +622,24 @@
             .app-grid,
             .calculator-layout {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (min-width: 1280px) and (max-width: 1499px) {
+            .asset-row::after {
+                content: "";
+                flex-basis: 100%;
+                order: 80;
+                height: 0;
+            }
+            .group-middle-secondary {
+                order: 85;
+            }
+            .group-value {
+                margin-left: 0;
+            }
+            .group-remove {
+                margin-left: 0;
             }
         }
 
