@@ -22,6 +22,7 @@ services:
       # Optional: Provider API keys (uncomment and set if needed)
       # - OPENEXCHANGERATES_APP_ID=${OPENEXCHANGERATES_APP_ID:-}
       # - GOLDAPI_KEY=${GOLDAPI_KEY:-}
+      # - METALPRICEAPI_KEY=${METALPRICEAPI_KEY:-}
       # - METALS_DEV_API_KEY=${METALS_DEV_API_KEY:-}
       # - COINMARKETCAP_API_KEY=${COINMARKETCAP_API_KEY:-}
     volumes:
@@ -55,6 +56,7 @@ services:
       # Provider API keys (same as web service)
       # - OPENEXCHANGERATES_APP_ID=${OPENEXCHANGERATES_APP_ID:-}
       # - GOLDAPI_KEY=${GOLDAPI_KEY:-}
+      # - METALPRICEAPI_KEY=${METALPRICEAPI_KEY:-}
       # - METALS_DEV_API_KEY=${METALS_DEV_API_KEY:-}
       # - COINMARKETCAP_API_KEY=${COINMARKETCAP_API_KEY:-}
     volumes:

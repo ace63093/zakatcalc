@@ -88,6 +88,11 @@ def get_goldapi_key() -> str | None:
     return os.environ.get('GOLDAPI_KEY')
 
 
+def get_metalpriceapi_key() -> str | None:
+    """Get MetalPriceAPI key if configured."""
+    return os.environ.get('METALPRICEAPI_KEY')
+
+
 def get_coinmarketcap_key() -> str | None:
     """Get CoinMarketCap API key if configured."""
     return os.environ.get('COINMARKETCAP_API_KEY')
@@ -103,6 +108,7 @@ def get_provider_keys_status() -> dict:
     return {
         'openexchangerates': bool(get_openexchangerates_key()),
         'goldapi': bool(get_goldapi_key()),
+        'metalpriceapi': bool(get_metalpriceapi_key()),
         'metalsdev': bool(get_metalsdev_key()),
         'coinmarketcap': bool(get_coinmarketcap_key()),
     }

@@ -3,11 +3,12 @@ from app.services.config import (
     get_openexchangerates_key,
     get_goldapi_key,
     get_metalsdev_key,
+    get_metalpriceapi_key,
     get_coinmarketcap_key,
 )
 from . import FXProvider, MetalProvider, CryptoProvider
 from .fx_providers import ExchangeRateAPIProvider, OpenExchangeRatesProvider, FallbackFXProvider
-from .metal_providers import MetalsDevAPIProvider, GoldAPIProvider, FallbackMetalProvider
+from .metal_providers import MetalPriceAPIProvider, MetalsDevAPIProvider, GoldAPIProvider, FallbackMetalProvider
 from .crypto_providers import CoinGeckoProvider, CoinMarketCapProvider, FallbackCryptoProvider
 
 
@@ -28,10 +29,13 @@ def get_metal_provider() -> MetalProvider:
     """Get configured metal provider.
 
     Priority:
-    1. GoldAPI (if key configured) - best historical support
-    2. MetalsDevAPI (no key) - current prices only
-    3. Fallback (empty results)
+    1. MetalPriceAPI (if key configured) - preferred for current pricing
+    2. GoldAPI (if key configured) - best historical support
+    3. MetalsDevAPI (if key configured) - current prices only
+    4. Fallback (empty results)
     """
+    if get_metalpriceapi_key():
+        return MetalPriceAPIProvider()
     if get_goldapi_key():
         return GoldAPIProvider()
     if get_metalsdev_key():
