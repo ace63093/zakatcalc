@@ -621,10 +621,16 @@ const ZakatCalculator = (function() {
         const metals = pricingSnapshot?.metals || {};
         const metalInfo = metals[metal] || {};
         const price = metalInfo.price_per_gram || 0;
+        const legacyPriceUsd = metalInfo.price_per_gram_usd || 0;
 
         // Use fallback if price is 0 or unavailable
-        if (price === 0 && FALLBACK_PRICES[metal]) {
-            return FALLBACK_PRICES[metal];
+        if (price === 0) {
+            if (legacyPriceUsd) {
+                return convertToBase(legacyPriceUsd, 'USD');
+            }
+            if (FALLBACK_PRICES[metal]) {
+                return convertToBase(FALLBACK_PRICES[metal], 'USD');
+            }
         }
 
         return price;
