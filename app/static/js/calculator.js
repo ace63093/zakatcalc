@@ -684,6 +684,7 @@ const ZakatCalculator = (function() {
         setElementText('nisabThreshold', formatMoney(baseCurrency, results.nisabThreshold));
         setElementText('aboveNisab', results.aboveNisab ? 'Yes' : 'No');
         setElementText('zakatDue', formatMoney(baseCurrency, results.zakatDue));
+        setZakatDueGold(results.zakatDue >= 0.01);
 
         // Update nisab threshold label based on current basis
         const nisabLabel = results.nisabBasis === 'silver'
@@ -695,6 +696,20 @@ const ZakatCalculator = (function() {
         const resultSection = document.getElementById('result');
         if (resultSection) {
             resultSection.classList.add('show');
+        }
+    }
+
+    /**
+     * Toggle gold styling for zakat due when amount is at least one cent.
+     */
+    function setZakatDueGold(isGold) {
+        const valueElem = document.getElementById('zakatDue');
+        const labelElem = document.querySelector('.zakat-due-label');
+        if (valueElem) {
+            valueElem.classList.toggle('zakat-due-gold', isGold);
+        }
+        if (labelElem) {
+            labelElem.classList.toggle('zakat-due-gold', isGold);
         }
     }
 
