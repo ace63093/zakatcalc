@@ -20,8 +20,14 @@
             min-height: 100vh;
             padding: 20px;
         }
+        .page-shell {
+            max-width: 1700px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
         .container {
-            width: min(94vw, 900px);
+            width: 100%;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -29,30 +35,11 @@
             padding: 30px;
         }
         .page-layout {
-            width: min(96vw, 1100px);
+            width: 100%;
             margin: 0 auto;
-            align-items: stretch;
         }
         .page-content {
             min-width: 0;
-        }
-        .ad-rail {
-            display: none;
-            align-self: stretch;
-            flex-direction: column;
-        }
-        .ad-rail-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 8px;
-        }
-        .ad-rail-slot {
-            min-height: 600px;
-            border-radius: 12px;
-            background: transparent;
-            flex: 1 1 auto;
         }
         h1 {
             text-align: center;
@@ -533,23 +520,14 @@
             body {
                 padding: 30px;
             }
-            .page-layout {
-                width: min(96vw, 1700px);
-                display: grid;
-                grid-template-columns: 260px minmax(0, 1fr) 260px;
-                gap: 28px;
-                align-items: start;
+            .page-shell {
+                padding: 0 32px;
             }
-            .ad-rail {
-                display: flex;
+            .page-layout {
+                width: 100%;
             }
             .page-content {
                 width: 100%;
-                margin: 0;
-            }
-            .page-content .container {
-                width: 100%;
-                max-width: none;
                 margin: 0;
             }
             .app-grid,
@@ -574,13 +552,10 @@
             }
         }
 
-        @media (max-width: 1200px) {
-            .page-layout {
-                width: min(96vw, 1100px);
-                display: block;
-            }
-            .ad-rail {
-                display: none;
+        @media (max-width: 1023px) {
+            .page-shell {
+                max-width: none;
+                padding: 0;
             }
         }
 
@@ -700,27 +675,19 @@
     </style>
 </head>
 <body>
-    <nav class="site-nav">
-        <a href="https://buymeacoffee.com/zakatcalculator" class="contribute-btn">Contribute</a>
-        <a href="{{ url_for('main.calculator') }}" {% if request.endpoint == 'main.calculator' %}class="active"{% endif %}>Calculator</a>
-        <a href="{{ url_for('main.about_zakat') }}" {% if request.endpoint == 'main.about_zakat' %}class="active"{% endif %}>About Zakat</a>
-        <a href="{{ url_for('main.faq') }}" {% if request.endpoint == 'main.faq' %}class="active"{% endif %}>FAQ</a>
-        <a href="{{ url_for('main.contact') }}" {% if request.endpoint == 'main.contact' %}class="active"{% endif %}>Contact Us</a>
-    </nav>
-    <div class="page-layout">
-        <aside class="ad-rail ad-left" aria-label="Advertisement">
-            <div class="ad-rail-label">Advertisement</div>
-            <!-- TODO: Insert AdSense ad unit markup for left rail -->
-            <div class="ad-rail-slot" aria-hidden="true"></div>
-        </aside>
-        <main class="page-content">
-            {% block content %}{% endblock %}
-        </main>
-        <aside class="ad-rail ad-right" aria-label="Advertisement">
-            <div class="ad-rail-label">Advertisement</div>
-            <!-- TODO: Insert AdSense ad unit markup for right rail -->
-            <div class="ad-rail-slot" aria-hidden="true"></div>
-        </aside>
+    <div class="page-shell">
+        <nav class="site-nav">
+            <a href="https://buymeacoffee.com/zakatcalculator" class="contribute-btn">Contribute</a>
+            <a href="{{ url_for('main.calculator') }}" {% if request.endpoint == 'main.calculator' %}class="active"{% endif %}>Calculator</a>
+            <a href="{{ url_for('main.about_zakat') }}" {% if request.endpoint == 'main.about_zakat' %}class="active"{% endif %}>About Zakat</a>
+            <a href="{{ url_for('main.faq') }}" {% if request.endpoint == 'main.faq' %}class="active"{% endif %}>FAQ</a>
+            <a href="{{ url_for('main.contact') }}" {% if request.endpoint == 'main.contact' %}class="active"{% endif %}>Contact Us</a>
+        </nav>
+        <div class="page-layout">
+            <main class="page-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
     </div>
     {% block scripts %}{% endblock %}
 </body>
