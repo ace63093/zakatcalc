@@ -219,6 +219,16 @@
             order: 20;
             min-width: 0;
         }
+        .group-middle-secondary {
+            flex: 1 1 420px;
+            min-width: 320px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            order: 30;
+            min-width: 0;
+        }
         .group-value {
             flex: 0 0 auto;
             display: inline-flex;
@@ -539,6 +549,13 @@
                 flex-wrap: nowrap;
                 gap: 6px;
             }
+            .group-middle-secondary {
+                flex: 0 1 auto;
+                min-width: 0;
+                flex-wrap: nowrap;
+                gap: 6px;
+                order: 85;
+            }
             .asset-row .input-name {
                 min-width: 0;
             }
@@ -584,7 +601,7 @@
                 height: 0;
             }
             .group-value {
-                margin-left: auto;
+                margin-left: 0;
             }
             .group-remove {
                 margin-left: 0;
@@ -640,7 +657,8 @@
                 flex: 1 1 100%;
                 min-width: 0;
             }
-            .group-middle {
+            .group-middle,
+            .group-middle-secondary {
                 flex: 1 1 200px;
                 min-width: 200px;
             }
@@ -661,7 +679,8 @@
             .group-name {
                 flex: 1 1 100%;
             }
-            .group-middle {
+            .group-middle,
+            .group-middle-secondary {
                 flex: 1 1 100%;
             }
             .asset-row .currency-autocomplete,

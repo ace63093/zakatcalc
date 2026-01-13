@@ -1006,6 +1006,8 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-middle">
                 <input type="number" name="gold_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
+            </div>
+            <div class="group-middle-secondary">
                 <select name="gold_weight_unit" class="input-weight-unit">
                     <option value="g" selected>g</option>
                     <option value="ozt">oz t</option>
@@ -1099,6 +1101,8 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-middle">
                 <input type="number" name="metal_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
+            </div>
+            <div class="group-middle-secondary">
                 <select name="metal_weight_unit" class="input-weight-unit">
                     <option value="g" selected>g</option>
                     <option value="ozt">oz t</option>
@@ -1382,6 +1386,8 @@ const ZakatCalculator = (function() {
                 '</div>',
                 '<div class="group-middle">',
                 '    <input type="number" name="gold_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight" value="' + displayWeight + '">',
+                '</div>',
+                '<div class="group-middle-secondary">',
                 '    <select name="gold_weight_unit" class="input-weight-unit">',
                 '        <option value="g"' + (rowUnit === 'g' ? ' selected' : '') + '>g</option>',
                 '        <option value="ozt"' + (rowUnit === 'ozt' ? ' selected' : '') + '>oz t</option>',
@@ -1521,6 +1527,8 @@ const ZakatCalculator = (function() {
                 '</div>',
                 '<div class="group-middle">',
                 '    <input type="number" name="metal_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight" value="' + displayWeight + '">',
+                '</div>',
+                '<div class="group-middle-secondary">',
                 '    <select name="metal_weight_unit" class="input-weight-unit">',
                 '        <option value="g"' + (rowUnit === 'g' ? ' selected' : '') + '>g</option>',
                 '        <option value="ozt"' + (rowUnit === 'ozt' ? ' selected' : '') + '>oz t</option>',
