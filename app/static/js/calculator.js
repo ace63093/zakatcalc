@@ -1047,9 +1047,9 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-middle">
                 <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
-                <div class="currency-autocomplete" data-name="cash_currency"></div>
             </div>
             <div class="group-value">
+                <div class="currency-autocomplete" data-name="cash_currency"></div>
                 <span class="base-value-pill" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
@@ -1073,9 +1073,9 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-middle">
                 <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
-                <div class="currency-autocomplete" data-name="bank_currency"></div>
             </div>
             <div class="group-value">
+                <div class="currency-autocomplete" data-name="bank_currency"></div>
                 <span class="base-value-pill" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
@@ -1433,9 +1433,9 @@ const ZakatCalculator = (function() {
                 '</div>',
                 '<div class="group-middle">',
                 '    <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
-                '    <div class="currency-autocomplete" data-name="cash_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
                 '</div>',
                 '<div class="group-value">',
+                '    <div class="currency-autocomplete" data-name="cash_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
                 '    <span class="base-value-pill" data-field="base_value">—</span>',
                 '</div>',
                 '<div class="group-remove">',
@@ -1471,9 +1471,9 @@ const ZakatCalculator = (function() {
                 '</div>',
                 '<div class="group-middle">',
                 '    <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
-                '    <div class="currency-autocomplete" data-name="bank_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
                 '</div>',
                 '<div class="group-value">',
+                '    <div class="currency-autocomplete" data-name="bank_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
                 '    <span class="base-value-pill" data-field="base_value">—</span>',
                 '</div>',
                 '<div class="group-remove">',
