@@ -39,18 +39,11 @@
         .ad-rail {
             display: none;
         }
-        .ad-rail-label {
-            color: rgba(255, 255, 255, 0.75);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 8px;
-        }
         .ad-rail-slot {
             min-height: 600px;
-            border: 1px dashed rgba(255, 255, 255, 0.35);
+            border: none;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.08);
+            background: transparent;
         }
         h1 {
             text-align: center;
@@ -584,7 +577,6 @@
     </nav>
     <div class="page-layout">
         <aside class="ad-rail ad-left" aria-label="Advertisement">
-            <div class="ad-rail-label">Advertisement</div>
             <!-- TODO: Insert AdSense ad unit markup for left rail -->
             <div class="ad-rail-slot" aria-hidden="true"></div>
         </aside>
@@ -592,7 +584,6 @@
             {% block content %}{% endblock %}
         </main>
         <aside class="ad-rail ad-right" aria-label="Advertisement">
-            <div class="ad-rail-label">Advertisement</div>
             <!-- TODO: Insert AdSense ad unit markup for right rail -->
             <div class="ad-rail-slot" aria-hidden="true"></div>
         </aside>
