@@ -32,12 +32,15 @@
         .page-layout {
             width: min(96vw, 1100px);
             margin: 0 auto;
+            align-items: stretch;
         }
         .page-content {
             min-width: 0;
         }
         .ad-rail {
             display: none;
+            align-self: stretch;
+            flex-direction: column;
         }
         .ad-rail-label {
             color: rgba(255, 255, 255, 0.7);
@@ -50,6 +53,7 @@
             min-height: 600px;
             border-radius: 12px;
             background: transparent;
+            flex: 1 1 auto;
         }
         h1 {
             text-align: center;
@@ -441,7 +445,7 @@
                 align-items: start;
             }
             .ad-rail {
-                display: block;
+                display: flex;
             }
             .page-content {
                 width: 100%;
