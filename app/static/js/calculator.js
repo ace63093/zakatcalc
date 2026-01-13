@@ -550,9 +550,10 @@ const ZakatCalculator = (function() {
      */
     function calculateCashTotal(items) {
         let total = 0;
+        const fxRates = pricingSnapshot?.fx_rates || {};
 
         for (const item of items) {
-            total += convertToBase(item.amount, item.currency);
+            total += convertCurrency(item.amount, item.currency, baseCurrency, fxRates);
         }
 
         return total;
@@ -563,9 +564,10 @@ const ZakatCalculator = (function() {
      */
     function calculateBankTotal(items) {
         let total = 0;
+        const fxRates = pricingSnapshot?.fx_rates || {};
 
         for (const item of items) {
-            total += convertToBase(item.amount, item.currency);
+            total += convertCurrency(item.amount, item.currency, baseCurrency, fxRates);
         }
 
         return total;
@@ -602,14 +604,17 @@ const ZakatCalculator = (function() {
     /**
      * Convert amount from one currency to base currency
      */
-    function convertToBase(amount, fromCurrency) {
-        if (fromCurrency === baseCurrency) return amount;
+    function convertCurrency(amount, fromCurrency, toCurrency, fxRates) {
+        if (!fromCurrency || !toCurrency || fromCurrency === toCurrency) return amount;
+        if (!fxRates) return amount;
 
-        const fxRates = pricingSnapshot?.fx_rates || {};
-        const rate = fxRates[fromCurrency] || 1;
+        const fromRate = fxRates[fromCurrency];
+        const toRate = fxRates[toCurrency];
+
+        if (!fromRate || !toRate) return amount;
 
         // fx_rates[X] is the conversion factor from X to base
-        return amount * rate;
+        return amount * (fromRate / toRate);
     }
 
     /**
@@ -629,14 +634,15 @@ const ZakatCalculator = (function() {
         const metalInfo = metals[metal] || {};
         const price = metalInfo.price_per_gram || 0;
         const legacyPriceUsd = metalInfo.price_per_gram_usd || 0;
+        const fxRates = pricingSnapshot?.fx_rates || {};
 
         // Use fallback if price is 0 or unavailable
         if (price === 0) {
             if (legacyPriceUsd) {
-                return convertToBase(legacyPriceUsd, 'USD');
+                return convertCurrency(legacyPriceUsd, 'USD', baseCurrency, fxRates);
             }
             if (FALLBACK_PRICES[metal]) {
-                return convertToBase(FALLBACK_PRICES[metal], 'USD');
+                return convertCurrency(FALLBACK_PRICES[metal], 'USD', baseCurrency, fxRates);
             }
         }
 
@@ -813,14 +819,14 @@ const ZakatCalculator = (function() {
                 const currency = row.querySelector('[name="cash_currency"]')?.value || baseCurrency;
                 if (!amount || amount === 0) return undefined;
                 if (isNaN(amount)) return undefined;
-                return convertToBase(amount, currency);
+                return convertCurrency(amount, currency, baseCurrency, pricingSnapshot?.fx_rates || {});
             }
             case 'bank': {
                 const amount = parseFloat(row.querySelector('[name="bank_amount"]')?.value);
                 const currency = row.querySelector('[name="bank_currency"]')?.value || baseCurrency;
                 if (!amount || amount === 0) return undefined;
                 if (isNaN(amount)) return undefined;
-                return convertToBase(amount, currency);
+                return convertCurrency(amount, currency, baseCurrency, pricingSnapshot?.fx_rates || {});
             }
             case 'crypto': {
                 const amount = parseFloat(row.querySelector('[name="crypto_amount"]')?.value);
