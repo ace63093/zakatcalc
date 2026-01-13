@@ -20,11 +20,12 @@ var NisabIndicator = (function() {
     var baseCurrency = 'CAD';
     var onBasisChange = null;
 
-    // Currency symbols for display
+    // Currency symbols for fallback display
     var CURRENCY_SYMBOLS = {
         CAD: 'C$', USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5',
         AUD: 'A$', CHF: 'CHF', CNY: '\u00A5', INR: '\u20B9', BDT: '\u09F3'
     };
+    var MONEY_FORMATTERS = {};
 
     /**
      * Initialize the nisab indicator
@@ -284,6 +285,27 @@ var NisabIndicator = (function() {
      * @returns {string} Formatted currency string
      */
     function formatCurrency(amount) {
+        if (amount === undefined || amount === null || isNaN(amount)) {
+            return '--';
+        }
+
+        if (!MONEY_FORMATTERS[baseCurrency]) {
+            try {
+                MONEY_FORMATTERS[baseCurrency] = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: baseCurrency,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            } catch (error) {
+                MONEY_FORMATTERS[baseCurrency] = null;
+            }
+        }
+
+        if (MONEY_FORMATTERS[baseCurrency]) {
+            return MONEY_FORMATTERS[baseCurrency].format(amount);
+        }
+
         var symbol = CURRENCY_SYMBOLS[baseCurrency] || baseCurrency + ' ';
         return symbol + amount.toLocaleString('en-US', {
             minimumFractionDigits: 2,

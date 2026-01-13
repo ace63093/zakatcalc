@@ -64,6 +64,7 @@ const ZakatCalculator = (function() {
         WST: 'WS$', XAF: 'FCFA', XCD: '$', XOF: 'CFA', XPF: '₣',
         YER: '﷼', ZAR: 'R', ZMW: 'ZK', ZWL: '$'
     };
+    const MONEY_FORMATTERS = {};
 
     // ========== Weight Unit Conversion Helpers ==========
 
@@ -219,21 +220,10 @@ const ZakatCalculator = (function() {
             initialValue: baseCurrency,
             name: 'baseCurrency',
             onSelect: function(currency) {
-                baseCurrency = currency.code;
-                // Update NisabIndicator's base currency
-                if (typeof NisabIndicator !== 'undefined') {
-                    NisabIndicator.setBaseCurrency(baseCurrency);
-                }
-                loadPricing()
-                    .then(function() {
-                        recalculate();
-                        updateRowBaseValues();
-                    })
-                    .catch(function(error) {
-                        console.error('Failed to reload pricing for base currency change:', error);
-                    });
+                handleBaseCurrencyChange(currency.code);
             }
         });
+        container.dataset.initialized = 'true';
     }
 
     /**
@@ -266,6 +256,7 @@ const ZakatCalculator = (function() {
         if (typeof CurrencyAutocomplete === 'undefined') return;
 
         document.querySelectorAll('.currency-autocomplete:not([data-initialized])').forEach(function(container) {
+            if (container.id === 'baseCurrencyContainer') return;
             // Use compact mode for row-level selectors (inside .asset-row)
             var isRowLevel = container.closest('.asset-row') !== null;
             CurrencyAutocomplete.create(container, {
@@ -429,6 +420,25 @@ const ZakatCalculator = (function() {
 
         // Update per-row base value pills
         updateRowBaseValues();
+    }
+
+    /**
+     * Handle base currency changes by reloading pricing and recalculating
+     */
+    function handleBaseCurrencyChange(currencyCode) {
+        baseCurrency = currencyCode;
+        if (typeof NisabIndicator !== 'undefined') {
+            NisabIndicator.setBaseCurrency(baseCurrency);
+        }
+
+        loadPricing()
+            .then(function() {
+                recalculate();
+                updateRowBaseValues();
+            })
+            .catch(function(error) {
+                console.error('Failed to reload pricing for base currency change:', error);
+            });
     }
 
     /**
@@ -665,17 +675,15 @@ const ZakatCalculator = (function() {
         // Store the last calculation result for PDF export
         lastCalculationResult = results;
 
-        const symbol = CURRENCY_SYMBOLS[baseCurrency] || baseCurrency + ' ';
-
-        setElementText('goldTotal', formatCurrency(results.goldTotal, symbol));
-        setElementText('cashTotal', formatCurrency(results.cashTotal, symbol));
-        setElementText('bankTotal', formatCurrency(results.bankTotal, symbol));
-        setElementText('metalTotal', formatCurrency(results.metalTotal, symbol));
-        setElementText('cryptoTotal', formatCurrency(results.cryptoTotal, symbol));
-        setElementText('grandTotal', formatCurrency(results.grandTotal, symbol));
-        setElementText('nisabThreshold', formatCurrency(results.nisabThreshold, symbol));
+        setElementText('goldTotal', formatMoney(baseCurrency, results.goldTotal));
+        setElementText('cashTotal', formatMoney(baseCurrency, results.cashTotal));
+        setElementText('bankTotal', formatMoney(baseCurrency, results.bankTotal));
+        setElementText('metalTotal', formatMoney(baseCurrency, results.metalTotal));
+        setElementText('cryptoTotal', formatMoney(baseCurrency, results.cryptoTotal));
+        setElementText('grandTotal', formatMoney(baseCurrency, results.grandTotal));
+        setElementText('nisabThreshold', formatMoney(baseCurrency, results.nisabThreshold));
         setElementText('aboveNisab', results.aboveNisab ? 'Yes' : 'No');
-        setElementText('zakatDue', formatCurrency(results.zakatDue, symbol));
+        setElementText('zakatDue', formatMoney(baseCurrency, results.zakatDue));
 
         // Update nisab threshold label based on current basis
         const nisabLabel = results.nisabBasis === 'silver'
@@ -756,13 +764,6 @@ const ZakatCalculator = (function() {
     /**
      * Format currency for display
      */
-    function formatCurrency(amount, symbol) {
-        return symbol + amount.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    }
-
     /**
      * Format money with currency symbol for base value pills
      * @param {string} currencyCode - The currency code (e.g., 'CAD')
@@ -773,6 +774,30 @@ const ZakatCalculator = (function() {
         if (value === undefined || value === null || isNaN(value)) {
             return '—';
         }
+        if (!currencyCode) {
+            return value.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        if (!MONEY_FORMATTERS[currencyCode]) {
+            try {
+                MONEY_FORMATTERS[currencyCode] = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: currencyCode,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            } catch (error) {
+                MONEY_FORMATTERS[currencyCode] = null;
+            }
+        }
+
+        if (MONEY_FORMATTERS[currencyCode]) {
+            return MONEY_FORMATTERS[currencyCode].format(value);
+        }
+
         const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode + ' ';
         return symbol + value.toLocaleString('en-US', {
             minimumFractionDigits: 2,
@@ -1471,6 +1496,7 @@ const ZakatCalculator = (function() {
         if (typeof CurrencyAutocomplete === 'undefined') return;
 
         document.querySelectorAll('.currency-autocomplete:not([data-initialized])').forEach(function(container) {
+            if (container.id === 'baseCurrencyContainer') return;
             var initialValue = container.dataset.initial || baseCurrency;
             // Use compact mode for row-level selectors (inside .asset-row)
             var isRowLevel = container.closest('.asset-row') !== null;
