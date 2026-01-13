@@ -126,9 +126,9 @@
             display: block;
         }
         .result-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
             padding: 6px 0;
             border-bottom: 1px solid #e2e8f0;
             gap: 12px;
@@ -138,14 +138,15 @@
         }
         .result-label {
             color: #718096;
-            flex: 0 0 auto;
-            min-width: 120px;
+            min-width: 0;
         }
         .result-value {
             font-weight: 600;
             color: #4a5568;
             text-align: right;
-            flex: 1;
+            justify-self: end;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
         .zakat-due {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
