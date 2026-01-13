@@ -224,7 +224,14 @@ const ZakatCalculator = (function() {
                 if (typeof NisabIndicator !== 'undefined') {
                     NisabIndicator.setBaseCurrency(baseCurrency);
                 }
-                loadPricing().then(recalculate);
+                loadPricing()
+                    .then(function() {
+                        recalculate();
+                        updateRowBaseValues();
+                    })
+                    .catch(function(error) {
+                        console.error('Failed to reload pricing for base currency change:', error);
+                    });
             }
         });
     }
