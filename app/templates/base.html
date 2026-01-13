@@ -419,6 +419,21 @@
             flex: 1.5;
             min-width: 150px;
         }
+        .row-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: nowrap;
+            margin-left: auto;
+        }
+        .row-actions .base-value-pill,
+        .row-actions .weight-grams-pill {
+            flex: 0 0 auto;
+        }
+        .row-actions .btn-remove {
+            order: 999;
+            flex: 0 0 auto;
+        }
         .asset-row .currency-autocomplete.currency-compact {
             flex: 0 0 auto;
             width: 110px;
@@ -562,6 +577,17 @@
             }
             body {
                 padding: 0;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .asset-row {
+                flex-wrap: wrap;
+            }
+            .row-actions {
+                margin-left: 0;
+                width: 100%;
+                justify-content: flex-end;
             }
         }
 
