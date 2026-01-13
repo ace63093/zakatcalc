@@ -128,20 +128,29 @@
 
 /* Compact mode for row-level currency selectors */
 .currency-compact {
+    width: 110px;
     min-width: 90px;
     max-width: 120px;
 }
 
 .currency-compact .autocomplete-input {
-    padding: 0.5rem 0.5rem;
+    padding: 0.5rem 0.45rem;
     font-size: 0.9rem;
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .currency-compact .autocomplete-listbox {
     min-width: 200px;
     /* Allow dropdown to extend beyond the compact input */
     width: max-content;
+}
+
+.currency-compact:focus-within {
+    width: 120px;
+    max-width: 140px;
 }
 
 /* Mobile-friendly adjustments */
