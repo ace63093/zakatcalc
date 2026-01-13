@@ -5,6 +5,7 @@ from app.services.calc import (
     karat_to_fraction,
     calculate_pure_grams,
     calculate_gold_subtotal,
+    calculate_gold_subtotal_usd,
     calculate_cash_subtotal,
     calculate_bank_subtotal,
     calculate_zakat,
@@ -79,6 +80,17 @@ class TestCalculateGoldSubtotal:
         result = calculate_gold_subtotal([], 65.0, 'CAD', {'CAD': 1.38})
         assert result['items'] == []
         assert result['total'] == 0.0
+
+    def test_usd_price_converts_to_master(self):
+        """USD price per gram converts to master currency correctly."""
+        price_per_oz_usd = 2000.0
+        price_per_gram_usd = price_per_oz_usd / 31.1034768
+        items = [{'name': 'Bar', 'weight_grams': 20, 'purity_karat': 24}]
+        fx_rates = {'USD': 1.0, 'CAD': 1.5}
+
+        result = calculate_gold_subtotal_usd(items, price_per_gram_usd, 'CAD', fx_rates)
+
+        assert result['total'] == pytest.approx(1929.05, rel=0.001)
 
 
 class TestCalculateCashSubtotal:
