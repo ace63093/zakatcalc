@@ -27,7 +27,7 @@
         }
         .container {
             width: 100%;
-            max-width: 1200px;
+            max-width: 1240px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -193,56 +193,56 @@
             border-bottom: 2px solid #e2e8f0;
         }
         .asset-row {
-            display: grid;
-            grid-template-columns: 1fr;
-            grid-template-areas:
-                "name"
-                "middle"
-                "secondary"
-                "value"
-                "remove";
-            gap: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-bottom: 10px;
             align-items: center;
             min-width: 0;
         }
         .group-name {
-            grid-area: name;
-            min-width: 0;
+            flex: 1 1 220px;
+            min-width: 200px;
+            order: 10;
         }
         .group-name .input-name {
             width: 100%;
         }
         .group-middle {
-            grid-area: middle;
+            flex: 1 1 260px;
+            min-width: 220px;
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             gap: 8px;
             align-items: center;
+            order: 20;
             min-width: 0;
         }
         .group-middle-secondary {
-            grid-area: secondary;
+            flex: 1 1 240px;
+            min-width: 220px;
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             gap: 8px;
             align-items: center;
+            order: 30;
             min-width: 0;
         }
         .group-value {
-            grid-area: value;
+            flex: 0 0 auto;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            order: 90;
             white-space: nowrap;
-            justify-self: start;
         }
         .group-remove {
-            grid-area: remove;
-            justify-self: end;
+            flex: 0 0 auto;
+            margin-left: auto;
+            order: 100;
         }
         .asset-row .input-name {
-            min-width: 0;
+            min-width: 160px;
         }
         .asset-row .input-weight {
             min-width: 90px;
@@ -444,7 +444,8 @@
         }
         .asset-row .currency-autocomplete,
         .asset-row .crypto-autocomplete {
-            min-width: 180px;
+            flex: 1 1 180px;
+            min-width: 160px;
         }
         .asset-row .currency-autocomplete.currency-compact {
             width: 110px;
@@ -534,7 +535,7 @@
                 width: 100%;
             }
             .container {
-                max-width: 1000px;
+                max-width: 1240px;
             }
             .page-content {
                 width: 100%;
@@ -542,7 +543,7 @@
             }
             .app-grid,
             .calculator-layout {
-                grid-template-columns: minmax(0, 1fr) 420px;
+                grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
             }
             .calculator-inputs {
                 /* Left column - form inputs */
@@ -559,50 +560,6 @@
             .app-grid,
             .calculator-layout {
                 grid-template-columns: 1fr;
-            }
-        }
-
-        @media (min-width: 900px) and (max-width: 1499px) {
-            .asset-row {
-                grid-template-columns: minmax(240px, 1.2fr) minmax(180px, 1fr) minmax(180px, 1fr) max-content;
-                grid-template-areas:
-                    "name middle middle middle"
-                    "secondary value value remove";
-                column-gap: 10px;
-                row-gap: 8px;
-            }
-            .group-middle,
-            .group-middle-secondary {
-                flex-wrap: nowrap;
-                gap: 6px;
-            }
-            .group-value {
-                justify-self: start;
-            }
-            .group-remove {
-                justify-self: end;
-            }
-            .asset-row[data-type="cash"] .group-value,
-            .asset-row[data-type="bank"] .group-value {
-                grid-column: 1 / span 3;
-            }
-        }
-
-        @media (min-width: 1500px) {
-            .asset-row {
-                grid-template-columns: minmax(260px, 1.4fr) minmax(200px, 1fr) minmax(240px, 1fr) max-content max-content;
-                grid-template-areas: "name middle secondary value remove";
-                column-gap: 12px;
-                row-gap: 6px;
-            }
-            .group-middle,
-            .group-middle-secondary {
-                flex-wrap: nowrap;
-                gap: 8px;
-            }
-            .group-value,
-            .group-remove {
-                justify-self: end;
             }
         }
 
@@ -628,13 +585,16 @@
 
         @media (max-width: 640px) {
             .group-name {
-                flex: 1 1 100%;
-                min-width: 0;
+                flex: 1 1 160px;
+                min-width: 140px;
             }
             .group-middle,
             .group-middle-secondary {
-                flex: 1 1 200px;
-                min-width: 200px;
+                flex: 1 1 170px;
+                min-width: 150px;
+            }
+            .asset-row {
+                gap: 8px;
             }
             .group-value {
                 order: 90;
@@ -651,28 +611,50 @@
                 gap: 15px;
             }
             .group-name {
-                flex: 1 1 100%;
+                flex: 1 1 150px;
+                min-width: 120px;
             }
             .group-middle,
             .group-middle-secondary {
-                flex: 1 1 100%;
+                flex: 1 1 150px;
+                min-width: 120px;
             }
             .asset-row .currency-autocomplete,
             .asset-row .crypto-autocomplete {
-                flex: 1 1 100%;
+                flex: 1 1 140px;
+                min-width: 120px;
+            }
+            .asset-row .input-name {
+                min-width: 120px;
+            }
+            .asset-row .input-weight {
+                min-width: 80px;
+            }
+            .asset-row .input-amount {
+                min-width: 110px;
+            }
+            .asset-row .input-weight-unit,
+            .asset-row .input-karat {
+                width: 64px;
+                min-width: 64px;
+            }
+            .asset-row .input-metal {
+                width: 80px;
+                min-width: 80px;
             }
             .asset-row .currency-autocomplete.currency-compact {
-                flex: 0 0 auto;
                 width: 100px;
                 min-width: 85px;
                 max-width: 110px;
             }
             .group-value {
                 order: 90;
-                margin-left: auto;
             }
             .group-remove {
                 order: 100;
+            }
+            .base-value-pill {
+                min-width: 70px;
             }
             .sync-banner-content {
                 flex-direction: column;
