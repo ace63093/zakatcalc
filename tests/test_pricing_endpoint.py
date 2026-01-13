@@ -285,6 +285,23 @@ class TestPricingEndpoint:
         gold_usd = data_usd['metals']['gold']['price_per_gram']
         gold_cad = data_cad['metals']['gold']['price_per_gram']
         assert gold_cad > gold_usd
+    
+    def test_base_currency_units_match_request(self, client):
+        """Unit and conversions should align with requested base currency."""
+        response_usd = client.get('/api/v1/pricing?date=2025-12-15&base=USD')
+        response_cad = client.get('/api/v1/pricing?date=2025-12-15&base=CAD')
+
+        data_usd = response_usd.get_json()
+        data_cad = response_cad.get_json()
+
+        assert data_usd['metals']['gold']['unit'] == 'USD'
+        assert data_cad['metals']['gold']['unit'] == 'CAD'
+
+        gold_usd = data_usd['metals']['gold']['price_per_gram']
+        gold_cad = data_cad['metals']['gold']['price_per_gram']
+        usd_to_cad = data_cad['fx_rates']['USD']
+
+        assert gold_cad == pytest.approx(gold_usd * usd_to_cad, rel=1e-4)
 
     def test_invalid_date_format(self, client):
         """Should reject invalid date format."""
