@@ -5,7 +5,7 @@ import urllib.error
 from datetime import date, datetime
 from typing import Optional
 
-from app.services.config import get_goldapi_key, get_user_agent
+from app.services.config import get_goldapi_key, get_metalsdev_key, get_user_agent
 from . import MetalProvider, MetalPrice, ProviderError, RateLimitError, NetworkError
 
 
@@ -22,20 +22,26 @@ class MetalsDevAPIProvider(MetalProvider):
 
     BASE_URL = "https://api.metals.dev/v1"
 
+    def __init__(self, api_key: Optional[str] = None):
+        self._api_key = api_key or get_metalsdev_key()
+
     @property
     def name(self) -> str:
         return "metals-dev"
 
     @property
     def requires_api_key(self) -> bool:
-        return False  # Has free tier without key for latest
+        return True
 
     def is_configured(self) -> bool:
-        return True
+        return bool(self._api_key)
 
     def get_prices(self, target_date: date) -> list[MetalPrice]:
         """Fetch metal prices. Free tier only supports latest prices."""
-        url = f"{self.BASE_URL}/latest?api_key=demo&currency=USD&unit=toz"
+        if not self._api_key:
+            raise ProviderError("Metals.dev API key not configured")
+
+        url = f"{self.BASE_URL}/latest?api_key={self._api_key}&currency=USD&unit=toz"
 
         try:
             req = urllib.request.Request(url, headers={'User-Agent': get_user_agent()})

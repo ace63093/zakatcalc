@@ -2,6 +2,7 @@
 from app.services.config import (
     get_openexchangerates_key,
     get_goldapi_key,
+    get_metalsdev_key,
     get_coinmarketcap_key,
 )
 from . import FXProvider, MetalProvider, CryptoProvider
@@ -33,7 +34,9 @@ def get_metal_provider() -> MetalProvider:
     """
     if get_goldapi_key():
         return GoldAPIProvider()
-    return MetalsDevAPIProvider()
+    if get_metalsdev_key():
+        return MetalsDevAPIProvider()
+    return FallbackMetalProvider()
 
 
 def get_crypto_provider() -> CryptoProvider:
