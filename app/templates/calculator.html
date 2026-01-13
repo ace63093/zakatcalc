@@ -54,27 +54,33 @@
                 <div class="section-title">Gold Assets</div>
                 <div id="goldItems">
                     <div class="asset-row" data-type="gold">
-                        <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
-                        <input type="number" name="gold_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
-                        <select name="gold_weight_unit" class="input-weight-unit">
-                            <option value="g" selected>g</option>
-                            <option value="ozt">oz t</option>
-                            <option value="tola">tola</option>
-                            <option value="vori">vori</option>
-                            <option value="aana">aana</option>
-                        </select>
-                        <select name="gold_karat" class="input-karat">
-                            <option value="24">24K</option>
-                            <option value="22" selected>22K</option>
-                            <option value="21">21K</option>
-                            <option value="18">18K</option>
-                            <option value="14">14K</option>
-                            <option value="10">10K</option>
-                            <option value="9">9K</option>
-                        </select>
-                        <div class="row-actions">
+                        <div class="group-name">
+                            <input type="text" name="gold_name" placeholder="Name (e.g., Ring)" class="input-name">
+                        </div>
+                        <div class="group-middle">
+                            <input type="number" name="gold_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
+                            <select name="gold_weight_unit" class="input-weight-unit">
+                                <option value="g" selected>g</option>
+                                <option value="ozt">oz t</option>
+                                <option value="tola">tola</option>
+                                <option value="vori">vori</option>
+                                <option value="aana">aana</option>
+                            </select>
+                            <select name="gold_karat" class="input-karat">
+                                <option value="24">24K</option>
+                                <option value="22" selected>22K</option>
+                                <option value="21">21K</option>
+                                <option value="18">18K</option>
+                                <option value="14">14K</option>
+                                <option value="10">10K</option>
+                                <option value="9">9K</option>
+                            </select>
                             <span class="weight-grams-pill" data-field="weight_grams">—</span>
+                        </div>
+                        <div class="group-value">
                             <span class="base-value-pill" data-field="base_value">—</span>
+                        </div>
+                        <div class="group-remove">
                             <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                         </div>
                     </div>
@@ -85,23 +91,29 @@
                 <div class="section-title">Other Precious Metals</div>
                 <div id="metalItems">
                     <div class="asset-row" data-type="metal">
-                        <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
-                        <input type="number" name="metal_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
-                        <select name="metal_weight_unit" class="input-weight-unit">
-                            <option value="g" selected>g</option>
-                            <option value="ozt">oz t</option>
-                            <option value="tola">tola</option>
-                            <option value="vori">vori</option>
-                            <option value="aana">aana</option>
-                        </select>
-                        <select name="metal_type" class="input-metal">
-                            <option value="silver">Silver</option>
-                            <option value="platinum">Platinum</option>
-                            <option value="palladium">Palladium</option>
-                        </select>
-                        <div class="row-actions">
+                        <div class="group-name">
+                            <input type="text" name="metal_name" placeholder="Name (e.g., Silver coins)" class="input-name">
+                        </div>
+                        <div class="group-middle">
+                            <input type="number" name="metal_weight" step="0.0001" min="0" placeholder="Weight" class="input-weight">
+                            <select name="metal_weight_unit" class="input-weight-unit">
+                                <option value="g" selected>g</option>
+                                <option value="ozt">oz t</option>
+                                <option value="tola">tola</option>
+                                <option value="vori">vori</option>
+                                <option value="aana">aana</option>
+                            </select>
+                            <select name="metal_type" class="input-metal">
+                                <option value="silver">Silver</option>
+                                <option value="platinum">Platinum</option>
+                                <option value="palladium">Palladium</option>
+                            </select>
                             <span class="weight-grams-pill" data-field="weight_grams">—</span>
+                        </div>
+                        <div class="group-value">
                             <span class="base-value-pill" data-field="base_value">—</span>
+                        </div>
+                        <div class="group-remove">
                             <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                         </div>
                     </div>
@@ -112,11 +124,17 @@
                 <div class="section-title">Cash on Hand</div>
                 <div id="cashItems">
                     <div class="asset-row" data-type="cash">
-                        <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
-                        <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
-                        <div class="currency-autocomplete" data-name="cash_currency"></div>
-                        <div class="row-actions">
+                        <div class="group-name">
+                            <input type="text" name="cash_name" placeholder="Name (e.g., Wallet)" class="input-name">
+                        </div>
+                        <div class="group-middle">
+                            <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                            <div class="currency-autocomplete" data-name="cash_currency"></div>
+                        </div>
+                        <div class="group-value">
                             <span class="base-value-pill" data-field="base_value">—</span>
+                        </div>
+                        <div class="group-remove">
                             <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                         </div>
                     </div>
@@ -128,11 +146,17 @@
                 <p class="section-helper">Enter the balances of your respective accounts.</p>
                 <div id="bankItems">
                     <div class="asset-row" data-type="bank">
-                        <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
-                        <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
-                        <div class="currency-autocomplete" data-name="bank_currency"></div>
-                        <div class="row-actions">
+                        <div class="group-name">
+                            <input type="text" name="bank_name" placeholder="Name (e.g., Savings)" class="input-name">
+                        </div>
+                        <div class="group-middle">
+                            <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                            <div class="currency-autocomplete" data-name="bank_currency"></div>
+                        </div>
+                        <div class="group-value">
                             <span class="base-value-pill" data-field="base_value">—</span>
+                        </div>
+                        <div class="group-remove">
                             <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                         </div>
                     </div>
@@ -143,11 +167,17 @@
                 <div class="section-title">Cryptocurrency</div>
                 <div id="cryptoItems">
                     <div class="asset-row" data-type="crypto">
-                        <input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name">
-                        <div class="crypto-autocomplete" data-name="crypto_symbol"></div>
-                        <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount">
-                        <div class="row-actions">
+                        <div class="group-name">
+                            <input type="text" name="crypto_name" placeholder="Name (e.g., Holdings)" class="input-name">
+                        </div>
+                        <div class="group-middle">
+                            <div class="crypto-autocomplete" data-name="crypto_symbol"></div>
+                            <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount">
+                        </div>
+                        <div class="group-value">
                             <span class="base-value-pill" data-field="base_value">—</span>
+                        </div>
+                        <div class="group-remove">
                             <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
                         </div>
                     </div>

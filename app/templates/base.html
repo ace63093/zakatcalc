@@ -212,6 +212,39 @@
             margin-bottom: 10px;
             align-items: center;
             position: relative;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+        .group-name .input-name {
+            width: 100%;
+        }
+        .group-name {
+            flex: 1 1 260px;
+            min-width: 220px;
+            order: 10;
+        }
+        .group-middle {
+            flex: 1 1 420px;
+            min-width: 320px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            order: 20;
+            min-width: 0;
+        }
+        .group-value {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            order: 90;
+            white-space: nowrap;
+        }
+        .group-remove {
+            flex: 0 0 auto;
+            margin-left: auto;
+            order: 100;
         }
         .asset-row .input-name {
             flex: 2;
@@ -419,21 +452,6 @@
             flex: 1.5;
             min-width: 150px;
         }
-        .row-actions {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: nowrap;
-            margin-left: auto;
-        }
-        .row-actions .base-value-pill,
-        .row-actions .weight-grams-pill {
-            flex: 0 0 auto;
-        }
-        .row-actions .btn-remove {
-            order: 999;
-            flex: 0 0 auto;
-        }
         .asset-row .currency-autocomplete.currency-compact {
             flex: 0 0 auto;
             width: 110px;
@@ -581,13 +599,20 @@
         }
 
         @media (max-width: 640px) {
-            .asset-row {
-                flex-wrap: wrap;
+            .group-name {
+                flex: 1 1 100%;
+                min-width: 0;
             }
-            .row-actions {
-                margin-left: 0;
-                width: 100%;
-                justify-content: flex-end;
+            .group-middle {
+                flex: 1 1 200px;
+                min-width: 200px;
+            }
+            .group-value {
+                order: 90;
+            }
+            .group-remove {
+                margin-left: auto;
+                order: 100;
             }
         }
 
@@ -596,10 +621,10 @@
                 flex-direction: column;
                 gap: 15px;
             }
-            .asset-row {
-                flex-wrap: wrap;
+            .group-name {
+                flex: 1 1 100%;
             }
-            .asset-row .input-name {
+            .group-middle {
                 flex: 1 1 100%;
             }
             .asset-row .currency-autocomplete,
@@ -612,10 +637,12 @@
                 min-width: 85px;
                 max-width: 110px;
             }
-            .asset-row .base-value-pill {
-                flex: 0 0 auto;
-                order: 10;
+            .group-value {
+                order: 90;
                 margin-left: auto;
+            }
+            .group-remove {
+                order: 100;
             }
             .sync-banner-content {
                 flex-direction: column;
