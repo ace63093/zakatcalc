@@ -529,6 +529,26 @@
             min-width: 0;
         }
 
+        /* Full Desktop - prevent excessive whitespace between fields (>=1750px) */
+        @media (min-width: 1750px) {
+            .group-name {
+                flex: 0 0 auto;
+                min-width: 200px;
+                max-width: 260px;
+            }
+            .group-middle {
+                flex: 0 0 auto;
+                min-width: 0;
+            }
+            .group-middle-secondary {
+                flex: 0 0 auto;
+                min-width: 0;
+            }
+            .group-value {
+                flex: 0 0 auto;
+            }
+        }
+
         /* Desktop two-column layout (>=1280px) */
         @media (min-width: 1280px) {
             body {
