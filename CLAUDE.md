@@ -12,6 +12,9 @@ Zakat Calculator - A Flask web application for calculating Islamic wealth tax (Z
 # Run the app locally
 docker compose up --build
 
+# Run pricing sync daemon (optional)
+docker compose up pricing-sync
+
 # When UI changes don't show, rebuild/recreate the web container
 DOCKER_BUILDKIT=0 docker compose up --build -d web
 
@@ -49,6 +52,13 @@ The `SnapshotRepository` (`app/services/snapshot_repository.py`) implements read
 
 Each successful fetch populates lower-tier caches. R2 is optional and best-effort.
 
+### Pricing Sync Configuration
+- `PRICING_ALLOW_NETWORK` gates network sync (app default: 0; docker compose default: 1)
+- `PRICING_AUTO_SYNC` controls auto-sync; in-app thread requires `PRICING_BACKGROUND_SYNC=1`
+- Daemon settings: `PRICING_SYNC_INTERVAL_SECONDS`, `PRICING_LOOKBACK_MONTHS`, `PRICING_RECENT_DAYS`, `PRICING_MONTHLY_LIMIT`
+- Optional provider keys: `OPENEXCHANGERATES_APP_ID`, `GOLDAPI_KEY`, `METALPRICEAPI_KEY`, `METALS_DEV_API_KEY`, `COINMARKETCAP_API_KEY`
+- R2 cache config uses `R2_*` env vars (`R2_ENABLED`, `R2_BUCKET`, `R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PREFIX`)
+
 ### Cadence System
 Historical pricing uses tiered snapshot granularity (`app/services/cadence.py`):
 - **Daily**: Last 30 days
@@ -66,6 +76,11 @@ Both use constants: `ZAKAT_RATE = 0.025`, `NISAB_GOLD_GRAMS = 85`, `NISAB_SILVER
 - `GET /api/v1/pricing?date=YYYY-MM-DD&base=CAD` - Pricing snapshot with FX, metals, crypto
 - `POST /api/v1/calculate` - Calculate zakat from asset list
 - `GET /api/v1/currencies` - Currency list (CAD first, then high-volume, then alphabetical)
+
+### Provider Selection Order
+- FX: OpenExchangeRates (if key) → ExchangeRateAPI → Fallback
+- Metals: MetalPriceAPI (if key) → GoldAPI (if key) → Metals.dev (if key) → Fallback
+- Crypto: CoinMarketCap (if key) → CoinGecko → Fallback
 
 ### UI Routes & Content
 - `/` - Calculator UI
@@ -121,7 +136,7 @@ Weight is always stored/transmitted in grams; UI shows a "grams pill" with conve
 - `app/templates/base.html`: Main styles embedded (gradients, layout, responsive breakpoints)
 
 ### Desktop Layout
-Two-column grid on >=1024px: inputs left (flex), sticky results panel right (320px). Mobile stacks vertically.
+Two-column grid on >=1280px: inputs left, results right (min 320px, max 420px). <=1279px stacks to one column; 1280-1749px uses compact field widths and asset-row wrapping.
 
 ## Testing Guidelines
 

@@ -13,6 +13,7 @@ Zakat Calculator - Flask web app for Islamic wealth tax calculation (2.5% on wea
 docker compose up --build              # Run locally
 docker compose run --rm web pytest     # Run all tests (MUST pass before commit)
 docker compose run --rm web pytest tests/test_main.py -v  # Single file
+docker compose up pricing-sync         # Run pricing sync daemon (optional)
 
 # When UI changes don't show, rebuild/recreate the web container
 DOCKER_BUILDKIT=0 docker compose up --build -d web
@@ -23,6 +24,11 @@ http://localhost:8080
 # Database
 docker compose run --rm web flask init-db
 docker compose run --rm web flask seed-all
+
+# Import pricing data from CSV
+docker compose run --rm web flask import-fx-csv data/seed/fx_rates.csv
+docker compose run --rm web flask import-metals-csv data/seed/metal_prices.csv
+docker compose run --rm web flask import-crypto-csv data/seed/crypto_prices.csv
 ```
 
 ## File Structure
@@ -35,9 +41,15 @@ app/
 │   ├── api.py               # REST API (/api/v1/*)
 │   └── health.py            # Health check (/healthz)
 ├── services/
+│   ├── background_sync.py   # Optional in-app pricing sync thread
 │   ├── calc.py              # Zakat calculation logic
 │   ├── cadence.py           # Date snapshot granularity
-│   └── snapshot_repository.py  # 3-tier pricing cache
+│   ├── config.py            # Env-based pricing config + API keys
+│   ├── providers/           # FX/metal/crypto providers + registry
+│   ├── r2_client.py         # Cloudflare R2 cache client
+│   ├── r2_config.py         # R2 env config
+│   ├── snapshot_repository.py  # 3-tier pricing cache
+│   └── sync.py              # Provider sync service + R2 mirroring
 ├── static/
 │   ├── js/
 │   │   ├── calculator.js    # Main frontend logic
@@ -49,6 +61,9 @@ app/
     ├── about_zakat.html
     ├── faq.html
     └── contact.html
+
+scripts/
+└── pricing_sync_daemon.py   # Background pricing sync service
 
 tests/
 ├── conftest.py              # Fixtures (client, db_client, frozen_time)
@@ -83,6 +98,14 @@ WEIGHT_UNITS = {
 | POST | `/api/v1/calculate` | Calculate zakat |
 | GET | `/api/v1/currencies` | Currency list |
 | GET | `/api/v1/cryptocurrencies` | Crypto list |
+
+## Pricing Sync & Config
+
+- Network sync is gated by `PRICING_ALLOW_NETWORK` (app default: 0; docker compose default: 1).
+- Auto-sync is controlled by `PRICING_AUTO_SYNC`; in-app thread requires `PRICING_BACKGROUND_SYNC=1`.
+- Daemon service uses `PRICING_SYNC_INTERVAL_SECONDS`, `PRICING_LOOKBACK_MONTHS`, `PRICING_RECENT_DAYS`, `PRICING_MONTHLY_LIMIT` (optional).
+- Provider API keys (optional): `OPENEXCHANGERATES_APP_ID`, `GOLDAPI_KEY`, `METALPRICEAPI_KEY`, `METALS_DEV_API_KEY`, `COINMARKETCAP_API_KEY`.
+- R2 cache config uses `R2_*` env vars (`R2_ENABLED`, `R2_BUCKET`, `R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PREFIX`).
 
 ## UI Routes & Content
 
