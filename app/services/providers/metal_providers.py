@@ -5,7 +5,7 @@ import urllib.error
 from datetime import date, datetime
 from typing import Optional
 
-from app.services.config import get_goldapi_key, get_user_agent
+from app.services.config import get_goldapi_key, get_metalsdev_key, get_metalpriceapi_key, get_user_agent
 from . import MetalProvider, MetalPrice, ProviderError, RateLimitError, NetworkError
 
 
@@ -22,20 +22,26 @@ class MetalsDevAPIProvider(MetalProvider):
 
     BASE_URL = "https://api.metals.dev/v1"
 
+    def __init__(self, api_key: Optional[str] = None):
+        self._api_key = api_key or get_metalsdev_key()
+
     @property
     def name(self) -> str:
         return "metals-dev"
 
     @property
     def requires_api_key(self) -> bool:
-        return False  # Has free tier without key for latest
+        return True
 
     def is_configured(self) -> bool:
-        return True
+        return bool(self._api_key)
 
     def get_prices(self, target_date: date) -> list[MetalPrice]:
         """Fetch metal prices. Free tier only supports latest prices."""
-        url = f"{self.BASE_URL}/latest?api_key=demo&currency=USD&unit=toz"
+        if not self._api_key:
+            raise ProviderError("Metals.dev API key not configured")
+
+        url = f"{self.BASE_URL}/latest?api_key={self._api_key}&currency=USD&unit=toz"
 
         try:
             req = urllib.request.Request(url, headers={'User-Agent': get_user_agent()})
@@ -69,6 +75,92 @@ class MetalsDevAPIProvider(MetalProvider):
             return prices
 
         except urllib.error.HTTPError as e:
+            if e.code == 429:
+                raise RateLimitError("Rate limit exceeded")
+            raise ProviderError(f"HTTP error: {e.code}")
+        except urllib.error.URLError as e:
+            raise NetworkError(f"Network error: {e.reason}")
+        except json.JSONDecodeError:
+            raise ProviderError("Invalid JSON response")
+
+
+class MetalPriceAPIProvider(MetalProvider):
+    """MetalPriceAPI provider - requires API key.
+
+    Provides USD-based prices for gold, silver, platinum, palladium.
+    Uses troy-ounce rates, converted to per-gram USD.
+    """
+
+    BASE_URL = "https://api.metalpriceapi.com/v1"
+
+    def __init__(self, api_key: Optional[str] = None):
+        self._api_key = api_key or get_metalpriceapi_key()
+
+    @property
+    def name(self) -> str:
+        return "metalpriceapi"
+
+    @property
+    def requires_api_key(self) -> bool:
+        return True
+
+    def is_configured(self) -> bool:
+        return bool(self._api_key)
+
+    def get_prices(self, target_date: date) -> list[MetalPrice]:
+        """Fetch metal prices for a specific date."""
+        if not self._api_key:
+            raise ProviderError("MetalPriceAPI key not configured")
+
+        today = datetime.now().date()
+        if target_date < today:
+            date_str = target_date.strftime('%Y-%m-%d')
+            url = f"{self.BASE_URL}/{date_str}?api_key={self._api_key}&base=USD&currencies=XAU,XAG,XPT,XPD"
+        else:
+            url = f"{self.BASE_URL}/latest?api_key={self._api_key}&base=USD&currencies=XAU,XAG,XPT,XPD"
+
+        try:
+            req = urllib.request.Request(url, headers={'User-Agent': get_user_agent()})
+            with urllib.request.urlopen(req, timeout=30) as response:
+                data = json.loads(response.read().decode('utf-8'))
+
+            if not data.get('success'):
+                error = data.get('error', {})
+                message = error.get('message', 'unknown')
+                raise ProviderError(f"API error: {message}")
+
+            rates = data.get('rates', {})
+            prices = []
+
+            symbol_map = {
+                'XAU': 'gold',
+                'XAG': 'silver',
+                'XPT': 'platinum',
+                'XPD': 'palladium',
+            }
+
+            for symbol, metal_name in symbol_map.items():
+                usd_per_oz = rates.get(f"USD{symbol}")
+                if usd_per_oz is None:
+                    per_usd = rates.get(symbol)
+                    if per_usd:
+                        usd_per_oz = 1 / per_usd
+
+                if usd_per_oz is None:
+                    continue
+
+                price_per_gram = float(usd_per_oz) / TROY_OZ_TO_GRAMS
+                prices.append(MetalPrice(
+                    metal=metal_name,
+                    price_per_gram_usd=round(price_per_gram, 4),
+                    source=self.name
+                ))
+
+            return prices
+
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                raise ProviderError("Invalid MetalPriceAPI key")
             if e.code == 429:
                 raise RateLimitError("Rate limit exceeded")
             raise ProviderError(f"HTTP error: {e.code}")

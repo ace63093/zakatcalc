@@ -19,13 +19,26 @@
             min-height: 100vh;
             padding: 20px;
         }
+        .page-shell {
+            max-width: 1700px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
         .container {
-            max-width: 700px;
+            width: 100%;
+            max-width: 1320px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             padding: 30px;
+        }
+        .page-layout {
+            width: 100%;
+            margin: 0 auto;
+        }
+        .page-content {
+            min-width: 0;
         }
         h1 {
             text-align: center;
@@ -98,9 +111,9 @@
             display: block;
         }
         .result-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
             padding: 6px 0;
             border-bottom: 1px solid #e2e8f0;
             gap: 12px;
@@ -110,14 +123,15 @@
         }
         .result-label {
             color: #718096;
-            flex: 0 0 auto;
-            min-width: 120px;
+            min-width: 0;
         }
         .result-value {
             font-weight: 600;
             color: #4a5568;
             text-align: right;
-            flex: 1;
+            justify-self: end;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
         .zakat-due {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -125,6 +139,39 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-size: 1.5rem;
+        }
+        .zakat-due-gold {
+            display: inline-block;
+            position: relative;
+            white-space: nowrap;
+            background-image:
+                linear-gradient(135deg, #7a5a00 0%, #ffd36b 20%, #fff2b3 45%, #d3a11f 70%, #7a5a00 100%),
+                linear-gradient(120deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 45%, rgba(255, 255, 255, 0) 70%);
+            background-size: 100% 100%, 220% 100%;
+            background-position: 0 0, -200% 0;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12);
+            animation: zakat-sheen 4.2s ease-in-out infinite;
+        }
+        .zakat-due-value {
+            font-size: 1.5rem;
+        }
+        @keyframes zakat-sheen {
+            0%, 70% {
+                background-position: 0 0, -200% 0;
+            }
+            85%, 100% {
+                background-position: 0 0, 200% 0;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .zakat-due-gold {
+                animation: none;
+                background-position: 0 0, 0 0;
+            }
         }
         .info-box {
             background: #ebf8ff;
@@ -146,25 +193,65 @@
         }
         .asset-row {
             display: flex;
-            gap: 8px;
+            flex-wrap: nowrap;
+            gap: 10px;
             margin-bottom: 10px;
             align-items: center;
-            position: relative;
+            min-width: 0;
+        }
+        .group-name {
+            flex: 1 1 220px;
+            min-width: 200px;
+            order: 10;
+        }
+        .group-name .input-name {
+            width: 100%;
+        }
+        .group-middle {
+            flex: 1 1 260px;
+            min-width: 220px;
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            align-items: center;
+            order: 20;
+            min-width: 0;
+        }
+        .group-middle-secondary {
+            flex: 1 1 240px;
+            min-width: 220px;
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            align-items: center;
+            order: 30;
+            min-width: 0;
+        }
+        .group-value {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            order: 90;
+            white-space: nowrap;
+        }
+        .group-remove {
+            flex: 0 0 auto;
+            margin-left: auto;
+            order: 100;
         }
         .asset-row .input-name {
-            flex: 2;
-            min-width: 100px;
+            min-width: 160px;
         }
         .asset-row .input-weight {
-            flex: 0.6;
-            min-width: 50px;
+            min-width: 90px;
         }
         .asset-row .input-amount {
-            flex: 1;
-            min-width: 80px;
+            min-width: 120px;
         }
         .asset-row .input-karat {
             width: 80px;
+            min-width: 72px;
             flex-shrink: 0;
         }
         .asset-row .input-currency {
@@ -219,9 +306,14 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
+        .asset-row[data-type="gold"] .weight-grams-pill,
+        .asset-row[data-type="metal"] .weight-grams-pill {
+            margin-right: 6px;
+        }
         /* Weight unit selector styling */
         .asset-row .input-weight-unit {
             width: 80px;
+            min-width: 72px;
             flex-shrink: 0;
         }
         /* Consistent height for all asset row inputs */
@@ -311,27 +403,57 @@
             letter-spacing: 0.5px;
         }
         .grand-total {
-            background: #f0f5ff;
-            margin: 0 -16px;
-            padding: 10px 16px;
+            position: relative;
+            padding: 10px 0;
             border-radius: 4px;
+        }
+        .grand-total::before {
+            content: '';
+            position: absolute;
+            inset: 0 -16px;
+            background: #f0f5ff;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .grand-total > * {
+            position: relative;
+            z-index: 1;
         }
         .grand-total .result-value {
             font-size: 1.1rem;
         }
         .zakat-row {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            margin: 0 -16px;
-            padding: 12px 16px;
+            position: relative;
+            padding: 12px 0;
             border-radius: 4px;
         }
+        .zakat-row::before {
+            content: '';
+            position: absolute;
+            inset: 0 -16px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .zakat-row > * {
+            position: relative;
+            z-index: 1;
+        }
         .asset-row .input-metal {
-            width: 100px;
+            width: 80px;
+            min-width: 72px;
         }
         .asset-row .currency-autocomplete,
         .asset-row .crypto-autocomplete {
-            flex: 1.5;
-            min-width: 150px;
+            flex: 1 1 180px;
+            min-width: 160px;
+        }
+        .asset-row .currency-autocomplete.currency-compact {
+            width: 110px;
+            min-width: 90px;
+            max-width: 120px;
         }
         /* Cadence info banner styles */
         .cadence-banner {
@@ -371,32 +493,64 @@
             color: #319795;
             margin-top: 4px;
         }
+        .app-grid,
+        .calculator-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        .sidebar,
+        .calculator-results {
+            display: grid;
+            gap: 16px;
+            min-width: 0;
+        }
+        .sidebar *,
+        .calculator-results * {
+            max-width: 100%;
+        }
+        .card,
+        .sidebar,
+        .main,
+        .calculator-results .result,
+        .nisab-indicator {
+            box-sizing: border-box;
+        }
+        .sidebar {
+            position: static !important;
+            transform: none !important;
+            margin: 0 !important;
+        }
+        .main {
+            min-width: 0;
+        }
 
-        /* Desktop two-column layout (>=1024px) */
-        @media (min-width: 1024px) {
+        /* Desktop two-column layout (>=1280px) */
+        @media (min-width: 1280px) {
             body {
                 padding: 30px;
             }
-            .container {
-                max-width: 1100px;
-                min-width: 900px;
+            .page-shell {
+                padding: 0 32px;
             }
+            .page-layout {
+                width: 100%;
+            }
+            .container {
+                max-width: 1320px;
+            }
+            .page-content {
+                width: 100%;
+                margin: 0;
+            }
+            .app-grid,
             .calculator-layout {
-                display: grid;
-                grid-template-columns: 1fr 320px;
-                gap: 24px;
-                align-items: start;
+                grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
             }
             .calculator-inputs {
                 /* Left column - form inputs */
                 min-width: 0; /* Prevent grid blowout */
-            }
-            .calculator-results {
-                /* Right column - sticky results */
-                position: sticky;
-                top: 20px;
-                max-height: calc(100vh - 40px);
-                overflow-y: auto;
             }
             .calculator-results .result {
                 margin-top: 0;
@@ -405,17 +559,107 @@
             }
         }
 
-        /* Tablet (768px - 1023px) */
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .container {
-                max-width: 700px;
+        @media (max-width: 1279px) {
+            :root {
+                --compact-field-width: 300px;
+            }
+            .app-grid,
+            .calculator-layout {
+                grid-template-columns: 1fr;
+            }
+            .asset-row {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .asset-row::after {
+                content: "";
+                flex-basis: 100%;
+                order: 70;
+                height: 0;
+            }
+            .group-middle-secondary {
+                order: 80;
+            }
+            .asset-row[data-type="gold"] .group-middle-secondary,
+            .asset-row[data-type="metal"] .group-middle-secondary,
+            .asset-row[data-type="crypto"] .group-middle-secondary {
+                flex: 0 1 auto;
+            }
+            .group-value {
+                order: 90;
+            }
+            .group-remove {
+                margin-left: 0;
+                order: 100;
+            }
+            #baseCurrencyContainer,
+            #baseCurrencyContainer input,
+            #calculationDate,
+            .asset-row .crypto-autocomplete {
+                max-width: var(--compact-field-width);
+            }
+            #baseCurrencyContainer input,
+            #calculationDate {
+                width: 100%;
             }
         }
+
+        @media (min-width: 1280px) and (max-width: 1749px) {
+            :root {
+                --compact-field-width: 300px;
+            }
+            .asset-row {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .asset-row::after {
+                content: "";
+                flex-basis: 100%;
+                order: 70;
+                height: 0;
+            }
+            .group-middle-secondary {
+                order: 80;
+            }
+            .asset-row[data-type="gold"] .group-middle-secondary,
+            .asset-row[data-type="metal"] .group-middle-secondary,
+            .asset-row[data-type="crypto"] .group-middle-secondary {
+                flex: 0 1 auto;
+            }
+            .group-value {
+                order: 90;
+            }
+            .group-remove {
+                margin-left: 0;
+                order: 100;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 15px;
+            }
+            #baseCurrencyContainer,
+            #baseCurrencyContainer input,
+            #calculationDate,
+            .asset-row .crypto-autocomplete {
+                max-width: var(--compact-field-width);
+            }
+            #baseCurrencyContainer input,
+            #calculationDate {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 1023px) {
+            .page-shell {
+                max-width: none;
+                padding: 0;
+            }
+        }
+
 
         /* Mobile (<768px) */
         @media (max-width: 767px) {
             .container {
-                max-width: 100%;
                 padding: 15px;
                 border-radius: 0;
                 margin: 0;
@@ -425,25 +669,85 @@
             }
         }
 
+        @media (max-width: 640px) {
+            :root {
+                --compact-field-width: 230px;
+            }
+            .group-name {
+                flex: 1 1 160px;
+                min-width: 140px;
+            }
+            .group-middle,
+            .group-middle-secondary {
+                flex: 1 1 170px;
+                min-width: 150px;
+            }
+            .asset-row {
+                gap: 6px;
+            }
+            .group-value {
+                order: 90;
+            }
+            .group-remove {
+                margin-left: 0;
+                order: 100;
+            }
+        }
+
         @media (max-width: 600px) {
+            :root {
+                --compact-field-width: 210px;
+            }
             .form-row {
                 flex-direction: column;
                 gap: 15px;
             }
-            .asset-row {
-                flex-wrap: wrap;
+            .group-name {
+                flex: 1 1 150px;
+                min-width: 120px;
             }
-            .asset-row .input-name {
-                flex: 1 1 100%;
+            .group-middle,
+            .group-middle-secondary {
+                flex: 1 1 150px;
+                min-width: 120px;
             }
             .asset-row .currency-autocomplete,
             .asset-row .crypto-autocomplete {
-                flex: 1 1 100%;
+                flex: 1 1 140px;
+                min-width: 120px;
             }
-            .asset-row .base-value-pill {
-                flex: 0 0 auto;
-                order: 10;
-                margin-left: auto;
+            .asset-row .input-name {
+                min-width: 120px;
+            }
+            .asset-row .input-weight {
+                min-width: 80px;
+            }
+            .asset-row .input-amount {
+                min-width: 110px;
+            }
+            .asset-row .input-weight-unit,
+            .asset-row .input-karat {
+                width: 64px;
+                min-width: 64px;
+            }
+            .asset-row .input-metal {
+                width: 80px;
+                min-width: 80px;
+            }
+            .asset-row .currency-autocomplete.currency-compact {
+                width: 100px;
+                min-width: 85px;
+                max-width: 110px;
+            }
+            .group-value {
+                order: 90;
+            }
+            .group-remove {
+                margin-left: 0;
+                order: 100;
+            }
+            .base-value-pill {
+                min-width: 70px;
             }
             .sync-banner-content {
                 flex-direction: column;
@@ -502,14 +806,20 @@
     </style>
 </head>
 <body>
-    <nav class="site-nav">
-        <a href="https://buymeacoffee.com/zakatcalculator" class="contribute-btn">Contribute</a>
-        <a href="{{ url_for('main.calculator') }}" {% if request.endpoint == 'main.calculator' %}class="active"{% endif %}>Calculator</a>
-        <a href="{{ url_for('main.about_zakat') }}" {% if request.endpoint == 'main.about_zakat' %}class="active"{% endif %}>About Zakat</a>
-        <a href="{{ url_for('main.faq') }}" {% if request.endpoint == 'main.faq' %}class="active"{% endif %}>FAQ</a>
-        <a href="{{ url_for('main.contact') }}" {% if request.endpoint == 'main.contact' %}class="active"{% endif %}>Contact Us</a>
-    </nav>
-    {% block content %}{% endblock %}
+    <div class="page-shell">
+        <nav class="site-nav">
+            <a href="https://buymeacoffee.com/zakatcalculator" class="contribute-btn">Contribute</a>
+            <a href="{{ url_for('main.calculator') }}" {% if request.endpoint == 'main.calculator' %}class="active"{% endif %}>Calculator</a>
+            <a href="{{ url_for('main.about_zakat') }}" {% if request.endpoint == 'main.about_zakat' %}class="active"{% endif %}>About Zakat</a>
+            <a href="{{ url_for('main.faq') }}" {% if request.endpoint == 'main.faq' %}class="active"{% endif %}>FAQ</a>
+            <a href="{{ url_for('main.contact') }}" {% if request.endpoint == 'main.contact' %}class="active"{% endif %}>Contact Us</a>
+        </nav>
+        <div class="page-layout">
+            <main class="page-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
     {% block scripts %}{% endblock %}
 </body>
 </html>
