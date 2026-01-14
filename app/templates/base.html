@@ -307,6 +307,10 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
+        .asset-row[data-type="gold"] .weight-grams-pill,
+        .asset-row[data-type="metal"] .weight-grams-pill {
+            margin-right: 6px;
+        }
         /* Weight unit selector styling */
         .asset-row .input-weight-unit {
             width: 80px;
@@ -557,12 +561,16 @@
         }
 
         @media (max-width: 1279px) {
+            :root {
+                --compact-field-width: 300px;
+            }
             .app-grid,
             .calculator-layout {
                 grid-template-columns: 1fr;
             }
             .asset-row {
                 flex-wrap: wrap;
+                gap: 6px;
             }
             .asset-row::after {
                 content: "";
@@ -572,12 +580,38 @@
             }
             .group-middle-secondary {
                 order: 80;
+            }
+            .asset-row[data-type="gold"] .group-middle-secondary,
+            .asset-row[data-type="metal"] .group-middle-secondary,
+            .asset-row[data-type="crypto"] .group-middle-secondary {
+                flex: 0 1 auto;
+            }
+            .group-value {
+                order: 90;
+            }
+            .group-remove {
+                margin-left: 0;
+                order: 100;
+            }
+            #baseCurrencyContainer,
+            #baseCurrencyContainer input,
+            #calculationDate,
+            .asset-row .crypto-autocomplete {
+                max-width: var(--compact-field-width);
+            }
+            #baseCurrencyContainer input,
+            #calculationDate {
+                width: 100%;
             }
         }
 
         @media (min-width: 1280px) and (max-width: 1749px) {
+            :root {
+                --compact-field-width: 300px;
+            }
             .asset-row {
                 flex-wrap: wrap;
+                gap: 6px;
             }
             .asset-row::after {
                 content: "";
@@ -588,9 +622,31 @@
             .group-middle-secondary {
                 order: 80;
             }
+            .asset-row[data-type="gold"] .group-middle-secondary,
+            .asset-row[data-type="metal"] .group-middle-secondary,
+            .asset-row[data-type="crypto"] .group-middle-secondary {
+                flex: 0 1 auto;
+            }
+            .group-value {
+                order: 90;
+            }
+            .group-remove {
+                margin-left: 0;
+                order: 100;
+            }
             .form-row {
                 flex-direction: column;
                 gap: 15px;
+            }
+            #baseCurrencyContainer,
+            #baseCurrencyContainer input,
+            #calculationDate,
+            .asset-row .crypto-autocomplete {
+                max-width: var(--compact-field-width);
+            }
+            #baseCurrencyContainer input,
+            #calculationDate {
+                width: 100%;
             }
         }
 
@@ -615,6 +671,9 @@
         }
 
         @media (max-width: 640px) {
+            :root {
+                --compact-field-width: 230px;
+            }
             .group-name {
                 flex: 1 1 160px;
                 min-width: 140px;
@@ -625,18 +684,21 @@
                 min-width: 150px;
             }
             .asset-row {
-                gap: 8px;
+                gap: 6px;
             }
             .group-value {
                 order: 90;
             }
             .group-remove {
-                margin-left: auto;
+                margin-left: 0;
                 order: 100;
             }
         }
 
         @media (max-width: 600px) {
+            :root {
+                --compact-field-width: 210px;
+            }
             .form-row {
                 flex-direction: column;
                 gap: 15px;
@@ -682,6 +744,7 @@
                 order: 90;
             }
             .group-remove {
+                margin-left: 0;
                 order: 100;
             }
             .base-value-pill {
