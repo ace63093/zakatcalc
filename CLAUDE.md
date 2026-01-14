@@ -135,8 +135,30 @@ Weight is always stored/transmitted in grams; UI shows a "grams pill" with conve
 - `app/static/css/tools.css`: Share link and export buttons
 - `app/templates/base.html`: Main styles embedded (gradients, layout, responsive breakpoints)
 
-### Desktop Layout
-Two-column grid on >=1280px: inputs left, results right (min 320px, max 420px). <=1279px stacks to one column; 1280-1749px uses compact field widths and asset-row wrapping.
+### Responsive Layout (3 Viewport Modes)
+
+| Mode | Width | Layout |
+|------|-------|--------|
+| **Full Desktop** | ≥1750px | Two-column, single-line asset rows, expanded field widths (200px for weight/amount) |
+| **Compact Desktop** | 1280-1749px | Two-column, asset rows wrap to 2 lines, container uses `fit-content` for ad space |
+| **Mobile/Tablet** | ≤1279px | Single-column stacked layout |
+
+Additional mobile refinements at 1023px, 767px, 640px, 600px for progressively smaller screens.
+
+### Pill Number Formatting
+The `formatCompactPillNumber()` function in `calculator.js` prevents pill overflow:
+- Values < 10,000: Show as `X.XX` (2 decimals)
+- Values ≥ 10,000: Use suffixes `k` (thousand), `M` (million), `B` (billion), `T` (trillion)
+- Examples: `9999.99`, `10.00k`, `123.46k`, `1.23M`, `1.23B`
+- Handles NaN/null gracefully with em-dash `—`
+
+Used by both purple value pills (`.base-value-pill`) and grams pills (`.weight-grams-pill`).
+
+### Field Width Constraints
+- **Weight fields**: 120px default, 200px in Full Desktop (18 chars)
+- **Amount fields**: 130px default, 200px in Full Desktop (18 chars)
+- **Crypto autocomplete**: 160px fixed width
+- **Metal type selector**: 80px default, 120px in Full Desktop
 
 ## Testing Guidelines
 

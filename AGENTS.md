@@ -140,6 +140,19 @@ WEIGHT_UNITS = {
 ### Live Calculation
 `recalculate()` triggers on input change → fetches `/api/v1/pricing` → updates pills and totals.
 
+### Pill Number Formatting
+`formatCompactPillNumber()` prevents overflow: values < 10,000 show as `X.XX`, larger values use `k/M/B/T` suffixes.
+
+## Responsive Breakpoints
+
+| Mode | Width | Behavior |
+|------|-------|----------|
+| Full Desktop | ≥1750px | Two-column, single-line rows, 200px weight/amount fields |
+| Compact Desktop | 1280-1749px | Two-column, rows wrap, `fit-content` container |
+| Mobile | ≤1279px | Single-column stacked |
+
+Additional breakpoints: 1023px, 767px, 640px, 600px.
+
 ## Testing Rules
 
 1. Every endpoint needs a test
