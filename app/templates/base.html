@@ -633,7 +633,10 @@
             }
             .app-grid,
             .calculator-layout {
-                grid-template-columns: auto minmax(320px, 420px);
+                grid-template-columns: minmax(auto, max-content) minmax(320px, 420px);
+            }
+            .calculator-inputs {
+                max-width: 580px;
             }
             .asset-row {
                 flex-wrap: wrap;
