@@ -105,6 +105,85 @@ const ZakatCalculator = (function() {
     }
 
     /**
+     * Format a number compactly for pill display to prevent overflow.
+     * Max 6 numeric digits total with 2 decimals. Values >= 10000 use k/M/B/T suffixes.
+     * @param {number|null|undefined} value - The value to format
+     * @param {Object} [options] - Formatting options
+     * @param {number} [options.decimals=2] - Decimal places
+     * @returns {string} Formatted string like "123.45", "10.00k", "1.23M", or "—"
+     */
+    function formatCompactPillNumber(value, options) {
+        var decimals = (options && options.decimals !== undefined) ? options.decimals : 2;
+
+        // Handle null/undefined/NaN
+        if (value === null || value === undefined || isNaN(value)) {
+            return '—';
+        }
+
+        var abs = Math.abs(value);
+        var sign = value < 0 ? '-' : '';
+
+        // If absolute value < 10000, format normally with fixed decimals
+        if (abs < 10000) {
+            return sign + abs.toFixed(decimals);
+        }
+
+        // Suffixes in order: k (thousand), M (million), B (billion), T (trillion)
+        var suffixes = [
+            { factor: 1e3, suffix: 'k' },
+            { factor: 1e6, suffix: 'M' },
+            { factor: 1e9, suffix: 'B' },
+            { factor: 1e12, suffix: 'T' }
+        ];
+
+        // Find the smallest suffix where scaled value < 10000
+        var chosen = suffixes[0];
+        for (var i = 0; i < suffixes.length; i++) {
+            var scaled = abs / suffixes[i].factor;
+            // Check if this suffix works (scaled < 10000) or if it's the last option
+            if (scaled < 10000 || i === suffixes.length - 1) {
+                chosen = suffixes[i];
+                break;
+            }
+        }
+
+        var scaled = abs / chosen.factor;
+
+        // Edge case: if scaled rounds up to 10000.00, bump to next suffix
+        var rounded = parseFloat(scaled.toFixed(decimals));
+        if (rounded >= 10000 && chosen !== suffixes[suffixes.length - 1]) {
+            var nextIndex = suffixes.indexOf(chosen) + 1;
+            if (nextIndex < suffixes.length) {
+                chosen = suffixes[nextIndex];
+                scaled = abs / chosen.factor;
+            }
+        }
+
+        return sign + scaled.toFixed(decimals) + chosen.suffix;
+    }
+
+    /**
+     * Format money for pill display with compact number formatting.
+     * Uses currency symbol + compact number to prevent overflow.
+     * @param {string} currencyCode - The currency code (e.g., 'CAD')
+     * @param {number|undefined} value - The value to format
+     * @returns {string} Formatted string like "C$1234.56" or "C$12.35k" or "—"
+     */
+    function formatPillMoney(currencyCode, value) {
+        if (value === undefined || value === null || isNaN(value)) {
+            return '—';
+        }
+
+        var compactNum = formatCompactPillNumber(value, { decimals: 2 });
+        if (compactNum === '—') {
+            return '—';
+        }
+
+        var symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode + ' ';
+        return symbol + compactNum;
+    }
+
+    /**
      * Initialize the calculator
      */
     async function init() {
@@ -910,9 +989,9 @@ const ZakatCalculator = (function() {
             }
 
             if (value === 0 && hasInput) {
-                pill.textContent = formatMoney(baseCurrency, 0);
+                pill.textContent = formatPillMoney(baseCurrency, 0);
             } else if (value !== undefined && !isNaN(value)) {
-                pill.textContent = formatMoney(baseCurrency, value);
+                pill.textContent = formatPillMoney(baseCurrency, value);
             } else {
                 pill.textContent = '—';
             }
@@ -947,8 +1026,9 @@ const ZakatCalculator = (function() {
         }
 
         const weightGrams = toGrams(displayWeight, rowUnit);
-        // Format with 2 decimal places and add 'g' suffix
-        gramsPill.textContent = weightGrams.toFixed(2) + 'g';
+        // Format with compact number formatter and add 'g' suffix
+        var compactGrams = formatCompactPillNumber(weightGrams, { decimals: 2 });
+        gramsPill.textContent = compactGrams + 'g';
     }
 
     /**
