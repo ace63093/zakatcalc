@@ -19,6 +19,7 @@ var NisabIndicator = (function() {
     var nisabData = null;
     var baseCurrency = 'CAD';
     var onBasisChange = null;
+    var hasAnimated = false;  // Track if initial animation has played
 
     // Currency symbols for fallback display
     var CURRENCY_SYMBOLS = {
@@ -46,6 +47,7 @@ var NisabIndicator = (function() {
         nisabBasis = options.basis || 'gold';
         baseCurrency = options.baseCurrency || 'CAD';
         onBasisChange = options.onBasisChange || null;
+        hasAnimated = false;  // Reset animation flag on init
 
         render();
         bindEvents();
@@ -202,10 +204,14 @@ var NisabIndicator = (function() {
             progressFill.style.width = percentage + '%';
             progressFill.className = 'nisab-progress-fill status-' + status;
 
-            // Trigger animation
-            progressFill.classList.remove('animate');
-            void progressFill.offsetWidth; // Force reflow
-            progressFill.classList.add('animate');
+            // Only trigger fill animation on initial load, not on every update
+            // Subsequent updates use CSS transition for smooth progress
+            if (!hasAnimated) {
+                hasAnimated = true;
+                progressFill.classList.remove('animate');
+                void progressFill.offsetWidth; // Force reflow
+                progressFill.classList.add('animate');
+            }
         }
 
         // Update progress labels
