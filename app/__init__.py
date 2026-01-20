@@ -41,10 +41,12 @@ def create_app(config: dict | None = None) -> Flask:
     from app.routes.main import main_bp
     from app.routes.health import health_bp
     from app.routes.api import api_bp
+    from app.routes.guides import guides_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(api_bp, url_prefix='/api/v1')
+    app.register_blueprint(guides_bp)
 
     # Start background pricing sync (for single-container deployments)
     # Only starts if PRICING_AUTO_SYNC=1 (checked inside start_background_sync)

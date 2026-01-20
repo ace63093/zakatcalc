@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}{{ guide.meta_title }}{% endblock %}
+
+{% block head %}
+<meta name="description" content="{{ guide.meta_description }}">
+<link rel="canonical" href="{{ canonical_url }}">
+<meta property="og:title" content="{{ guide.meta_title }}">
+<meta property="og:description" content="{{ guide.meta_description }}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Zakat Calculator">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ guide.meta_title }}">
+<meta name="twitter:description" content="{{ guide.meta_description }}">
+<meta name="twitter:url" content="{{ canonical_url }}">
+<script type="application/ld+json">{{ breadcrumb_schema_json | safe }}</script>
+<script type="application/ld+json">{{ article_schema_json | safe }}</script>
+<script type="application/ld+json">{{ faq_schema_json | safe }}</script>
+<style>
+    .guide-hero {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .guide-hero .subtitle {
+        margin-bottom: 16px;
+    }
+    .btn-cta {
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 999px;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-cta:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(102, 126, 234, 0.35);
+    }
+    .guide-section {
+        margin-bottom: 26px;
+    }
+    .guide-section h2,
+    .guide-section h3 {
+        color: #667eea;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+    }
+    .guide-section p {
+        color: #4a5568;
+        margin-bottom: 10px;
+    }
+    .guide-callout {
+        background: #f0f5ff;
+        border-left: 4px solid #667eea;
+        padding: 14px 16px;
+        border-radius: 0 8px 8px 0;
+    }
+    .guide-callout ul,
+    .guide-section ul,
+    .guide-section ol {
+        margin-left: 20px;
+        color: #4a5568;
+    }
+    .guide-section li {
+        margin-bottom: 6px;
+    }
+    .guide-cta-block {
+        background: #fefcbf;
+        border-left: 4px solid #d69e2e;
+        padding: 14px 16px;
+        border-radius: 0 8px 8px 0;
+        color: #744210;
+        font-weight: 600;
+    }
+    .guide-faq {
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 16px;
+        margin-bottom: 16px;
+    }
+    .guide-faq:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    .guide-faq h3 {
+        color: #667eea;
+        font-size: 1rem;
+        margin-bottom: 6px;
+    }
+    .guide-related {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+    }
+    .related-card {
+        display: block;
+        padding: 12px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        text-decoration: none;
+        color: inherit;
+        background: #f8fafc;
+    }
+    .related-card:hover {
+        border-color: #cbd5f5;
+    }
+    .related-card h4 {
+        color: #2d3748;
+        font-size: 0.98rem;
+        margin-bottom: 6px;
+    }
+    .related-card p {
+        color: #718096;
+        font-size: 0.9rem;
+    }
+    .guide-resources {
+        margin-top: 24px;
+        padding-top: 18px;
+        border-top: 1px solid #e2e8f0;
+        color: #4a5568;
+    }
+    .guide-resources a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="guide-hero">
+        <h1>{{ guide.title }}</h1>
+        <p class="subtitle">{{ guide.summary }}</p>
+        <a class="btn-cta" data-cta="calculator" href="{{ url_for('main.calculator') }}">Use the Zakat Calculator</a>
+    </div>
+
+    {% for section in guide.sections %}
+    <div class="guide-section">
+        {% if section.type == 'paragraph' %}
+            <p>{{ section.text }}</p>
+        {% elif section.type == 'callout' %}
+            <div class="guide-callout">
+                <h3>{{ section.title }}</h3>
+                <ul>
+                    {% for item in section['items'] %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% elif section.type == 'steps' %}
+            <h3>{{ section.title }}</h3>
+            <ol>
+                {% for item in section['items'] %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ol>
+        {% elif section.type == 'bullets' %}
+            <h3>{{ section.title }}</h3>
+            <ul>
+                {% for item in section['items'] %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        {% elif section.type == 'cta' %}
+            <div class="guide-cta-block">{{ section.text }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="guide-section">
+        <h2>FAQ</h2>
+        {% for faq in guide.faqs %}
+        <div class="guide-faq">
+            <h3>{{ faq.q }}</h3>
+            <p>{{ faq.a }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="guide-section">
+        <h2>Related guides</h2>
+        <div class="guide-related">
+            {% for related in related_guides %}
+            <a class="related-card" href="/{{ related.slug }}">
+                <h4>{{ related.title }}</h4>
+                <p>{{ related.summary }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="guide-resources">
+        <p>More resources: <a href="{{ url_for('main.faq') }}">FAQ</a> and <a href="{{ url_for('main.about_zakat') }}">About Zakat</a>.</p>
+    </div>
+</div>
+{% endblock %}

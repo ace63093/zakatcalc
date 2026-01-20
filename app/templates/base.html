@@ -899,6 +899,7 @@
         <nav class="site-nav">
             <a href="https://buymeacoffee.com/zakatcalculator" class="contribute-btn">Contribute</a>
             <a href="{{ url_for('main.calculator') }}" {% if request.endpoint == 'main.calculator' %}class="active"{% endif %}>Calculator</a>
+            <a href="{{ url_for('guides.index') }}" {% if request.endpoint and request.endpoint.startswith('guides.') %}class="active"{% endif %}>Guides</a>
             <a href="{{ url_for('main.about_zakat') }}" {% if request.endpoint == 'main.about_zakat' %}class="active"{% endif %}>About Zakat</a>
             <a href="{{ url_for('main.faq') }}" {% if request.endpoint == 'main.faq' %}class="active"{% endif %}>FAQ</a>
             <a href="{{ url_for('main.contact') }}" {% if request.endpoint == 'main.contact' %}class="active"{% endif %}>Contact Us</a>
