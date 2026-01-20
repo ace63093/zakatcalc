@@ -36,7 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger('pricing_daemon')
 
-DAEMON_VERSION = '2.0.0'  # 3-tier cadence
+DAEMON_VERSION = '2.1.0'  # 3-tier cadence + R2 backfill
 
 
 class PricingSyncDaemon:
@@ -174,6 +174,110 @@ class PricingSyncDaemon:
         self.update_state(status, error_summary, synced)
 
         logger.info(f"Sync cycle complete: {synced} synced, {len(errors)} errors")
+
+        # Run R2 backfill to ensure R2 has all SQLite data
+        self.backfill_r2()
+
+    def backfill_r2(self):
+        """Backfill R2 with snapshots that exist in SQLite but not in R2.
+
+        This ensures R2 stays in sync even when data came from sources
+        that don't write-through to R2 (e.g., seed data, direct imports).
+        """
+        from app.services.r2_client import get_r2_client
+        from app.services.r2_config import is_r2_enabled
+
+        if not is_r2_enabled():
+            logger.debug("R2 not enabled, skipping backfill")
+            return
+
+        r2 = get_r2_client()
+        if not r2:
+            logger.debug("R2 client unavailable, skipping backfill")
+            return
+
+        logger.info("Starting R2 backfill...")
+
+        required = self.calculate_required_snapshots()
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+
+        backfilled = 0
+        for snapshot_date, cadence in required:
+            date_str = snapshot_date.isoformat()
+
+            # Check if SQLite has data
+            fx_rows = conn.execute(
+                'SELECT currency, rate_to_usd FROM fx_rates WHERE date = ?',
+                (date_str,)
+            ).fetchall()
+
+            if not fx_rows:
+                continue  # No SQLite data, nothing to backfill
+
+            # Check if R2 already has this snapshot
+            try:
+                if r2.has_snapshot('fx', cadence, snapshot_date):
+                    continue  # R2 already has it
+            except Exception as e:
+                logger.warning(f"R2 check failed for {date_str}: {e}")
+                continue
+
+            # Backfill FX to R2
+            fx_data = {row['currency']: row['rate_to_usd'] for row in fx_rows}
+            try:
+                r2.put_snapshot('fx', cadence, snapshot_date, {
+                    'source': 'sqlite-backfill',
+                    'data': fx_data,
+                })
+                logger.info(f"R2 backfill: FX {date_str} ({cadence})")
+                backfilled += 1
+            except Exception as e:
+                logger.warning(f"R2 backfill failed for FX {date_str}: {e}")
+
+            # Backfill metals
+            metal_rows = conn.execute(
+                'SELECT metal, price_per_gram_usd FROM metal_prices WHERE date = ?',
+                (date_str,)
+            ).fetchall()
+            if metal_rows:
+                try:
+                    if not r2.has_snapshot('metals', cadence, snapshot_date):
+                        metals_data = {row['metal']: row['price_per_gram_usd'] for row in metal_rows}
+                        r2.put_snapshot('metals', cadence, snapshot_date, {
+                            'source': 'sqlite-backfill',
+                            'data': metals_data,
+                        })
+                        logger.info(f"R2 backfill: metals {date_str} ({cadence})")
+                except Exception as e:
+                    logger.warning(f"R2 backfill failed for metals {date_str}: {e}")
+
+            # Backfill crypto
+            crypto_rows = conn.execute(
+                'SELECT symbol, name, price_usd, rank FROM crypto_prices WHERE date = ?',
+                (date_str,)
+            ).fetchall()
+            if crypto_rows:
+                try:
+                    if not r2.has_snapshot('crypto', cadence, snapshot_date):
+                        crypto_data = {
+                            row['symbol']: {
+                                'name': row['name'],
+                                'price': row['price_usd'],
+                                'rank': row['rank'],
+                            }
+                            for row in crypto_rows
+                        }
+                        r2.put_snapshot('crypto', cadence, snapshot_date, {
+                            'source': 'sqlite-backfill',
+                            'data': crypto_data,
+                        })
+                        logger.info(f"R2 backfill: crypto {date_str} ({cadence})")
+                except Exception as e:
+                    logger.warning(f"R2 backfill failed for crypto {date_str}: {e}")
+
+        conn.close()
+        logger.info(f"R2 backfill complete: {backfilled} snapshots uploaded")
 
     def calculate_required_snapshots(self) -> list[tuple[date, str]]:
         """Calculate all required snapshot dates using 3-tier cadence.

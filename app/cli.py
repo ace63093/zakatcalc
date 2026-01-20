@@ -262,6 +262,126 @@ def mirror_to_r2_command(cadence, limit):
     click.echo(f'Mirrored to R2: {fx_count} FX, {metals_count} metals, {crypto_count} crypto snapshots')
 
 
+@click.command('backfill-r2')
+@click.option('--dry-run', is_flag=True, help='Show what would be uploaded without uploading')
+@click.option('--monthly-limit', default=None, type=int, help='Max months of monthly snapshots')
+@with_appcontext
+def backfill_r2_command(dry_run, monthly_limit):
+    """Backfill R2 with SQLite data using proper 3-tier cadence.
+
+    For each required snapshot (daily/weekly/monthly), checks if R2 has it.
+    If not, uploads from SQLite.
+    """
+    from datetime import date as dt_date
+    from app.services.r2_client import get_r2_client
+    from app.services.r2_config import is_r2_enabled
+    from app.services.cadence import get_all_required_snapshots
+    from app.services.time_provider import get_today
+
+    if not is_r2_enabled():
+        click.echo('Error: R2 is not enabled. Set R2_ENABLED=1 and configure credentials.')
+        return
+
+    r2 = get_r2_client()
+    if not r2:
+        click.echo('Error: Could not create R2 client.')
+        return
+
+    db = get_db()
+    today = get_today()
+
+    # Get required snapshots using cadence system
+    required = get_all_required_snapshots(
+        today=today,
+        include_monthly=True,
+        monthly_limit=monthly_limit
+    )
+
+    click.echo(f'Checking {len(required)} required snapshots...')
+
+    missing_fx = 0
+    missing_metals = 0
+    missing_crypto = 0
+    uploaded_fx = 0
+    uploaded_metals = 0
+    uploaded_crypto = 0
+
+    for snapshot_date, cadence in required:
+        date_str = snapshot_date.isoformat()
+
+        # Check FX
+        fx_rows = db.execute(
+            'SELECT currency, rate_to_usd FROM fx_rates WHERE date = ?',
+            (date_str,)
+        ).fetchall()
+        if fx_rows:
+            try:
+                if not r2.has_snapshot('fx', cadence, snapshot_date):
+                    missing_fx += 1
+                    if not dry_run:
+                        fx_data = {row['currency']: row['rate_to_usd'] for row in fx_rows}
+                        r2.put_snapshot('fx', cadence, snapshot_date, {
+                            'source': 'cli-backfill',
+                            'data': fx_data,
+                        })
+                        uploaded_fx += 1
+                        click.echo(f'  Uploaded FX {date_str} ({cadence})')
+            except Exception as e:
+                click.echo(f'  Error checking/uploading FX {date_str}: {e}')
+
+        # Check metals
+        metal_rows = db.execute(
+            'SELECT metal, price_per_gram_usd FROM metal_prices WHERE date = ?',
+            (date_str,)
+        ).fetchall()
+        if metal_rows:
+            try:
+                if not r2.has_snapshot('metals', cadence, snapshot_date):
+                    missing_metals += 1
+                    if not dry_run:
+                        metals_data = {row['metal']: row['price_per_gram_usd'] for row in metal_rows}
+                        r2.put_snapshot('metals', cadence, snapshot_date, {
+                            'source': 'cli-backfill',
+                            'data': metals_data,
+                        })
+                        uploaded_metals += 1
+                        click.echo(f'  Uploaded metals {date_str} ({cadence})')
+            except Exception as e:
+                click.echo(f'  Error checking/uploading metals {date_str}: {e}')
+
+        # Check crypto
+        crypto_rows = db.execute(
+            'SELECT symbol, name, price_usd, rank FROM crypto_prices WHERE date = ?',
+            (date_str,)
+        ).fetchall()
+        if crypto_rows:
+            try:
+                if not r2.has_snapshot('crypto', cadence, snapshot_date):
+                    missing_crypto += 1
+                    if not dry_run:
+                        crypto_data = {
+                            row['symbol']: {
+                                'name': row['name'],
+                                'price': row['price_usd'],
+                                'rank': row['rank'],
+                            }
+                            for row in crypto_rows
+                        }
+                        r2.put_snapshot('crypto', cadence, snapshot_date, {
+                            'source': 'cli-backfill',
+                            'data': crypto_data,
+                        })
+                        uploaded_crypto += 1
+                        click.echo(f'  Uploaded crypto {date_str} ({cadence})')
+            except Exception as e:
+                click.echo(f'  Error checking/uploading crypto {date_str}: {e}')
+
+    if dry_run:
+        click.echo(f'\nDry run - would upload: {missing_fx} FX, {missing_metals} metals, {missing_crypto} crypto')
+    else:
+        click.echo(f'\nBackfill complete: {uploaded_fx} FX, {uploaded_metals} metals, {uploaded_crypto} crypto uploaded')
+
+
 def register_cli(app):
     """Register CLI commands with the Flask app."""
     app.cli.add_command(init_db_command)
@@ -270,3 +390,4 @@ def register_cli(app):
     app.cli.add_command(import_crypto_csv_command)
     app.cli.add_command(seed_all_command)
     app.cli.add_command(mirror_to_r2_command)
+    app.cli.add_command(backfill_r2_command)
