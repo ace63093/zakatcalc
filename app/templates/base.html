@@ -134,6 +134,12 @@
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
+        .result-value-deduction {
+            color: #9f7aea;
+        }
+        .debts-row .result-label {
+            color: #9f7aea;
+        }
         .zakat-due {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
@@ -191,6 +197,16 @@
             margin: 25px 0 15px;
             padding-bottom: 8px;
             border-bottom: 2px solid #e2e8f0;
+        }
+        .section-title-debts {
+            color: #9f7aea;
+            border-bottom-color: #e9d8fd;
+        }
+        .subsection-title {
+            font-size: 0.95rem;
+            color: #718096;
+            margin: 15px 0 10px;
+            font-weight: 600;
         }
         .asset-row {
             display: flex;
@@ -261,6 +277,11 @@
         }
         .asset-row .input-currency {
             width: 70px;
+        }
+        .asset-row .input-frequency {
+            width: 110px;
+            min-width: 100px;
+            flex-shrink: 0;
         }
         .btn-remove {
             background: none;

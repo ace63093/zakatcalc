@@ -26,6 +26,16 @@ const ZakatCalculator = (function() {
         aana: { gramsPerUnit: 0.72898774, label: 'Aana', short: 'aana', decimals: 2 }
     };
 
+    // Loan frequency multipliers for annualization
+    const LOAN_FREQUENCY_MULTIPLIERS = {
+        weekly: 52,
+        biweekly: 26,
+        semi_monthly: 24,
+        monthly: 12,
+        quarterly: 4,
+        yearly: 1
+    };
+
     // State
     let currencies = [];
     let cryptos = [];
@@ -416,21 +426,37 @@ const ZakatCalculator = (function() {
             return;
         }
 
-        // Collect all items
+        // Collect all asset items
         const goldItems = collectGoldItems();
         const cashItems = collectCashItems();
         const bankItems = collectBankItems();
         const metalItems = collectMetalItems();
         const cryptoItems = collectCryptoItems();
 
-        // Calculate subtotals
+        // Collect debt items
+        const creditCardItems = collectCreditCardItems();
+        const loanItems = collectLoanItems();
+
+        // Calculate asset subtotals
         const goldTotal = calculateGoldTotal(goldItems);
         const cashTotal = calculateCashTotal(cashItems);
         const bankTotal = calculateBankTotal(bankItems);
         const metalTotal = calculateMetalTotal(metalItems);
         const cryptoTotal = calculateCryptoTotal(cryptoItems);
 
-        const grandTotal = goldTotal + cashTotal + bankTotal + metalTotal + cryptoTotal;
+        // Calculate debt subtotals
+        const creditCardTotal = calculateCreditCardTotal(creditCardItems);
+        const loanTotal = calculateLoanTotal(loanItems);
+
+        // Total assets and debts
+        const assetsTotal = goldTotal + cashTotal + bankTotal + metalTotal + cryptoTotal;
+        const debtsTotal = creditCardTotal + loanTotal;
+
+        // Net total (assets minus debts, floored at 0)
+        const netTotal = Math.max(0, assetsTotal - debtsTotal);
+
+        // Keep grandTotal as assetsTotal for backward compatibility
+        const grandTotal = assetsTotal;
 
         // Calculate nisab thresholds
         const goldPrice = getMetalPrice('gold');
@@ -441,11 +467,11 @@ const ZakatCalculator = (function() {
         // Use threshold based on selected basis
         const nisabThreshold = nisabBasis === 'silver' ? nisabSilverValue : nisabGoldValue;
 
-        // Calculate ratio and status for nisab indicator
+        // Calculate ratio and status for nisab indicator (using netTotal)
         let ratio = 0;
         let status = 'below';
         if (nisabThreshold > 0) {
-            const rawRatio = grandTotal / nisabThreshold;
+            const rawRatio = netTotal / nisabThreshold;
             ratio = Math.min(Math.max(rawRatio, 0), 1);
             if (rawRatio >= 1.0) {
                 status = 'above';
@@ -454,13 +480,14 @@ const ZakatCalculator = (function() {
             }
         }
 
-        const difference = Math.abs(grandTotal - nisabThreshold);
-        const differenceText = grandTotal >= nisabThreshold
+        const difference = Math.abs(netTotal - nisabThreshold);
+        const differenceText = netTotal >= nisabThreshold
             ? difference.toFixed(2) + ' above nisab'
             : difference.toFixed(2) + ' more to reach nisab';
 
-        const aboveNisab = grandTotal >= nisabThreshold;
-        const zakatDue = aboveNisab ? grandTotal * ZAKAT_RATE : 0;
+        // Nisab check and zakat use netTotal (after deducting debts)
+        const aboveNisab = netTotal >= nisabThreshold;
+        const zakatDue = aboveNisab ? netTotal * ZAKAT_RATE : 0;
 
         // Update NisabIndicator with calculated data
         if (typeof NisabIndicator !== 'undefined') {
@@ -490,7 +517,11 @@ const ZakatCalculator = (function() {
             bankTotal,
             metalTotal,
             cryptoTotal,
+            creditCardTotal,
+            loanTotal,
+            debtsTotal,
             grandTotal,
+            netTotal,
             nisabThreshold,
             nisabBasis,
             aboveNisab,
@@ -620,6 +651,46 @@ const ZakatCalculator = (function() {
     }
 
     /**
+     * Collect credit card items from form
+     */
+    function collectCreditCardItems() {
+        const items = [];
+        document.querySelectorAll('#creditCardItems .asset-row').forEach(function(row) {
+            const amount = parseFloat(row.querySelector('[name="credit_card_amount"]')?.value) || 0;
+            const currency = row.querySelector('[name="credit_card_currency"]')?.value || baseCurrency;
+            if (amount > 0) {
+                items.push({
+                    name: row.querySelector('[name="credit_card_name"]')?.value || 'Credit Card',
+                    amount: amount,
+                    currency: currency
+                });
+            }
+        });
+        return items;
+    }
+
+    /**
+     * Collect loan items from form
+     */
+    function collectLoanItems() {
+        const items = [];
+        document.querySelectorAll('#loanItems .asset-row').forEach(function(row) {
+            const paymentAmount = parseFloat(row.querySelector('[name="loan_payment_amount"]')?.value) || 0;
+            const currency = row.querySelector('[name="loan_currency"]')?.value || baseCurrency;
+            const frequency = row.querySelector('[name="loan_frequency"]')?.value || 'monthly';
+            if (paymentAmount > 0) {
+                items.push({
+                    name: row.querySelector('[name="loan_name"]')?.value || 'Loan',
+                    payment_amount: paymentAmount,
+                    currency: currency,
+                    frequency: frequency
+                });
+            }
+        });
+        return items;
+    }
+
+    /**
      * Calculate gold total in base currency
      */
     function calculateGoldTotal(items) {
@@ -629,6 +700,36 @@ const ZakatCalculator = (function() {
         for (const item of items) {
             const pureGrams = item.weight_grams * (item.purity_karat / 24);
             total += pureGrams * goldPrice;
+        }
+
+        return total;
+    }
+
+    /**
+     * Calculate credit card total in base currency
+     */
+    function calculateCreditCardTotal(items) {
+        let total = 0;
+        const fxRates = pricingSnapshot?.fx_rates || {};
+
+        for (const item of items) {
+            total += convertCurrency(item.amount, item.currency, baseCurrency, fxRates);
+        }
+
+        return total;
+    }
+
+    /**
+     * Calculate loan total in base currency (annualized)
+     */
+    function calculateLoanTotal(items) {
+        let total = 0;
+        const fxRates = pricingSnapshot?.fx_rates || {};
+
+        for (const item of items) {
+            const multiplier = LOAN_FREQUENCY_MULTIPLIERS[item.frequency] || 12;
+            const annualizedAmount = item.payment_amount * multiplier;
+            total += convertCurrency(annualizedAmount, item.currency, baseCurrency, fxRates);
         }
 
         return total;
@@ -760,6 +861,16 @@ const ZakatCalculator = (function() {
         setElementText('metalTotal', formatMoney(baseCurrency, results.metalTotal));
         setElementText('cryptoTotal', formatMoney(baseCurrency, results.cryptoTotal));
         setElementText('grandTotal', formatMoney(baseCurrency, results.grandTotal));
+
+        // Display debts total with minus sign (deduction)
+        const debtsDisplay = results.debtsTotal > 0
+            ? '−' + formatMoney(baseCurrency, results.debtsTotal).replace(/^-/, '')
+            : formatMoney(baseCurrency, 0);
+        setElementText('debtsTotal', debtsDisplay);
+
+        // Display net total
+        setElementText('netTotal', formatMoney(baseCurrency, results.netTotal));
+
         setElementText('nisabThreshold', formatMoney(baseCurrency, results.nisabThreshold));
         setElementText('aboveNisab', results.aboveNisab ? 'Yes' : 'No');
         setElementText('zakatDue', formatMoney(baseCurrency, results.zakatDue));
@@ -957,6 +1068,24 @@ const ZakatCalculator = (function() {
                 if (!cryptoPrice) return undefined;
                 return amount * cryptoPrice;
             }
+            case 'credit_card': {
+                const amount = parseFloat(row.querySelector('[name="credit_card_amount"]')?.value);
+                const currency = row.querySelector('[name="credit_card_currency"]')?.value || baseCurrency;
+                if (!amount || amount === 0) return undefined;
+                if (isNaN(amount)) return undefined;
+                return convertCurrency(amount, currency, baseCurrency, pricingSnapshot?.fx_rates || {});
+            }
+            case 'loan': {
+                const paymentAmount = parseFloat(row.querySelector('[name="loan_payment_amount"]')?.value);
+                const currency = row.querySelector('[name="loan_currency"]')?.value || baseCurrency;
+                const frequency = row.querySelector('[name="loan_frequency"]')?.value || 'monthly';
+                if (!paymentAmount || paymentAmount === 0) return undefined;
+                if (isNaN(paymentAmount)) return undefined;
+                // Annualize the payment amount
+                const multiplier = LOAN_FREQUENCY_MULTIPLIERS[frequency] || 12;
+                const annualizedAmount = paymentAmount * multiplier;
+                return convertCurrency(annualizedAmount, currency, baseCurrency, pricingSnapshot?.fx_rates || {});
+            }
             default:
                 return undefined;
         }
@@ -986,6 +1115,12 @@ const ZakatCalculator = (function() {
                 const amountInput = row.querySelector('[name="crypto_amount"]');
                 const symbolInput = row.querySelector('[name="crypto_symbol"]');
                 hasInput = amountInput && amountInput.value !== '' && symbolInput && symbolInput.value !== '';
+            } else if (type === 'credit_card') {
+                const amountInput = row.querySelector('[name="credit_card_amount"]');
+                hasInput = amountInput && amountInput.value !== '';
+            } else if (type === 'loan') {
+                const amountInput = row.querySelector('[name="loan_payment_amount"]');
+                hasInput = amountInput && amountInput.value !== '';
             }
 
             if (value === 0 && hasInput) {
@@ -1235,6 +1370,68 @@ const ZakatCalculator = (function() {
         initCryptoAutocompletes();
     }
 
+    function addCreditCardRow() {
+        const container = document.getElementById('creditCardItems');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'asset-row';
+        row.dataset.type = 'credit_card';
+        row.innerHTML = `
+            <div class="group-name">
+                <input type="text" name="credit_card_name" placeholder="Name (e.g., Visa)" class="input-name">
+            </div>
+            <div class="group-middle">
+                <input type="number" name="credit_card_amount" step="0.01" min="0" placeholder="Balance" class="input-amount">
+            </div>
+            <div class="group-value">
+                <div class="currency-autocomplete" data-name="credit_card_currency"></div>
+                <span class="base-value-pill" data-field="base_value">—</span>
+            </div>
+            <div class="group-remove">
+                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
+            </div>
+        `;
+        container.appendChild(row);
+        initCurrencyAutocompletes();
+    }
+
+    function addLoanRow() {
+        const container = document.getElementById('loanItems');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'asset-row';
+        row.dataset.type = 'loan';
+        row.innerHTML = `
+            <div class="group-name">
+                <input type="text" name="loan_name" placeholder="Name (e.g., Car Loan)" class="input-name">
+            </div>
+            <div class="group-middle">
+                <input type="number" name="loan_payment_amount" step="0.01" min="0" placeholder="Payment" class="input-amount">
+            </div>
+            <div class="group-middle-secondary">
+                <select name="loan_frequency" class="input-frequency">
+                    <option value="monthly" selected>Monthly</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="biweekly">Bi-weekly</option>
+                    <option value="semi_monthly">Semi-monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+                <div class="currency-autocomplete" data-name="loan_currency"></div>
+            </div>
+            <div class="group-value">
+                <span class="base-value-pill" data-field="base_value" title="Annualized amount in base currency">—</span>
+            </div>
+            <div class="group-remove">
+                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
+            </div>
+        `;
+        container.appendChild(row);
+        initCurrencyAutocompletes();
+    }
+
     function removeRow(button) {
         const row = button.closest('.asset-row');
         const container = row.parentElement;
@@ -1280,7 +1477,9 @@ const ZakatCalculator = (function() {
             cash_items: collectCashItemsFull(),
             bank_items: collectBankItemsFull(),
             metal_items: collectMetalItemsFull(),
-            crypto_items: collectCryptoItemsFull()
+            crypto_items: collectCryptoItemsFull(),
+            credit_card_items: collectCreditCardItemsFull(),
+            loan_items: collectLoanItemsFull()
         };
     }
 
@@ -1370,6 +1569,37 @@ const ZakatCalculator = (function() {
     }
 
     /**
+     * Collect credit card items with all fields (including empty)
+     */
+    function collectCreditCardItemsFull() {
+        var items = [];
+        document.querySelectorAll('#creditCardItems .asset-row').forEach(function(row) {
+            items.push({
+                name: row.querySelector('[name="credit_card_name"]')?.value || '',
+                amount: parseFloat(row.querySelector('[name="credit_card_amount"]')?.value) || 0,
+                currency: row.querySelector('[name="credit_card_currency"]')?.value || baseCurrency
+            });
+        });
+        return items;
+    }
+
+    /**
+     * Collect loan items with all fields (including empty)
+     */
+    function collectLoanItemsFull() {
+        var items = [];
+        document.querySelectorAll('#loanItems .asset-row').forEach(function(row) {
+            items.push({
+                name: row.querySelector('[name="loan_name"]')?.value || '',
+                payment_amount: parseFloat(row.querySelector('[name="loan_payment_amount"]')?.value) || 0,
+                currency: row.querySelector('[name="loan_currency"]')?.value || baseCurrency,
+                frequency: row.querySelector('[name="loan_frequency"]')?.value || 'monthly'
+            });
+        });
+        return items;
+    }
+
+    /**
      * Set the calculator state from a state object
      * @param {Object} state - State object to restore
      */
@@ -1426,6 +1656,16 @@ const ZakatCalculator = (function() {
         // Restore crypto items
         if (state.crypto_items) {
             restoreCryptoItems(state.crypto_items);
+        }
+
+        // Restore credit card items
+        if (state.credit_card_items) {
+            restoreCreditCardItems(state.credit_card_items);
+        }
+
+        // Restore loan items
+        if (state.loan_items) {
+            restoreLoanItems(state.loan_items);
         }
 
         // Reload pricing for the new date/currency and recalculate
@@ -1677,6 +1917,93 @@ const ZakatCalculator = (function() {
     }
 
     /**
+     * Restore credit card items from state
+     */
+    function restoreCreditCardItems(items) {
+        var container = document.getElementById('creditCardItems');
+        if (!container) return;
+
+        // Clear existing rows
+        container.innerHTML = '';
+
+        // Add rows for each item
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', amount: 0, currency: baseCurrency }];
+        itemsToRestore.forEach(function(item) {
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'credit_card';
+            row.innerHTML = [
+                '<div class="group-name">',
+                '    <input type="text" name="credit_card_name" placeholder="Name (e.g., Visa)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '</div>',
+                '<div class="group-middle">',
+                '    <input type="number" name="credit_card_amount" step="0.01" min="0" placeholder="Balance" class="input-amount" value="' + (item.amount || '') + '">',
+                '</div>',
+                '<div class="group-value">',
+                '    <div class="currency-autocomplete" data-name="credit_card_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '    <span class="base-value-pill" data-field="base_value">—</span>',
+                '</div>',
+                '<div class="group-remove">',
+                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
+                '</div>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+
+        // Initialize currency autocompletes for the new rows
+        initCurrencyAutocompletesWithValue();
+    }
+
+    /**
+     * Restore loan items from state
+     */
+    function restoreLoanItems(items) {
+        var container = document.getElementById('loanItems');
+        if (!container) return;
+
+        // Clear existing rows
+        container.innerHTML = '';
+
+        // Add rows for each item
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', payment_amount: 0, currency: baseCurrency, frequency: 'monthly' }];
+        itemsToRestore.forEach(function(item) {
+            var frequency = item.frequency || 'monthly';
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'loan';
+            row.innerHTML = [
+                '<div class="group-name">',
+                '    <input type="text" name="loan_name" placeholder="Name (e.g., Car Loan)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '</div>',
+                '<div class="group-middle">',
+                '    <input type="number" name="loan_payment_amount" step="0.01" min="0" placeholder="Payment" class="input-amount" value="' + (item.payment_amount || '') + '">',
+                '</div>',
+                '<div class="group-middle-secondary">',
+                '    <select name="loan_frequency" class="input-frequency">',
+                '        <option value="monthly"' + (frequency === 'monthly' ? ' selected' : '') + '>Monthly</option>',
+                '        <option value="weekly"' + (frequency === 'weekly' ? ' selected' : '') + '>Weekly</option>',
+                '        <option value="biweekly"' + (frequency === 'biweekly' ? ' selected' : '') + '>Bi-weekly</option>',
+                '        <option value="semi_monthly"' + (frequency === 'semi_monthly' ? ' selected' : '') + '>Semi-monthly</option>',
+                '        <option value="quarterly"' + (frequency === 'quarterly' ? ' selected' : '') + '>Quarterly</option>',
+                '        <option value="yearly"' + (frequency === 'yearly' ? ' selected' : '') + '>Yearly</option>',
+                '    </select>',
+                '    <div class="currency-autocomplete" data-name="loan_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '</div>',
+                '<div class="group-value">',
+                '    <span class="base-value-pill" data-field="base_value" title="Annualized amount in base currency">—</span>',
+                '</div>',
+                '<div class="group-remove">',
+                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
+                '</div>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+
+        // Initialize currency autocompletes for the new rows
+        initCurrencyAutocompletesWithValue();
+    }
+
+    /**
      * Initialize currency autocompletes with initial values from data attributes
      */
     function initCurrencyAutocompletesWithValue() {
@@ -1750,6 +2077,8 @@ const ZakatCalculator = (function() {
         addBankRow: addBankRow,
         addMetalRow: addMetalRow,
         addCryptoRow: addCryptoRow,
+        addCreditCardRow: addCreditCardRow,
+        addLoanRow: addLoanRow,
         removeRow: removeRow,
         getState: getState,
         setState: setState,
@@ -1768,4 +2097,6 @@ function addCashRow() { ZakatCalculator.addCashRow(); }
 function addBankRow() { ZakatCalculator.addBankRow(); }
 function addMetalRow() { ZakatCalculator.addMetalRow(); }
 function addCryptoRow() { ZakatCalculator.addCryptoRow(); }
+function addCreditCardRow() { ZakatCalculator.addCreditCardRow(); }
+function addLoanRow() { ZakatCalculator.addLoanRow(); }
 function removeRow(btn) { ZakatCalculator.removeRow(btn); }

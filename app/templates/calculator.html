@@ -190,6 +190,63 @@
                 </div>
                 <button type="button" class="btn-add" onclick="addCryptoRow()">+ Add Crypto Asset</button>
 
+                <!-- Debts (Deductible) -->
+                <div class="section-title section-title-debts">Debts (Deductible)</div>
+                <p class="section-helper">Deductible debts reduce your zakat-eligible total.</p>
+
+                <!-- Credit Cards subsection -->
+                <div class="subsection-title">Credit Cards</div>
+                <div id="creditCardItems">
+                    <div class="asset-row" data-type="credit_card">
+                        <div class="group-name">
+                            <input type="text" name="credit_card_name" placeholder="Name (e.g., Visa)" class="input-name">
+                        </div>
+                        <div class="group-middle">
+                            <input type="number" name="credit_card_amount" step="0.01" min="0" placeholder="Balance" class="input-amount">
+                        </div>
+                        <div class="group-value">
+                            <div class="currency-autocomplete" data-name="credit_card_currency"></div>
+                            <span class="base-value-pill" data-field="base_value">—</span>
+                        </div>
+                        <div class="group-remove">
+                            <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addCreditCardRow()">+ Add Credit Card</button>
+
+                <!-- Recurring Loans subsection -->
+                <div class="subsection-title">Recurring Loans</div>
+                <p class="section-helper">Enter your regular payment amount. Annual total will be calculated automatically.</p>
+                <div id="loanItems">
+                    <div class="asset-row" data-type="loan">
+                        <div class="group-name">
+                            <input type="text" name="loan_name" placeholder="Name (e.g., Car Loan)" class="input-name">
+                        </div>
+                        <div class="group-middle">
+                            <input type="number" name="loan_payment_amount" step="0.01" min="0" placeholder="Payment" class="input-amount">
+                        </div>
+                        <div class="group-middle-secondary">
+                            <select name="loan_frequency" class="input-frequency">
+                                <option value="monthly" selected>Monthly</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="biweekly">Bi-weekly</option>
+                                <option value="semi_monthly">Semi-monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                            <div class="currency-autocomplete" data-name="loan_currency"></div>
+                        </div>
+                        <div class="group-value">
+                            <span class="base-value-pill" data-field="base_value" title="Annualized amount in base currency">—</span>
+                        </div>
+                        <div class="group-remove">
+                            <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addLoanRow()">+ Add Loan</button>
+
                 <!-- Tools Section -->
                 <div class="tools-section">
                     <h3>Tools</h3>
@@ -235,9 +292,17 @@
 
                 <div class="result-section">
                     <h3>Zakat Calculation</h3>
-                    <div class="result-row grand-total">
-                        <span class="result-label">Grand Total</span>
+                    <div class="result-row">
+                        <span class="result-label">Assets Total</span>
                         <span class="result-value" id="grandTotal">$0.00</span>
+                    </div>
+                    <div class="result-row debts-row">
+                        <span class="result-label">Debts Total</span>
+                        <span class="result-value result-value-deduction" id="debtsTotal">−$0.00</span>
+                    </div>
+                    <div class="result-row grand-total">
+                        <span class="result-label">Net Total</span>
+                        <span class="result-value" id="netTotal">$0.00</span>
                     </div>
                     <div class="result-row">
                         <span class="result-label" id="nisabThresholdLabel">Nisab Threshold (85g Gold)</span>

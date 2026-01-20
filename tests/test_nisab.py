@@ -251,3 +251,99 @@ class TestNisabEndpointIntegration:
         assert 'status' in nisab
         assert 'difference' in nisab
         assert 'difference_text' in nisab
+
+
+class TestDebtEndpointIntegration:
+    """Integration tests for debt deductions in /api/v1/calculate endpoint."""
+
+    def test_endpoint_accepts_credit_cards(self, db_client):
+        """Endpoint accepts credit_card_items and deducts from net_total."""
+        response = db_client.post('/api/v1/calculate', json={
+            'base_currency': 'USD',
+            'calculation_date': '2025-01-01',
+            'gold_items': [],
+            'cash_items': [{'name': 'Cash', 'amount': 10000, 'currency': 'USD'}],
+            'bank_items': [],
+            'metal_items': [],
+            'crypto_items': [],
+            'credit_card_items': [{'name': 'Visa', 'amount': 2000, 'currency': 'USD'}]
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+
+        assert data['assets_total'] == pytest.approx(10000.0, rel=0.01)
+        assert data['debts_total'] == pytest.approx(2000.0, rel=0.01)
+        assert data['net_total'] == pytest.approx(8000.0, rel=0.01)
+
+    def test_endpoint_accepts_loans(self, db_client):
+        """Endpoint accepts loan_items with annualization."""
+        response = db_client.post('/api/v1/calculate', json={
+            'base_currency': 'USD',
+            'calculation_date': '2025-01-01',
+            'gold_items': [],
+            'cash_items': [{'name': 'Cash', 'amount': 20000, 'currency': 'USD'}],
+            'bank_items': [],
+            'metal_items': [],
+            'crypto_items': [],
+            'loan_items': [{'name': 'Car Loan', 'payment_amount': 500, 'currency': 'USD', 'frequency': 'monthly'}]
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+
+        # Loan: 500 * 12 = 6000 annual
+        assert data['subtotals']['debts']['loans']['total'] == pytest.approx(6000.0, rel=0.01)
+        assert data['debts_total'] == pytest.approx(6000.0, rel=0.01)
+        assert data['net_total'] == pytest.approx(14000.0, rel=0.01)
+
+    def test_endpoint_debts_affect_zakat(self, db_client):
+        """Debts reduce net_total and thus zakat due."""
+        response = db_client.post('/api/v1/calculate', json={
+            'base_currency': 'USD',
+            'calculation_date': '2025-01-01',
+            'gold_items': [],
+            'cash_items': [{'name': 'Cash', 'amount': 10000, 'currency': 'USD'}],
+            'bank_items': [],
+            'metal_items': [],
+            'crypto_items': [],
+            'credit_card_items': [{'name': 'Visa', 'amount': 2000, 'currency': 'USD'}]
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+
+        # Net total: 8000, which is above nisab (5525)
+        # Zakat: 8000 * 0.025 = 200
+        assert data['above_nisab'] is True
+        assert data['zakat_due'] == pytest.approx(200.0, rel=0.01)
+
+    def test_endpoint_validates_loan_frequency(self, db_client):
+        """Invalid loan frequency returns error."""
+        response = db_client.post('/api/v1/calculate', json={
+            'base_currency': 'USD',
+            'calculation_date': '2025-01-01',
+            'gold_items': [],
+            'cash_items': [],
+            'bank_items': [],
+            'metal_items': [],
+            'crypto_items': [],
+            'loan_items': [{'name': 'Loan', 'payment_amount': 500, 'currency': 'USD', 'frequency': 'invalid'}]
+        })
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'Invalid loan frequency' in data['error']
+
+    def test_endpoint_backward_compatible_no_debts(self, db_client):
+        """Endpoint works without debt items (backward compatibility)."""
+        response = db_client.post('/api/v1/calculate', json={
+            'base_currency': 'USD',
+            'calculation_date': '2025-01-01',
+            'gold_items': [],
+            'cash_items': [{'name': 'Cash', 'amount': 10000, 'currency': 'USD'}],
+            'bank_items': [],
+            'metal_items': [],
+            'crypto_items': []
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+
+        assert data['debts_total'] == 0.0
+        assert data['net_total'] == data['assets_total']

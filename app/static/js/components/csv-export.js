@@ -86,6 +86,29 @@ const CsvExport = (function() {
         const cryptoAssets = collectCryptoAssets(baseCurrency);
         cryptoAssets.forEach(asset => rows.push(asset));
 
+        // Debts section header
+        rows.push([]);
+        rows.push(['=== DEBTS (DEDUCTIBLE) ===']);
+        rows.push([]);
+        rows.push([
+            'Category',
+            'Item Name',
+            'Input Currency',
+            'Input Amount',
+            'Frequency',
+            'Annualized Amount',
+            'Value (Base)',
+            'Notes'
+        ]);
+
+        // Credit Cards
+        const creditCardDebts = collectCreditCardDebts(baseCurrency);
+        creditCardDebts.forEach(debt => rows.push(debt));
+
+        // Loans
+        const loanDebts = collectLoanDebts(baseCurrency);
+        loanDebts.forEach(debt => rows.push(debt));
+
         // Summary section
         rows.push([]);
         rows.push(['=== SUMMARY ===']);
@@ -97,9 +120,16 @@ const CsvExport = (function() {
         rows.push(['Bank Accounts', totals.bank]);
         rows.push(['Cryptocurrency', totals.crypto]);
         rows.push([]);
-        rows.push(['Grand Total', totals.grandTotal]);
+        rows.push(['Assets Total', totals.grandTotal]);
+        rows.push(['Credit Cards', totals.creditCards || '$0.00']);
+        rows.push(['Loans (Annualized)', totals.loans || '$0.00']);
+        rows.push(['Debts Total', totals.debtsTotal || '$0.00']);
+        rows.push(['Net Total', totals.netTotal || totals.grandTotal]);
+        rows.push([]);
         rows.push(['Nisab Threshold', nisabInfo.threshold]);
-        rows.push(['Above Nisab', totals.grandTotal >= parseFloat(nisabInfo.threshold.replace(/[^0-9.-]/g, '')) ? 'Yes' : 'No']);
+        const netTotalNum = parseFloat((totals.netTotal || totals.grandTotal).replace(/[^0-9.-]/g, '')) || 0;
+        const nisabNum = parseFloat(nisabInfo.threshold.replace(/[^0-9.-]/g, '')) || 0;
+        rows.push(['Above Nisab', netTotalNum >= nisabNum ? 'Yes' : 'No']);
         rows.push(['Zakat Due (2.5%)', totals.zakatDue]);
 
         return rows.map(row => row.map(escapeCsvField).join(',')).join('\n');
@@ -220,6 +250,8 @@ const CsvExport = (function() {
             bank: getElementText('bankTotal'),
             crypto: getElementText('cryptoTotal'),
             grandTotal: getElementText('grandTotal'),
+            debtsTotal: getElementText('debtsTotal'),
+            netTotal: getElementText('netTotal'),
             zakatDue: getElementText('zakatDue')
         };
     }
@@ -428,6 +460,99 @@ const CsvExport = (function() {
                     formatNumber(price),
                     formatNumber(value),
                     ''
+                ]);
+            }
+        });
+
+        return rows;
+    }
+
+    /**
+     * Loan frequency multipliers (must match calculator.js)
+     */
+    const LOAN_FREQUENCY_MULTIPLIERS = {
+        weekly: 52,
+        biweekly: 26,
+        semi_monthly: 24,
+        monthly: 12,
+        quarterly: 4,
+        yearly: 1
+    };
+
+    /**
+     * Collect credit card debts from the form
+     * @param {string} baseCurrency - Base currency code
+     * @returns {Array} Array of debt rows
+     */
+    function collectCreditCardDebts(baseCurrency) {
+        const rows = [];
+        const creditCardItems = document.querySelectorAll('#creditCardItems .asset-row');
+
+        creditCardItems.forEach(row => {
+            const name = row.querySelector('[name="credit_card_name"]')?.value || '';
+            const amount = row.querySelector('[name="credit_card_amount"]')?.value || '';
+            const currencyContainer = row.querySelector('.currency-autocomplete');
+            let currency = baseCurrency;
+            if (currencyContainer && currencyContainer._autocomplete) {
+                currency = currencyContainer._autocomplete.getValue() || baseCurrency;
+            }
+
+            if (amount && parseFloat(amount) > 0) {
+                const rate = getCurrencyRate(currency, baseCurrency);
+                const value = parseFloat(amount) * rate;
+
+                rows.push([
+                    'Credit Card',
+                    name || 'Credit Card',
+                    currency,
+                    amount,
+                    'N/A',
+                    amount,
+                    formatNumber(value),
+                    currency === baseCurrency ? 'Base currency' : ''
+                ]);
+            }
+        });
+
+        return rows;
+    }
+
+    /**
+     * Collect loan debts from the form
+     * @param {string} baseCurrency - Base currency code
+     * @returns {Array} Array of debt rows
+     */
+    function collectLoanDebts(baseCurrency) {
+        const rows = [];
+        const loanItems = document.querySelectorAll('#loanItems .asset-row');
+
+        loanItems.forEach(row => {
+            const name = row.querySelector('[name="loan_name"]')?.value || '';
+            const paymentAmount = row.querySelector('[name="loan_payment_amount"]')?.value || '';
+            const frequency = row.querySelector('[name="loan_frequency"]')?.value || 'monthly';
+            const currencyContainer = row.querySelector('.currency-autocomplete');
+            let currency = baseCurrency;
+            if (currencyContainer && currencyContainer._autocomplete) {
+                currency = currencyContainer._autocomplete.getValue() || baseCurrency;
+            }
+
+            if (paymentAmount && parseFloat(paymentAmount) > 0) {
+                const multiplier = LOAN_FREQUENCY_MULTIPLIERS[frequency] || 12;
+                const annualizedAmount = parseFloat(paymentAmount) * multiplier;
+                const rate = getCurrencyRate(currency, baseCurrency);
+                const value = annualizedAmount * rate;
+
+                const frequencyLabel = frequency.replace('_', '-');
+
+                rows.push([
+                    'Recurring Loan',
+                    name || 'Loan',
+                    currency,
+                    paymentAmount,
+                    frequencyLabel + ' (x' + multiplier + ')',
+                    formatNumber(annualizedAmount),
+                    formatNumber(value),
+                    currency === baseCurrency ? 'Base currency' : ''
                 ]);
             }
         });

@@ -410,3 +410,251 @@ class TestCalculateZakatV2:
         assert result['grand_total'] == pytest.approx(100.0, rel=0.01)
         assert result['above_nisab'] is False
         assert result['zakat_due'] == 0.0
+
+
+class TestCreditCardSubtotal:
+    """Tests for calculate_credit_card_subtotal function."""
+
+    def test_single_credit_card(self):
+        """Single credit card calculation."""
+        from app.services.calc import calculate_credit_card_subtotal
+
+        items = [{'name': 'Visa', 'amount': 2000, 'currency': 'USD'}]
+        fx_rates = {'USD': 1.0, 'CAD': 0.75}
+
+        result = calculate_credit_card_subtotal(items, 'USD', fx_rates)
+
+        assert len(result['items']) == 1
+        assert result['items'][0]['converted_amount'] == 2000.0
+        assert result['total'] == pytest.approx(2000.0, rel=0.01)
+
+    def test_credit_card_currency_conversion(self):
+        """Credit card amount converted to base currency."""
+        from app.services.calc import calculate_credit_card_subtotal
+
+        items = [{'name': 'Mastercard', 'amount': 1000, 'currency': 'CAD'}]
+        fx_rates = {'USD': 1.0, 'CAD': 0.75}  # 1 CAD = 0.75 USD
+
+        result = calculate_credit_card_subtotal(items, 'USD', fx_rates)
+
+        # 1000 CAD * (1/0.75) = 1333.33 USD
+        assert result['total'] == pytest.approx(1333.33, rel=0.01)
+
+    def test_multiple_credit_cards(self):
+        """Multiple credit cards sum correctly."""
+        from app.services.calc import calculate_credit_card_subtotal
+
+        items = [
+            {'name': 'Visa', 'amount': 1000, 'currency': 'USD'},
+            {'name': 'Amex', 'amount': 500, 'currency': 'USD'},
+        ]
+        fx_rates = {'USD': 1.0}
+
+        result = calculate_credit_card_subtotal(items, 'USD', fx_rates)
+
+        assert result['total'] == pytest.approx(1500.0, rel=0.01)
+
+
+class TestLoanSubtotal:
+    """Tests for calculate_loan_subtotal function."""
+
+    def test_monthly_loan_annualization(self):
+        """Monthly loan payment annualized correctly."""
+        from app.services.calc import calculate_loan_subtotal
+
+        items = [{'name': 'Car Loan', 'payment_amount': 500, 'currency': 'USD', 'frequency': 'monthly'}]
+        fx_rates = {'USD': 1.0}
+
+        result = calculate_loan_subtotal(items, 'USD', fx_rates)
+
+        # 500 * 12 = 6000
+        assert len(result['items']) == 1
+        assert result['items'][0]['multiplier'] == 12
+        assert result['items'][0]['annualized_amount'] == 6000.0
+        assert result['total'] == pytest.approx(6000.0, rel=0.01)
+
+    def test_biweekly_loan_annualization(self):
+        """Bi-weekly loan payment annualized correctly."""
+        from app.services.calc import calculate_loan_subtotal
+
+        items = [{'name': 'Mortgage', 'payment_amount': 1000, 'currency': 'USD', 'frequency': 'biweekly'}]
+        fx_rates = {'USD': 1.0}
+
+        result = calculate_loan_subtotal(items, 'USD', fx_rates)
+
+        # 1000 * 26 = 26000
+        assert result['items'][0]['multiplier'] == 26
+        assert result['items'][0]['annualized_amount'] == 26000.0
+        assert result['total'] == pytest.approx(26000.0, rel=0.01)
+
+    def test_weekly_loan_annualization(self):
+        """Weekly loan payment annualized correctly."""
+        from app.services.calc import calculate_loan_subtotal
+
+        items = [{'name': 'Personal Loan', 'payment_amount': 100, 'currency': 'USD', 'frequency': 'weekly'}]
+        fx_rates = {'USD': 1.0}
+
+        result = calculate_loan_subtotal(items, 'USD', fx_rates)
+
+        # 100 * 52 = 5200
+        assert result['items'][0]['multiplier'] == 52
+        assert result['total'] == pytest.approx(5200.0, rel=0.01)
+
+    def test_quarterly_loan_annualization(self):
+        """Quarterly loan payment annualized correctly."""
+        from app.services.calc import calculate_loan_subtotal
+
+        items = [{'name': 'Quarterly Payment', 'payment_amount': 3000, 'currency': 'USD', 'frequency': 'quarterly'}]
+        fx_rates = {'USD': 1.0}
+
+        result = calculate_loan_subtotal(items, 'USD', fx_rates)
+
+        # 3000 * 4 = 12000
+        assert result['items'][0]['multiplier'] == 4
+        assert result['total'] == pytest.approx(12000.0, rel=0.01)
+
+    def test_loan_currency_conversion(self):
+        """Loan amount converted to base currency after annualization."""
+        from app.services.calc import calculate_loan_subtotal
+
+        items = [{'name': 'CAD Loan', 'payment_amount': 500, 'currency': 'CAD', 'frequency': 'monthly'}]
+        fx_rates = {'USD': 1.0, 'CAD': 0.75}
+
+        result = calculate_loan_subtotal(items, 'USD', fx_rates)
+
+        # 500 CAD * 12 = 6000 CAD annual
+        # 6000 CAD * (1/0.75) = 8000 USD
+        assert result['items'][0]['annualized_amount'] == 6000.0
+        assert result['total'] == pytest.approx(8000.0, rel=0.01)
+
+
+class TestZakatV2WithDebts:
+    """Tests for calculate_zakat_v2 with debt deductions."""
+
+    def _get_base_pricing(self):
+        """Return base pricing for tests."""
+        return {
+            'fx_rates': {'USD': 1.0},
+            'metals': {
+                'gold': {'price_per_gram': 65.0},
+                'silver': {'price_per_gram': 0.85},
+            },
+            'crypto': {},
+        }
+
+    def test_assets_minus_debts_net_total(self):
+        """Net total is assets minus debts."""
+        from app.services.calc import calculate_zakat_v2
+
+        pricing = self._get_base_pricing()
+        cash = [{'name': 'Cash', 'amount': 10000, 'currency': 'USD'}]
+        credit_cards = [{'name': 'Visa', 'amount': 2000, 'currency': 'USD'}]
+
+        result = calculate_zakat_v2([], cash, [], [], [], 'USD', pricing,
+                                    credit_card_items=credit_cards)
+
+        assert result['assets_total'] == pytest.approx(10000.0, rel=0.01)
+        assert result['debts_total'] == pytest.approx(2000.0, rel=0.01)
+        assert result['net_total'] == pytest.approx(8000.0, rel=0.01)
+
+    def test_zakat_calculated_on_net_total(self):
+        """Zakat is calculated on net_total, not assets_total."""
+        from app.services.calc import calculate_zakat_v2, ZAKAT_RATE
+
+        pricing = self._get_base_pricing()
+        # Assets: 10000, Debts: 2000, Net: 8000
+        # Nisab (gold): 85 * 65 = 5525
+        cash = [{'name': 'Cash', 'amount': 10000, 'currency': 'USD'}]
+        credit_cards = [{'name': 'Visa', 'amount': 2000, 'currency': 'USD'}]
+
+        result = calculate_zakat_v2([], cash, [], [], [], 'USD', pricing,
+                                    credit_card_items=credit_cards)
+
+        assert result['above_nisab'] is True
+        # Zakat on 8000 (net), not 10000 (assets)
+        assert result['zakat_due'] == pytest.approx(8000 * ZAKAT_RATE, rel=0.01)
+
+    def test_debts_bring_below_nisab(self):
+        """Debts can bring net_total below nisab threshold."""
+        from app.services.calc import calculate_zakat_v2
+
+        pricing = self._get_base_pricing()
+        # Assets: 6000, Debts: 2000, Net: 4000
+        # Nisab (gold): 85 * 65 = 5525
+        # Net (4000) < Nisab (5525), so no zakat due
+        cash = [{'name': 'Cash', 'amount': 6000, 'currency': 'USD'}]
+        credit_cards = [{'name': 'Visa', 'amount': 2000, 'currency': 'USD'}]
+
+        result = calculate_zakat_v2([], cash, [], [], [], 'USD', pricing,
+                                    credit_card_items=credit_cards)
+
+        assert result['net_total'] == pytest.approx(4000.0, rel=0.01)
+        assert result['above_nisab'] is False
+        assert result['zakat_due'] == 0.0
+
+    def test_net_total_floored_at_zero(self):
+        """Net total cannot go negative (floored at 0)."""
+        from app.services.calc import calculate_zakat_v2
+
+        pricing = self._get_base_pricing()
+        # Assets: 1000, Debts: 5000, Net should be 0 (not -4000)
+        cash = [{'name': 'Cash', 'amount': 1000, 'currency': 'USD'}]
+        credit_cards = [{'name': 'Visa', 'amount': 5000, 'currency': 'USD'}]
+
+        result = calculate_zakat_v2([], cash, [], [], [], 'USD', pricing,
+                                    credit_card_items=credit_cards)
+
+        assert result['assets_total'] == pytest.approx(1000.0, rel=0.01)
+        assert result['debts_total'] == pytest.approx(5000.0, rel=0.01)
+        assert result['net_total'] == 0.0  # Floored at 0
+        assert result['zakat_due'] == 0.0
+
+    def test_loan_annualization_in_debts(self):
+        """Loans are annualized in debt calculation."""
+        from app.services.calc import calculate_zakat_v2
+
+        pricing = self._get_base_pricing()
+        cash = [{'name': 'Cash', 'amount': 20000, 'currency': 'USD'}]
+        loans = [{'name': 'Car Loan', 'payment_amount': 500, 'currency': 'USD', 'frequency': 'monthly'}]
+
+        result = calculate_zakat_v2([], cash, [], [], [], 'USD', pricing,
+                                    loan_items=loans)
+
+        # Loan: 500 * 12 = 6000 annualized
+        assert result['subtotals']['debts']['loans']['total'] == pytest.approx(6000.0, rel=0.01)
+        assert result['debts_total'] == pytest.approx(6000.0, rel=0.01)
+        assert result['net_total'] == pytest.approx(14000.0, rel=0.01)
+
+    def test_combined_credit_cards_and_loans(self):
+        """Both credit cards and loans deducted."""
+        from app.services.calc import calculate_zakat_v2
+
+        pricing = self._get_base_pricing()
+        cash = [{'name': 'Cash', 'amount': 30000, 'currency': 'USD'}]
+        credit_cards = [{'name': 'Visa', 'amount': 3000, 'currency': 'USD'}]
+        loans = [{'name': 'Car Loan', 'payment_amount': 500, 'currency': 'USD', 'frequency': 'monthly'}]
+
+        result = calculate_zakat_v2([], cash, [], [], [], 'USD', pricing,
+                                    credit_card_items=credit_cards, loan_items=loans)
+
+        # Credit cards: 3000
+        # Loans: 500 * 12 = 6000
+        # Total debts: 9000
+        # Net: 30000 - 9000 = 21000
+        assert result['subtotals']['debts']['credit_cards']['total'] == pytest.approx(3000.0, rel=0.01)
+        assert result['subtotals']['debts']['loans']['total'] == pytest.approx(6000.0, rel=0.01)
+        assert result['debts_total'] == pytest.approx(9000.0, rel=0.01)
+        assert result['net_total'] == pytest.approx(21000.0, rel=0.01)
+
+    def test_backward_compatibility_no_debts(self):
+        """No debt items defaults to empty lists (backward compatibility)."""
+        from app.services.calc import calculate_zakat_v2
+
+        pricing = self._get_base_pricing()
+        cash = [{'name': 'Cash', 'amount': 10000, 'currency': 'USD'}]
+
+        result = calculate_zakat_v2([], cash, [], [], [], 'USD', pricing)
+
+        assert result['debts_total'] == 0.0
+        assert result['net_total'] == result['assets_total']
+        assert result['grand_total'] == result['assets_total']

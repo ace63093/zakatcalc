@@ -156,6 +156,89 @@ def calculate_crypto_subtotal(crypto_items: list, crypto_prices: dict, base_curr
     return {'items': items_out, 'total': round(total, 2)}
 
 
+# Loan frequency multipliers for annualization
+LOAN_FREQUENCY_MULTIPLIERS = {
+    'weekly': 52,
+    'biweekly': 26,
+    'semi_monthly': 24,
+    'monthly': 12,
+    'quarterly': 4,
+    'yearly': 1,
+}
+
+
+def calculate_credit_card_subtotal(credit_card_items: list, master_currency: str, fx_rates: dict) -> dict:
+    """Calculate credit card debt subtotal.
+
+    Args:
+        credit_card_items: List of dicts with name, amount, currency
+        master_currency: Target currency for conversion
+        fx_rates: FX rate dictionary
+
+    Returns:
+        Dict with items list and total
+    """
+    items_out = []
+    total = 0.0
+
+    for item in credit_card_items:
+        amount = item.get('amount', 0)
+        currency = item.get('currency', master_currency)
+        converted, rate = convert_to_master(amount, currency, master_currency, fx_rates)
+
+        items_out.append({
+            'name': item.get('name', 'Credit Card'),
+            'original_currency': currency,
+            'original_amount': amount,
+            'converted_amount': round(converted, 2),
+            'fx_rate': round(rate, 6)
+        })
+        total += converted
+
+    return {'items': items_out, 'total': round(total, 2)}
+
+
+def calculate_loan_subtotal(loan_items: list, master_currency: str, fx_rates: dict) -> dict:
+    """Calculate recurring loan debt subtotal with annualization.
+
+    Args:
+        loan_items: List of dicts with name, payment_amount, currency, frequency
+        master_currency: Target currency for conversion
+        fx_rates: FX rate dictionary
+
+    Returns:
+        Dict with items list, total (annualized), and per-item annualized amounts
+    """
+    items_out = []
+    total = 0.0
+
+    for item in loan_items:
+        payment_amount = item.get('payment_amount', 0)
+        currency = item.get('currency', master_currency)
+        frequency = item.get('frequency', 'monthly')
+
+        # Get multiplier for annualization (default to monthly if unknown)
+        multiplier = LOAN_FREQUENCY_MULTIPLIERS.get(frequency, 12)
+        annualized_amount = payment_amount * multiplier
+
+        # Convert annualized amount to base currency
+        converted, rate = convert_to_master(annualized_amount, currency, master_currency, fx_rates)
+
+        items_out.append({
+            'name': item.get('name', 'Loan'),
+            'original_currency': currency,
+            'payment_amount': payment_amount,
+            'frequency': frequency,
+            'multiplier': multiplier,
+            'annualized_amount': round(annualized_amount, 2),
+            'converted_amount': round(converted, 2),
+            'fx_rate': round(rate, 6)
+        })
+        total += converted
+
+    return {'items': items_out, 'total': round(total, 2)}
+
+
 def calculate_zakat(gold_items: list, cash_items: list, bank_items: list, master_currency: str, pricing: dict) -> dict:
     """Legacy calculate_zakat for backward compatibility."""
     fx = pricing.get('fx_rates', {})
@@ -188,9 +271,11 @@ def calculate_zakat_v2(
     crypto_items: list,
     base_currency: str,
     pricing: dict,
-    nisab_basis: str = 'gold'
+    nisab_basis: str = 'gold',
+    credit_card_items: list = None,
+    loan_items: list = None
 ) -> dict:
-    """Calculate zakat with all asset categories.
+    """Calculate zakat with all asset categories and deductible debts.
 
     Args:
         gold_items: List of gold items with name, weight_grams, purity_karat
@@ -201,10 +286,17 @@ def calculate_zakat_v2(
         base_currency: Target currency for all calculations
         pricing: Pricing snapshot with fx_rates, metals, crypto all in base_currency
         nisab_basis: "gold" or "silver" - which metal to use for nisab threshold
+        credit_card_items: List of credit card debts with name, amount, currency
+        loan_items: List of recurring loans with name, payment_amount, currency, frequency
 
     Returns:
-        Complete calculation result with all subtotals and zakat due
+        Complete calculation result with all subtotals, debts, net_total, and zakat due
     """
+    # Default empty lists for optional debt parameters
+    if credit_card_items is None:
+        credit_card_items = []
+    if loan_items is None:
+        loan_items = []
     fx_rates = pricing.get('fx_rates', {})
 
     # Validate nisab_basis
@@ -231,21 +323,34 @@ def calculate_zakat_v2(
     gold_price = metal_prices.get('gold', 0) or FALLBACK_GOLD_PRICE
     silver_price = metal_prices.get('silver', 0) or FALLBACK_SILVER_PRICE
 
-    # Calculate subtotals
+    # Calculate asset subtotals
     gold_sub = calculate_gold_subtotal(gold_items, gold_price, base_currency, fx_rates)
     cash_sub = calculate_cash_subtotal(cash_items, base_currency, fx_rates)
     bank_sub = calculate_bank_subtotal(bank_items, base_currency, fx_rates)
     metal_sub = calculate_metal_subtotal(metal_items, metal_prices, base_currency)
     crypto_sub = calculate_crypto_subtotal(crypto_items, crypto_prices, base_currency)
 
-    # Grand total
-    grand = (
+    # Calculate debt subtotals
+    credit_card_sub = calculate_credit_card_subtotal(credit_card_items, base_currency, fx_rates)
+    loan_sub = calculate_loan_subtotal(loan_items, base_currency, fx_rates)
+
+    # Assets total (grand total of all assets)
+    assets_total = (
         gold_sub['total'] +
         cash_sub['total'] +
         bank_sub['total'] +
         metal_sub['total'] +
         crypto_sub['total']
     )
+
+    # Debts total
+    debts_total = credit_card_sub['total'] + loan_sub['total']
+
+    # Net total (assets minus debts, floored at 0)
+    net_total = max(0, assets_total - debts_total)
+
+    # For backward compatibility, grand_total remains the assets total
+    grand = assets_total
 
     # Calculate nisab thresholds
     nisab_gold_value = NISAB_GOLD_GRAMS * gold_price
@@ -258,8 +363,9 @@ def calculate_zakat_v2(
         nisab_threshold = nisab_gold_value
 
     # Calculate ratio (clamped 0-1 for display purposes)
+    # Use net_total (after debts) for nisab comparison
     if nisab_threshold > 0:
-        raw_ratio = grand / nisab_threshold
+        raw_ratio = net_total / nisab_threshold
         display_ratio = min(max(raw_ratio, 0), 1)
     else:
         raw_ratio = 0
@@ -273,15 +379,17 @@ def calculate_zakat_v2(
     else:
         status = 'above'
 
-    # Calculate difference and text
-    difference = abs(grand - nisab_threshold)
-    if grand >= nisab_threshold:
+    # Calculate difference and text (based on net_total)
+    difference = abs(net_total - nisab_threshold)
+    if net_total >= nisab_threshold:
         difference_text = f"{round(difference, 2)} above nisab"
     else:
         difference_text = f"{round(difference, 2)} more to reach nisab"
 
-    above = grand >= nisab_threshold
-    zakat = round(grand * ZAKAT_RATE, 2) if above else 0.0
+    # Nisab check uses net_total (after deducting debts)
+    above = net_total >= nisab_threshold
+    # Zakat is calculated on net_total (assets minus debts)
+    zakat = round(net_total * ZAKAT_RATE, 2) if above else 0.0
 
     return {
         'base_currency': base_currency,
@@ -291,8 +399,15 @@ def calculate_zakat_v2(
             'bank': bank_sub,
             'metals': metal_sub,
             'crypto': crypto_sub,
+            'debts': {
+                'credit_cards': credit_card_sub,
+                'loans': loan_sub,
+            },
         },
-        'grand_total': round(grand, 2),
+        'assets_total': round(assets_total, 2),
+        'debts_total': round(debts_total, 2),
+        'net_total': round(net_total, 2),
+        'grand_total': round(grand, 2),  # Kept for backward compatibility (same as assets_total)
         'nisab': {
             'basis_used': nisab_basis,
             'gold_grams': NISAB_GOLD_GRAMS,

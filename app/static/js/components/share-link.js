@@ -441,6 +441,18 @@ var ShareLink = (function() {
             items.push('<div class="share-preview-item"><strong>Assets:</strong> None</div>');
         }
 
+        // Count debts
+        var creditCardCount = (state.credit_card_items || []).filter(function(i) { return i.amount > 0; }).length;
+        var loanCount = (state.loan_items || []).filter(function(i) { return i.payment_amount > 0; }).length;
+
+        var debtSummary = [];
+        if (creditCardCount > 0) debtSummary.push(creditCardCount + ' credit card' + (creditCardCount > 1 ? 's' : ''));
+        if (loanCount > 0) debtSummary.push(loanCount + ' loan' + (loanCount > 1 ? 's' : ''));
+
+        if (debtSummary.length > 0) {
+            items.push('<div class="share-preview-item"><strong>Debts:</strong> ' + debtSummary.join(', ') + '</div>');
+        }
+
         return items.join('');
     }
 

@@ -200,7 +200,9 @@ def calculate():
         "cash_items": [{"name": "Wallet", "amount": 500, "currency": "CAD"}],
         "bank_items": [{"name": "Savings", "amount": 10000, "currency": "USD"}],
         "metal_items": [{"name": "Silver Coins", "metal": "silver", "weight_grams": 500}],
-        "crypto_items": [{"name": "BTC Holdings", "symbol": "BTC", "amount": 0.5}]
+        "crypto_items": [{"name": "BTC Holdings", "symbol": "BTC", "amount": 0.5}],
+        "credit_card_items": [{"name": "Visa", "amount": 2000, "currency": "CAD"}],
+        "loan_items": [{"name": "Car Loan", "payment_amount": 500, "currency": "CAD", "frequency": "monthly"}]
     }
 
     Legacy format (still supported):
@@ -286,6 +288,8 @@ def _calculate_v2(body: dict):
     bank_items = body.get('bank_items', body.get('bank', []))
     metal_items = body.get('metal_items', [])
     crypto_items = body.get('crypto_items', [])
+    credit_card_items = body.get('credit_card_items', [])
+    loan_items = body.get('loan_items', [])
 
     # Validate gold items
     for item in gold_items:
@@ -318,6 +322,24 @@ def _calculate_v2(body: dict):
         if 'symbol' not in item or 'amount' not in item:
             return jsonify({'error': 'Crypto items require symbol and amount'}), 400
         # Don't strictly validate crypto symbols - allow unknown ones with 0 price
+
+    # Validate credit card items
+    for item in credit_card_items:
+        if 'amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Credit card items require amount and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+
+    # Validate loan items
+    valid_frequencies = ['weekly', 'biweekly', 'semi_monthly', 'monthly', 'quarterly', 'yearly']
+    for item in loan_items:
+        if 'payment_amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Loan items require payment_amount and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+        frequency = item.get('frequency', 'monthly')
+        if frequency not in valid_frequencies:
+            return jsonify({'error': f"Invalid loan frequency: {frequency}. Must be one of: {', '.join(valid_frequencies)}"}), 400
 
     # Get pricing snapshot for the calculation date
     coverage = get_coverage_flags(calculation_date)
@@ -358,6 +380,8 @@ def _calculate_v2(body: dict):
         base_currency=base_currency,
         pricing=pricing,
         nisab_basis=nisab_basis,
+        credit_card_items=credit_card_items,
+        loan_items=loan_items,
     )
 
     # Add calculation metadata
