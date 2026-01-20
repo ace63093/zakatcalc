@@ -68,14 +68,50 @@ Historical pricing uses tiered snapshot granularity (`app/services/cadence.py`):
 ### Calculation Engine
 `app/services/calc.py` contains two calculation functions:
 - `calculate_zakat()`: Legacy v1 format (gold, cash, bank only)
-- `calculate_zakat_v2()`: Full format (adds metals, crypto, nisab basis selection)
+- `calculate_zakat_v2()`: Full format (adds metals, crypto, nisab basis selection, deductible debts)
 
 Both use constants: `ZAKAT_RATE = 0.025`, `NISAB_GOLD_GRAMS = 85`, `NISAB_SILVER_GRAMS = 595`
 
+#### Deductible Debts
+Debts reduce the zakat-eligible total. The calculation uses:
+- `assets_total` = sum of all assets (gold + metals + cash + bank + crypto)
+- `debts_total` = credit card balances + annualized loan payments
+- `net_total` = max(0, assets_total - debts_total)
+- Nisab check and zakat calculation use `net_total`
+
+**Credit Cards**: Full balance deducted (converted to base currency)
+
+**Recurring Loans**: Payment amount × frequency multiplier, then converted to base currency:
+| Frequency | Multiplier |
+|-----------|------------|
+| weekly | 52 |
+| biweekly | 26 |
+| semi_monthly | 24 |
+| monthly | 12 |
+| quarterly | 4 |
+| yearly | 1 |
+
 ### Key API Endpoints
 - `GET /api/v1/pricing?date=YYYY-MM-DD&base=CAD` - Pricing snapshot with FX, metals, crypto
-- `POST /api/v1/calculate` - Calculate zakat from asset list
+- `POST /api/v1/calculate` - Calculate zakat from asset list (supports v2 with debts)
 - `GET /api/v1/currencies` - Currency list (CAD first, then high-volume, then alphabetical)
+
+#### POST /api/v1/calculate (v2 format)
+```json
+{
+  "base_currency": "CAD",
+  "calculation_date": "2026-01-15",
+  "nisab_basis": "gold",
+  "gold_items": [{"name": "Ring", "weight_grams": 10, "purity_karat": 22}],
+  "cash_items": [{"name": "Wallet", "amount": 500, "currency": "CAD"}],
+  "bank_items": [{"name": "Savings", "amount": 10000, "currency": "USD"}],
+  "metal_items": [{"name": "Silver Coins", "metal": "silver", "weight_grams": 500}],
+  "crypto_items": [{"name": "BTC", "symbol": "BTC", "amount": 0.5}],
+  "credit_card_items": [{"name": "Visa", "amount": 2000, "currency": "CAD"}],
+  "loan_items": [{"name": "Car Loan", "payment_amount": 500, "currency": "CAD", "frequency": "monthly"}]
+}
+```
+Response includes `assets_total`, `debts_total`, `net_total`, and `subtotals.debts`.
 
 ### Provider Selection Order
 - FX: OpenExchangeRates (if key) → ExchangeRateAPI → Fallback
@@ -128,6 +164,13 @@ Per-row weight unit selection for gold/metal assets. Supported units in `WEIGHT_
 - `aana` - 0.729g (1/16 of tola, South Asian)
 
 Weight is always stored/transmitted in grams; UI shows a "grams pill" with converted value.
+
+#### Debt Section
+The "Debts (Deductible)" section appears below Cryptocurrency and above Tools:
+- **Credit Cards subsection**: Same structure as bank accounts (name, balance, currency)
+- **Recurring Loans subsection**: Name, payment amount, frequency dropdown, currency
+- Results panel shows: Assets Total, Debts Total (with minus sign), Net Total
+- Share link and CSV export include debt items
 
 ### CSS Structure
 - `app/static/css/autocomplete.css`: Currency/crypto autocomplete styling, compact mode
@@ -191,12 +234,16 @@ git checkout dev
 ## Key Patterns
 
 ### Asset Row Structure
-Each asset type (gold, metal, cash, bank, crypto) uses `.asset-row` containers with:
+Each asset type (gold, metal, cash, bank, crypto, credit_card, loan) uses `.asset-row` containers with:
 - Name input (`.input-name`)
-- Type-specific inputs (weight, amount, karat, etc.)
+- Type-specific inputs (weight, amount, karat, frequency, etc.)
 - Currency/crypto autocomplete (`.currency-autocomplete`, `.crypto-autocomplete`)
 - Base value pill (`.base-value-pill`) showing converted value
 - Remove button (`.btn-remove`)
+
+#### Debt Rows
+- **Credit Card** (`data-type="credit_card"`): Name, Balance, Currency → base value pill
+- **Loan** (`data-type="loan"`): Name, Payment Amount, Frequency dropdown, Currency → base value pill (shows annualized amount)
 
 ### Live Calculation
 `recalculate()` in calculator.js triggers on any input change, fetches pricing from `/api/v1/pricing`, and updates all value pills and totals in real-time.
