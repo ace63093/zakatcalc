@@ -24,6 +24,11 @@ http://localhost:8080
 # Run tests (all tests must pass before committing)
 docker compose run --rm web pytest
 
+# Run Selenium live tests (requires Chrome locally)
+pip install -r requirements-selenium.txt
+pytest tests/test_selenium_live.py -v
+HEADLESS=0 pytest tests/test_selenium_live.py -v  # See the browser
+
 # Run specific test file
 docker compose run --rm web pytest tests/test_main.py -v
 

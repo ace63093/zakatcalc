@@ -1,0 +1,5 @@
+# Selenium testing dependencies
+# Install with: pip install -r requirements-selenium.txt
+
+selenium>=4.15.0,<5.0.0
+webdriver-manager>=4.0.0,<5.0.0
