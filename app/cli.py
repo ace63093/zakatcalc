@@ -382,6 +382,89 @@ def backfill_r2_command(dry_run, monthly_limit):
         click.echo(f'\nBackfill complete: {uploaded_fx} FX, {uploaded_metals} metals, {uploaded_crypto} crypto uploaded')
 
 
+@click.command('sync-prices')
+@click.option('--start', 'start_date', default=None, help='Start date (YYYY-MM-DD). Defaults to today.')
+@click.option('--end', 'end_date', default=None, help='End date (YYYY-MM-DD). Defaults to start date.')
+@click.option('--types', default=None, help='Comma-separated types to sync: fx,metals,crypto. Defaults to all.')
+@with_appcontext
+def sync_prices_command(start_date, end_date, types):
+    """Sync pricing data from upstream providers.
+
+    Examples:
+        flask sync-prices                          # Sync today
+        flask sync-prices --start 2026-01-27       # Sync single date
+        flask sync-prices --start 2026-01-27 --end 2026-01-31  # Sync range
+        flask sync-prices --types fx,metals        # Sync only FX and metals
+    """
+    from datetime import date, timedelta
+    from app.services.config import is_sync_enabled
+    from app.services.sync import get_sync_service
+
+    if not is_sync_enabled():
+        click.echo('Error: Network sync is disabled. Set PRICING_ALLOW_NETWORK=1')
+        return
+
+    # Parse dates
+    today = date.today()
+    if start_date:
+        try:
+            start = date.fromisoformat(start_date)
+        except ValueError:
+            click.echo(f'Error: Invalid start date format: {start_date}. Use YYYY-MM-DD.')
+            return
+    else:
+        start = today
+
+    if end_date:
+        try:
+            end = date.fromisoformat(end_date)
+        except ValueError:
+            click.echo(f'Error: Invalid end date format: {end_date}. Use YYYY-MM-DD.')
+            return
+    else:
+        end = start
+
+    if end < start:
+        click.echo('Error: End date must be >= start date.')
+        return
+
+    # Parse types
+    type_list = None
+    if types:
+        type_list = [t.strip() for t in types.split(',')]
+        valid_types = {'fx', 'metals', 'crypto'}
+        invalid = set(type_list) - valid_types
+        if invalid:
+            click.echo(f'Error: Invalid types: {invalid}. Valid: fx, metals, crypto')
+            return
+
+    # Perform sync
+    sync_service = get_sync_service()
+    num_days = (end - start).days + 1
+
+    click.echo(f'Syncing {num_days} day(s) from {start} to {end}...')
+    if type_list:
+        click.echo(f'Types: {", ".join(type_list)}')
+
+    current = start
+    success_count = 0
+    error_count = 0
+
+    while current <= end:
+        result = sync_service.sync_date(current, type_list)
+        if result.get('success'):
+            success_count += 1
+            click.echo(f'  {current}: OK')
+        else:
+            error_count += 1
+            results = result.get('results', {})
+            errors = [f"{k}: {v.get('error', 'failed')}" for k, v in results.items() if v.get('status') != 'success']
+            click.echo(f'  {current}: FAILED - {"; ".join(errors) if errors else "unknown error"}')
+        current += timedelta(days=1)
+
+    click.echo(f'\nSync complete: {success_count} succeeded, {error_count} failed')
+
+
 def register_cli(app):
     """Register CLI commands with the Flask app."""
     app.cli.add_command(init_db_command)
@@ -391,3 +474,4 @@ def register_cli(app):
     app.cli.add_command(seed_all_command)
     app.cli.add_command(mirror_to_r2_command)
     app.cli.add_command(backfill_r2_command)
+    app.cli.add_command(sync_prices_command)

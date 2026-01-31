@@ -38,6 +38,12 @@ docker compose run --rm web flask seed-all
 docker compose run --rm web flask import-fx-csv data/seed/fx_rates.csv
 docker compose run --rm web flask import-metals-csv data/seed/metal_prices.csv
 docker compose run --rm web flask import-crypto-csv data/seed/crypto_prices.csv
+
+# Sync pricing from upstream providers (requires PRICING_ALLOW_NETWORK=1)
+docker compose run --rm web flask sync-prices                              # Sync today
+docker compose run --rm web flask sync-prices --start 2026-01-27           # Sync single date
+docker compose run --rm web flask sync-prices --start 2026-01-27 --end 2026-01-31  # Sync range
+docker compose run --rm web flask sync-prices --types fx,metals            # Sync only specific types
 ```
 
 ## Architecture
