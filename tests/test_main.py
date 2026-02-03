@@ -53,3 +53,15 @@ def test_contact_contains_heading(client):
     """GET /contact should contain Contact Us heading."""
     response = client.get('/contact')
     assert b'Contact Us' in response.data
+
+
+def test_privacy_policy_returns_200(client):
+    """GET /privacy-policy should return status 200."""
+    response = client.get('/privacy-policy')
+    assert response.status_code == 200
+
+
+def test_privacy_policy_contains_heading(client):
+    """GET /privacy-policy should contain Privacy Policy heading."""
+    response = client.get('/privacy-policy')
+    assert b'Privacy Policy' in response.data

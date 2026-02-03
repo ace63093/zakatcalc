@@ -32,3 +32,9 @@ def faq():
 def contact():
     """Render the Contact Us page."""
     return render_template('contact.html')
+
+
+@main_bp.route('/privacy-policy')
+def privacy_policy():
+    """Render the Privacy Policy page."""
+    return render_template('privacy_policy.html')
