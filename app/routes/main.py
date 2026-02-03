@@ -1,7 +1,13 @@
 """Main routes for the Zakat Calculator UI."""
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, redirect
 
 main_bp = Blueprint('main', __name__)
+
+
+@main_bp.route('/ads.txt')
+def ads_txt():
+    """Redirect to Ezoic's managed ads.txt file."""
+    return redirect('https://srv.adstxtmanager.com/19390/whatismyzakat.com', code=301)
 
 
 @main_bp.route('/')
