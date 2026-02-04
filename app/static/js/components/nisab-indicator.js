@@ -372,14 +372,14 @@ var NisabIndicator = (function() {
                 if (rate && rate > 0) {
                     var label, value;
                     if (rate >= 1) {
-                        // 1 foreign = X base (e.g., 1 USD = 1.35 CAD)
+                        // 1 foreign = X base (e.g., 1 USD → 1.35 CAD)
                         label = '1 ' + currency;
-                        value = '= ' + formatRate(rate) + ' ' + base;
+                        value = formatRate(rate) + ' ' + base;
                     } else {
-                        // Flip: 1 base = X foreign (e.g., 1 CAD = 0.74 USD becomes 1 USD = 1.35 CAD)
+                        // Flip: 1 base = X foreign (e.g., 1 CAD = 0.74 USD becomes 1 USD → 1.35 CAD)
                         var flipped = 1 / rate;
                         label = '1 ' + base;
-                        value = '= ' + formatRate(flipped) + ' ' + currency;
+                        value = formatRate(flipped) + ' ' + currency;
                     }
                     items.push({
                         label: label,
