@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% set canonical_url = "https://" ~ config["CANONICAL_HOST"] ~ request.path %}
+    <link rel="canonical" href="{{ canonical_url }}">
+    <meta property="og:url" content="{{ canonical_url }}">
     <!-- Ezoic Privacy Scripts (must load first) -->
     <script data-cfasync="false" src="https://cmp.gatekeeperconsent.com/min.js"></script>
     <script data-cfasync="false" src="https://the.gatekeeperconsent.com/cmp.min.js"></script>

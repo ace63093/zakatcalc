@@ -23,6 +23,8 @@ def create_app(config: dict | None = None) -> Flask:
         PRICING_ALLOW_NETWORK=os.environ.get('PRICING_ALLOW_NETWORK', '0').lower() in ('1', 'true', 'yes'),
         PRICING_AUTO_FETCH_MISSING=os.environ.get('PRICING_AUTO_FETCH_MISSING', '0').lower() in ('1', 'true', 'yes'),
         PRICING_DATA_BASE_CCY='USD',
+        # Canonical URL configuration
+        CANONICAL_HOST=os.environ.get('CANONICAL_HOST', 'whatismyzakat.com'),
     )
 
     # Override with provided config
