@@ -111,9 +111,15 @@ NISAB_SILVER_GRAMS = 595     # Silver nisab threshold
 - `calculator.js` - Main logic, live recalculation
 - `components/currency-autocomplete.js` - 179 ISO 4217 currencies
 - `components/crypto-autocomplete.js` - Top 100 cryptocurrencies
-- `components/nisab-indicator.js` - Visual threshold indicator
+- `components/nisab-indicator.js` - Visual threshold indicator + conversion rates
 - `components/share-link.js` - Shareable URLs (LZ-string compression)
 - `components/csv-export.js` - Export to CSV
+
+### Conversion Rates Display
+Expandable section in Nisab Indicator showing rates for entered assets only:
+- Metals: `Gold C$95.23/g`
+- FX: `1 USD 1.35 CAD` (flips if rate < 1)
+- Crypto: `BTC C$92,000.00`
 
 ### Weight Units
 | Unit | Grams | Region |

@@ -144,6 +144,14 @@ Response includes `assets_total`, `debts_total`, `net_total`, and `subtotals.deb
 - `base.html` injects `<link rel="canonical">` and `<meta property="og:url">` using `request.path`
 - Query strings are stripped from canonical URLs to avoid duplicate content issues
 
+### Conversion Rates Display
+The Nisab Indicator includes an expandable "View conversion rates" section showing:
+- **Metal prices**: Gold, silver, etc. per gram in base currency (only for metals user has entered)
+- **FX rates**: Format `1 USD 1.35 CAD` - flips when rate < 1 for readability
+- **Crypto prices**: Per-coin price in base currency (only for cryptos user has entered)
+
+Rates only appear for assets the user has actually entered. Collapsed by default.
+
 ### Test Fixtures
 `tests/conftest.py` provides:
 - `client`: Basic Flask test client
@@ -156,7 +164,7 @@ Single-page calculator at `/` using vanilla JS. Key components in `app/static/js
 - `calculator.js`: Main calculation logic with live updates
 - `components/currency-autocomplete.js`: 179 ISO 4217 currencies with compact mode
 - `components/crypto-autocomplete.js`: Top 100 cryptocurrencies
-- `components/nisab-indicator.js`: Visual nisab threshold indicator
+- `components/nisab-indicator.js`: Visual nisab threshold indicator with expandable conversion rates
 - `components/share-link.js`: Shareable URL generation with LZ-string compression
 - `components/csv-export.js`: Export assets to CSV
 
