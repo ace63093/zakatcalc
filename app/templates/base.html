@@ -319,9 +319,12 @@
             font-weight: 600;
             padding: 4px 10px;
             border-radius: 16px;
-            min-width: 80px;
+            min-width: 48px;
+            max-width: 100px;
             text-align: left;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             box-shadow: 0 2px 4px rgba(102, 126, 234, 0.25);
             flex-shrink: 0;
         }
@@ -341,8 +344,11 @@
             padding: 4px 8px;
             border-radius: 12px;
             min-width: 50px;
+            max-width: 80px;
             text-align: center;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             flex-shrink: 0;
         }
         .asset-row[data-type="gold"] .weight-grams-pill,
@@ -849,7 +855,7 @@
                 order: 100;
             }
             .base-value-pill {
-                min-width: 70px;
+                min-width: 42px;
             }
             .sync-banner-content {
                 flex-direction: column;
