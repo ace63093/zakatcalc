@@ -1334,9 +1334,9 @@ const ZakatCalculator = (function() {
                     <option value="10">10K</option>
                     <option value="9">9K</option>
                 </select>
-                <span class="weight-grams-pill" data-field="weight_grams">—</span>
             </div>
             <div class="group-value">
+                <span class="weight-grams-pill" data-field="weight_grams">—</span>
                 <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
@@ -1359,9 +1359,9 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-middle">
                 <input type="number" name="cash_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                <div class="currency-autocomplete" data-name="cash_currency"></div>
             </div>
             <div class="group-value">
-                <div class="currency-autocomplete" data-name="cash_currency"></div>
                 <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
@@ -1385,9 +1385,9 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-middle">
                 <input type="number" name="bank_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                <div class="currency-autocomplete" data-name="bank_currency"></div>
             </div>
             <div class="group-value">
-                <div class="currency-autocomplete" data-name="bank_currency"></div>
                 <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
@@ -1425,9 +1425,9 @@ const ZakatCalculator = (function() {
                     <option value="platinum">Platinum</option>
                     <option value="palladium">Palladium</option>
                 </select>
-                <span class="weight-grams-pill" data-field="weight_grams">—</span>
             </div>
             <div class="group-value">
+                <span class="weight-grams-pill" data-field="weight_grams">—</span>
                 <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
@@ -1478,9 +1478,9 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-middle">
                 <input type="number" name="credit_card_amount" step="0.01" min="0" placeholder="Balance" class="input-amount">
+                <div class="currency-autocomplete" data-name="credit_card_currency"></div>
             </div>
             <div class="group-value">
-                <div class="currency-autocomplete" data-name="credit_card_currency"></div>
                 <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
