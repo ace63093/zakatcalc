@@ -174,6 +174,9 @@ git checkout dev
 - `R2_ENABLED`, `R2_BUCKET`, `R2_ENDPOINT_URL`
 - `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PREFIX`
 
+### SEO
+- `CANONICAL_HOST` - Canonical domain for `<link rel="canonical">` and `og:url` (default: `whatismyzakat.com`)
+
 ## Common Tasks
 
 ### Fix Missing Pricing Data
