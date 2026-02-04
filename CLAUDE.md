@@ -139,6 +139,11 @@ Response includes `assets_total`, `debts_total`, `net_total`, and `subtotals.deb
 - Contribute button (global nav): https://buymeacoffee.com/zakatcalculator
 - Contact email (only): info@whatismyzakat.com
 
+### SEO Configuration
+- `CANONICAL_HOST` env var sets the canonical domain (default: `whatismyzakat.com`)
+- `base.html` injects `<link rel="canonical">` and `<meta property="og:url">` using `request.path`
+- Query strings are stripped from canonical URLs to avoid duplicate content issues
+
 ### Test Fixtures
 `tests/conftest.py` provides:
 - `client`: Basic Flask test client
