@@ -1125,10 +1125,13 @@ const ZakatCalculator = (function() {
 
             if (value === 0 && hasInput) {
                 pill.textContent = formatPillMoney(baseCurrency, 0);
+                pill.classList.remove('pill-empty');
             } else if (value !== undefined && !isNaN(value)) {
                 pill.textContent = formatPillMoney(baseCurrency, value);
+                pill.classList.remove('pill-empty');
             } else {
                 pill.textContent = '—';
+                pill.classList.add('pill-empty');
             }
 
             // Update grams pill for gold/metal rows
@@ -1242,7 +1245,7 @@ const ZakatCalculator = (function() {
                 <span class="weight-grams-pill" data-field="weight_grams">—</span>
             </div>
             <div class="group-value">
-                <span class="base-value-pill" data-field="base_value">—</span>
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
                 <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
@@ -1267,7 +1270,7 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-value">
                 <div class="currency-autocomplete" data-name="cash_currency"></div>
-                <span class="base-value-pill" data-field="base_value">—</span>
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
                 <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
@@ -1293,7 +1296,7 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-value">
                 <div class="currency-autocomplete" data-name="bank_currency"></div>
-                <span class="base-value-pill" data-field="base_value">—</span>
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
                 <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
@@ -1333,7 +1336,7 @@ const ZakatCalculator = (function() {
                 <span class="weight-grams-pill" data-field="weight_grams">—</span>
             </div>
             <div class="group-value">
-                <span class="base-value-pill" data-field="base_value">—</span>
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
                 <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
@@ -1360,7 +1363,7 @@ const ZakatCalculator = (function() {
                 <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount">
             </div>
             <div class="group-value">
-                <span class="base-value-pill" data-field="base_value">—</span>
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
                 <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
@@ -1386,7 +1389,7 @@ const ZakatCalculator = (function() {
             </div>
             <div class="group-value">
                 <div class="currency-autocomplete" data-name="credit_card_currency"></div>
-                <span class="base-value-pill" data-field="base_value">—</span>
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
             </div>
             <div class="group-remove">
                 <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
@@ -1422,7 +1425,7 @@ const ZakatCalculator = (function() {
                 <div class="currency-autocomplete" data-name="loan_currency"></div>
             </div>
             <div class="group-value">
-                <span class="base-value-pill" data-field="base_value" title="Annualized amount in base currency">—</span>
+                <span class="base-value-pill pill-empty" data-field="base_value" title="Annualized amount in base currency">—</span>
             </div>
             <div class="group-remove">
                 <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
@@ -1458,7 +1461,10 @@ const ZakatCalculator = (function() {
             });
             // Reset the pill
             const pill = row.querySelector('.base-value-pill');
-            if (pill) pill.textContent = '—';
+            if (pill) {
+                pill.textContent = '—';
+                pill.classList.add('pill-empty');
+            }
         }
 
         recalculate();
@@ -1729,7 +1735,7 @@ const ZakatCalculator = (function() {
                 '    <span class="weight-grams-pill" data-field="weight_grams">—</span>',
                 '</div>',
                 '<div class="group-value">',
-                '    <span class="base-value-pill" data-field="base_value">—</span>',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
                 '</div>',
                 '<div class="group-remove">',
                 '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
@@ -1764,7 +1770,7 @@ const ZakatCalculator = (function() {
                 '</div>',
                 '<div class="group-value">',
                 '    <div class="currency-autocomplete" data-name="cash_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
-                '    <span class="base-value-pill" data-field="base_value">—</span>',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
                 '</div>',
                 '<div class="group-remove">',
                 '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
@@ -1802,7 +1808,7 @@ const ZakatCalculator = (function() {
                 '</div>',
                 '<div class="group-value">',
                 '    <div class="currency-autocomplete" data-name="bank_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
-                '    <span class="base-value-pill" data-field="base_value">—</span>',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
                 '</div>',
                 '<div class="group-remove">',
                 '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
@@ -1866,7 +1872,7 @@ const ZakatCalculator = (function() {
                 '    <span class="weight-grams-pill" data-field="weight_grams">—</span>',
                 '</div>',
                 '<div class="group-value">',
-                '    <span class="base-value-pill" data-field="base_value">—</span>',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
                 '</div>',
                 '<div class="group-remove">',
                 '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
@@ -1903,7 +1909,7 @@ const ZakatCalculator = (function() {
                 '    <input type="number" name="crypto_amount" step="0.00000001" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
                 '</div>',
                 '<div class="group-value">',
-                '    <span class="base-value-pill" data-field="base_value">—</span>',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
                 '</div>',
                 '<div class="group-remove">',
                 '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
@@ -1941,7 +1947,7 @@ const ZakatCalculator = (function() {
                 '</div>',
                 '<div class="group-value">',
                 '    <div class="currency-autocomplete" data-name="credit_card_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
-                '    <span class="base-value-pill" data-field="base_value">—</span>',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
                 '</div>',
                 '<div class="group-remove">',
                 '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
@@ -1990,7 +1996,7 @@ const ZakatCalculator = (function() {
                 '    <div class="currency-autocomplete" data-name="loan_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
                 '</div>',
                 '<div class="group-value">',
-                '    <span class="base-value-pill" data-field="base_value" title="Annualized amount in base currency">—</span>',
+                '    <span class="base-value-pill pill-empty" data-field="base_value" title="Annualized amount in base currency">—</span>',
                 '</div>',
                 '<div class="group-remove">',
                 '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
