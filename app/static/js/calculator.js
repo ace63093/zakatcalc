@@ -508,6 +508,13 @@ const ZakatCalculator = (function() {
             if (pricingSnapshot.effective_date) {
                 NisabIndicator.setEffectiveDate(pricingSnapshot.effective_date);
             }
+
+            // Collect and set conversion rates for display
+            const usedRates = collectUsedConversionRates(
+                goldItems, metalItems, cashItems, bankItems,
+                cryptoItems, creditCardItems, loanItems
+            );
+            NisabIndicator.setConversionRates(usedRates);
         }
 
         // Update display
@@ -846,6 +853,91 @@ const ZakatCalculator = (function() {
         const crypto = pricingSnapshot?.crypto || {};
         const cryptoInfo = crypto[symbol] || {};
         return cryptoInfo.price || 0;
+    }
+
+    /**
+     * Collect conversion rates for assets the user has entered
+     * @returns {Object} Rates data for NisabIndicator
+     */
+    function collectUsedConversionRates(goldItems, metalItems, cashItems, bankItems, cryptoItems, creditCardItems, loanItems) {
+        const result = {
+            baseCurrency: baseCurrency,
+            metals: {},
+            fx: {},
+            crypto: {}
+        };
+
+        if (!pricingSnapshot) return result;
+
+        const fxRates = pricingSnapshot.fx_rates || {};
+        const metals = pricingSnapshot.metals || {};
+        const cryptoData = pricingSnapshot.crypto || {};
+
+        // Collect used metals
+        // Gold items always use gold
+        if (goldItems && goldItems.length > 0) {
+            const goldInfo = metals['gold'];
+            if (goldInfo && goldInfo.price_per_gram > 0) {
+                result.metals['gold'] = { price_per_gram: goldInfo.price_per_gram };
+            }
+        }
+
+        // Metal items can use silver, platinum, palladium
+        if (metalItems && metalItems.length > 0) {
+            const usedMetals = new Set();
+            metalItems.forEach(function(item) {
+                if (item.metal) usedMetals.add(item.metal);
+            });
+            usedMetals.forEach(function(metal) {
+                const metalInfo = metals[metal];
+                if (metalInfo && metalInfo.price_per_gram > 0) {
+                    result.metals[metal] = { price_per_gram: metalInfo.price_per_gram };
+                }
+            });
+        }
+
+        // Collect used currencies from cash, bank, credit cards, loans
+        const usedCurrencies = new Set();
+        [cashItems, bankItems, creditCardItems].forEach(function(items) {
+            if (items) {
+                items.forEach(function(item) {
+                    if (item.currency && item.currency !== baseCurrency) {
+                        usedCurrencies.add(item.currency);
+                    }
+                });
+            }
+        });
+        if (loanItems) {
+            loanItems.forEach(function(item) {
+                if (item.currency && item.currency !== baseCurrency) {
+                    usedCurrencies.add(item.currency);
+                }
+            });
+        }
+
+        // Add FX rates for used currencies
+        usedCurrencies.forEach(function(currency) {
+            // fxRates contains rates relative to base currency
+            // If baseCurrency is CAD and we have USD items, fxRates.USD = rate to convert USD to CAD
+            if (fxRates[currency]) {
+                result.fx[currency] = fxRates[currency];
+            }
+        });
+
+        // Collect used cryptos
+        if (cryptoItems && cryptoItems.length > 0) {
+            cryptoItems.forEach(function(item) {
+                if (item.symbol && cryptoData[item.symbol]) {
+                    const info = cryptoData[item.symbol];
+                    result.crypto[item.symbol] = {
+                        price: info.price || 0,
+                        name: info.name || item.symbol
+                    };
+                }
+            });
+        }
+
+        return result;
     }
 
     /**

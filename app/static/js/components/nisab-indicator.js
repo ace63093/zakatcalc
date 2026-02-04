@@ -20,6 +20,8 @@ var NisabIndicator = (function() {
     var baseCurrency = 'CAD';
     var onBasisChange = null;
     var hasAnimated = false;  // Track if initial animation has played
+    var ratesExpanded = false;  // Track rates section state
+    var currentRates = null;  // Store current conversion rates
 
     // Currency symbols for fallback display
     var CURRENCY_SYMBOLS = {
@@ -151,6 +153,13 @@ var NisabIndicator = (function() {
             '    <span>Threshold: </span>',
             '    <span class="threshold-value">--</span>',
             '    <span class="effective-date"></span>',
+            '    <button type="button" class="nisab-rates-toggle" aria-expanded="false">',
+            '      <span class="nisab-rates-toggle-icon">&#9654;</span>',
+            '      <span>View conversion rates</span>',
+            '    </button>',
+            '    <div class="nisab-rates-content" aria-hidden="true">',
+            '      <ul class="nisab-rates-list"></ul>',
+            '    </div>',
             '  </div>',
             '</div>'
         ].join('\n');
@@ -167,8 +176,36 @@ var NisabIndicator = (function() {
             if (btn) {
                 var basis = btn.dataset.basis;
                 setBasis(basis);
+                return;
+            }
+
+            var ratesToggle = event.target.closest('.nisab-rates-toggle');
+            if (ratesToggle) {
+                toggleRatesSection();
             }
         });
+    }
+
+    /**
+     * Toggle the rates section expanded/collapsed state
+     */
+    function toggleRatesSection() {
+        if (!container) return;
+
+        ratesExpanded = !ratesExpanded;
+
+        var toggle = container.querySelector('.nisab-rates-toggle');
+        var content = container.querySelector('.nisab-rates-content');
+
+        if (toggle) {
+            toggle.classList.toggle('expanded', ratesExpanded);
+            toggle.setAttribute('aria-expanded', ratesExpanded);
+        }
+
+        if (content) {
+            content.classList.toggle('show', ratesExpanded);
+            content.setAttribute('aria-hidden', !ratesExpanded);
+        }
     }
 
     /**
@@ -286,6 +323,119 @@ var NisabIndicator = (function() {
     }
 
     /**
+     * Set conversion rates for display
+     * @param {Object} rates - Rates data
+     * @param {string} rates.baseCurrency - Base currency code
+     * @param {Object} rates.metals - Metal prices { gold: { price_per_gram: 95 }, ... }
+     * @param {Object} rates.fx - FX rates { USD: 1.35, EUR: 1.48 }
+     * @param {Object} rates.crypto - Crypto prices { BTC: { price: 92000, name: 'Bitcoin' }, ... }
+     */
+    function setConversionRates(rates) {
+        if (!container) return;
+
+        currentRates = rates;
+        renderRatesList();
+    }
+
+    /**
+     * Render the rates list based on currentRates
+     */
+    function renderRatesList() {
+        if (!container || !currentRates) return;
+
+        var list = container.querySelector('.nisab-rates-list');
+        if (!list) return;
+
+        var items = [];
+        var base = currentRates.baseCurrency || baseCurrency;
+
+        // Add metal rates
+        if (currentRates.metals) {
+            Object.keys(currentRates.metals).forEach(function(metal) {
+                var info = currentRates.metals[metal];
+                if (info && info.price_per_gram > 0) {
+                    var metalName = metal.charAt(0).toUpperCase() + metal.slice(1);
+                    var priceStr = formatCurrency(info.price_per_gram) + '/g';
+                    items.push({
+                        label: metalName,
+                        value: priceStr,
+                        order: metal === 'gold' ? 0 : metal === 'silver' ? 1 : 2
+                    });
+                }
+            });
+        }
+
+        // Add FX rates (flip if < 1 for readability)
+        if (currentRates.fx) {
+            Object.keys(currentRates.fx).forEach(function(currency) {
+                var rate = currentRates.fx[currency];
+                if (rate && rate > 0) {
+                    var label, value;
+                    if (rate >= 1) {
+                        // 1 foreign = X base (e.g., 1 USD = 1.35 CAD)
+                        label = '1 ' + currency;
+                        value = '= ' + formatRate(rate) + ' ' + base;
+                    } else {
+                        // Flip: 1 base = X foreign (e.g., 1 CAD = 0.74 USD becomes 1 USD = 1.35 CAD)
+                        var flipped = 1 / rate;
+                        label = '1 ' + base;
+                        value = '= ' + formatRate(flipped) + ' ' + currency;
+                    }
+                    items.push({
+                        label: label,
+                        value: value,
+                        order: 10
+                    });
+                }
+            });
+        }
+
+        // Add crypto rates
+        if (currentRates.crypto) {
+            Object.keys(currentRates.crypto).forEach(function(symbol) {
+                var info = currentRates.crypto[symbol];
+                if (info && info.price > 0) {
+                    items.push({
+                        label: symbol,
+                        value: formatCurrency(info.price),
+                        order: 20
+                    });
+                }
+            });
+        }
+
+        // Sort by order then alphabetically
+        items.sort(function(a, b) {
+            if (a.order !== b.order) return a.order - b.order;
+            return a.label.localeCompare(b.label);
+        });
+
+        // Render
+        if (items.length === 0) {
+            list.innerHTML = '<li class="nisab-rates-empty">No conversion rates to display</li>';
+        } else {
+            list.innerHTML = items.map(function(item) {
+                return '<li><span class="nisab-rate-label">' + item.label + '</span><span class="nisab-rate-value">' + item.value + '</span></li>';
+            }).join('');
+        }
+    }
+
+    /**
+     * Format a rate number for display
+     * @param {number} rate - The rate value
+     * @returns {string} Formatted rate
+     */
+    function formatRate(rate) {
+        if (rate >= 100) {
+            return rate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } else if (rate >= 1) {
+            return rate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+        } else {
+            return rate.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+        }
+    }
+
+    /**
      * Format a number as currency
      * @param {number} amount - Amount to format
      * @returns {string} Formatted currency string
@@ -327,6 +477,7 @@ var NisabIndicator = (function() {
         update: update,
         setBaseCurrency: setBaseCurrency,
         setEffectiveDate: setEffectiveDate,
+        setConversionRates: setConversionRates,
         render: render
     };
 })();

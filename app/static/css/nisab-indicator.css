@@ -221,6 +221,87 @@
     }
 }
 
+/* Conversion Rates Section */
+.nisab-rates-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 0;
+    font-size: 0.8rem;
+    color: #667eea;
+    cursor: pointer;
+    user-select: none;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+.nisab-rates-toggle:hover {
+    color: #5a67d8;
+}
+
+.nisab-rates-toggle:focus {
+    outline: none;
+}
+
+.nisab-rates-toggle-icon {
+    font-size: 0.65rem;
+    transition: transform 0.2s ease;
+}
+
+.nisab-rates-toggle.expanded .nisab-rates-toggle-icon {
+    transform: rotate(90deg);
+}
+
+.nisab-rates-content {
+    display: none;
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #edf2f7;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+
+.nisab-rates-content.show {
+    display: block;
+}
+
+.nisab-rates-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nisab-rates-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.nisab-rates-list li:last-child {
+    border-bottom: none;
+}
+
+.nisab-rate-label {
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.nisab-rate-value {
+    color: #718096;
+    font-variant-numeric: tabular-nums;
+}
+
+.nisab-rates-empty {
+    color: #a0aec0;
+    font-style: italic;
+    text-align: center;
+    padding: 8px 0;
+}
+
 /* Desktop adjustments for results panel */
 @media (min-width: 1024px) {
     .nisab-indicator {
