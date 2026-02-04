@@ -412,7 +412,7 @@ var NisabIndicator = (function() {
 
         // Render
         if (items.length === 0) {
-            list.innerHTML = '<li class="nisab-rates-empty">No conversion rates to display</li>';
+            list.innerHTML = '<li class="nisab-rates-empty">No conversion rates to display.<br>Please input amounts in alternate currencies to display conversion rates.</li>';
         } else {
             list.innerHTML = items.map(function(item) {
                 return '<li><span class="nisab-rate-label">' + item.label + '</span><span class="nisab-rate-value">' + item.value + '</span></li>';
