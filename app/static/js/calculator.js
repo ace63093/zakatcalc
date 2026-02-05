@@ -388,6 +388,12 @@ const ZakatCalculator = (function() {
     let debtPolicy = '12_months';
     let includeUncertainReceivables = false;
 
+    // Autosave configuration
+    const AUTOSAVE_KEY = 'zakatCalculatorState';
+    const AUTOSAVE_DEBOUNCE = 2000; // 2 seconds
+    let autosaveEnabled = true;
+    let autosaveTimer = null;
+
     // Currency symbols for display (expanded set)
     const CURRENCY_SYMBOLS = {
         CAD: 'C$', USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5',
