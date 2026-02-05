@@ -11,30 +11,15 @@
 const ZakatCalculator = (function() {
     'use strict';
 
-    // Constants
-    const NISAB_GOLD_GRAMS = 85;
-    const NISAB_SILVER_GRAMS = 595;
-    const ZAKAT_RATE = 0.025;
+    // Import from shared utilities
+    const NISAB_GOLD_GRAMS = ZakatUtils.NISAB_GOLD_GRAMS;
+    const NISAB_SILVER_GRAMS = ZakatUtils.NISAB_SILVER_GRAMS;
+    const ZAKAT_RATE = ZakatUtils.ZAKAT_RATE;
+    const WEIGHT_UNITS = ZakatUtils.WEIGHT_UNITS;
+    const LOAN_FREQUENCY_MULTIPLIERS = ZakatUtils.LOAN_FREQUENCY_MULTIPLIERS;
+
+    // Local constants
     const DEBOUNCE_DELAY = 100;
-
-    // Weight unit conversion constants (all values are grams per unit)
-    const WEIGHT_UNITS = {
-        g: { gramsPerUnit: 1, label: 'Grams (g)', short: 'g', decimals: 2 },
-        ozt: { gramsPerUnit: 31.1034768, label: 'Troy ounces (oz t)', short: 'oz t', decimals: 4 },
-        tola: { gramsPerUnit: 11.6638038, label: 'Tola', short: 'tola', decimals: 4 },
-        vori: { gramsPerUnit: 11.6638038, label: 'Vori', short: 'vori', decimals: 4 },
-        aana: { gramsPerUnit: 0.72898774, label: 'Aana', short: 'aana', decimals: 2 }
-    };
-
-    // Loan frequency multipliers for annualization
-    const LOAN_FREQUENCY_MULTIPLIERS = {
-        weekly: 52,
-        biweekly: 26,
-        semi_monthly: 24,
-        monthly: 12,
-        quarterly: 4,
-        yearly: 1
-    };
 
     // State
     let currencies = [];
@@ -2146,17 +2131,8 @@ const ZakatCalculator = (function() {
         });
     }
 
-    /**
-     * Escape HTML special characters
-     */
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, '&amp;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;')
-                  .replace(/"/g, '&quot;')
-                  .replace(/'/g, '&#039;');
-    }
+    // Use shared utility for HTML escaping
+    var escapeHtml = ZakatUtils.escapeHtml;
 
     /**
      * Get the last calculation result

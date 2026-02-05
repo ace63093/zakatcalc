@@ -326,11 +326,8 @@ const CryptoAutocomplete = (function() {
             }).join('');
         }
 
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
+        // Use shared utility for HTML escaping
+        var escapeHtml = ZakatUtils.escapeHtml;
 
         return {
             getValue: function() {

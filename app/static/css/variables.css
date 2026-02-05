@@ -1,0 +1,63 @@
+/**
+ * CSS Custom Properties (Variables)
+ * Shared color palette and design tokens for the Zakat Calculator
+ */
+
+:root {
+    /* Primary colors */
+    --color-primary: #667eea;
+    --color-primary-dark: #5a67d8;
+    --color-primary-light: #a3bffa;
+    --color-secondary: #764ba2;
+
+    /* Text colors */
+    --color-text-primary: #2d3748;
+    --color-text-secondary: #4a5568;
+    --color-text-muted: #718096;
+
+    /* Background colors */
+    --color-bg-light: #f7fafc;
+    --color-bg-white: #ffffff;
+    --color-bg-primary-light: #f0f5ff;
+    --color-bg-primary-lighter: #ebf4ff;
+
+    /* Border colors */
+    --color-border: #e2e8f0;
+    --color-border-light: #edf2f7;
+
+    /* Alert/Status colors */
+    --color-info-bg: #f0f5ff;
+    --color-info-border: #667eea;
+    --color-info-text: #3c366b;
+
+    --color-warning-bg: #fefcbf;
+    --color-warning-border: #d69e2e;
+    --color-warning-text: #744210;
+
+    --color-success-bg: #e6fffa;
+    --color-success-border: #38b2ac;
+    --color-success-text: #234e52;
+
+    --color-error-bg: #fed7d7;
+    --color-error-border: #f56565;
+    --color-error-text: #742a2a;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* Border radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 999px;
+
+    /* Font sizes */
+    --font-size-sm: 0.9rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.1rem;
+    --font-size-xl: 1.3rem;
+}

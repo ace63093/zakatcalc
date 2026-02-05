@@ -472,14 +472,8 @@ const CurrencyAutocomplete = (function() {
             }).join('');
         }
 
-        /**
-         * Escape HTML special characters
-         */
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
+        // Use shared utility for HTML escaping
+        var escapeHtml = ZakatUtils.escapeHtml;
 
         // ==================== PUBLIC API ====================
         const api = {

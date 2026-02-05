@@ -25,12 +25,9 @@ from app.services.providers.registry import get_provider_status
 from app.services.cadence import get_effective_snapshot_date, get_cadence_boundaries
 from app.services.time_provider import get_today
 from app.services.r2_config import is_r2_enabled
+from app.constants import NISAB_GOLD_GRAMS, NISAB_SILVER_GRAMS, ZAKAT_RATE, LOAN_FREQUENCY_MULTIPLIERS
 
 api_bp = Blueprint('api', __name__)
-
-NISAB_GOLD_GRAMS = 85
-NISAB_SILVER_GRAMS = 595
-ZAKAT_RATE = 0.025
 
 
 @api_bp.route('/currencies')
@@ -331,7 +328,7 @@ def _calculate_v2(body: dict):
             return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
 
     # Validate loan items
-    valid_frequencies = ['weekly', 'biweekly', 'semi_monthly', 'monthly', 'quarterly', 'yearly']
+    valid_frequencies = list(LOAN_FREQUENCY_MULTIPLIERS.keys())
     for item in loan_items:
         if 'payment_amount' not in item or 'currency' not in item:
             return jsonify({'error': 'Loan items require payment_amount and currency'}), 400

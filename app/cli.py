@@ -106,16 +106,15 @@ def seed_all_command():
 def import_fx_csv(csv_path: str) -> int:
     """Import FX rates from CSV file. Returns count of records imported."""
     db = get_db()
-    count = 0
 
     with open(csv_path, 'r', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        for row in reader:
-            db.execute('''
-                INSERT OR REPLACE INTO fx_rates (date, currency, rate_to_usd, source)
-                VALUES (?, ?, ?, ?)
-            ''', (row['date'], row['currency'], float(row['rate_to_usd']), row.get('source', 'csv')))
-            count += 1
+        rows = [(row['date'], row['currency'], float(row['rate_to_usd']), row.get('source', 'csv')) for row in reader]
+
+    db.executemany('''
+        INSERT OR REPLACE INTO fx_rates (date, currency, rate_to_usd, source)
+        VALUES (?, ?, ?, ?)
+    ''', rows)
 
     # Always ensure USD = 1.0 for each date
     db.execute('''
@@ -126,44 +125,45 @@ def import_fx_csv(csv_path: str) -> int:
     ''')
 
     db.commit()
-    return count
+    return len(rows)
 
 
 def import_metals_csv(csv_path: str) -> int:
     """Import metal prices from CSV file. Returns count of records imported."""
     db = get_db()
-    count = 0
 
     with open(csv_path, 'r', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        for row in reader:
-            db.execute('''
-                INSERT OR REPLACE INTO metal_prices (date, metal, price_per_gram_usd, source)
-                VALUES (?, ?, ?, ?)
-            ''', (row['date'], row['metal'].lower(), float(row['price_per_gram_usd']), row.get('source', 'csv')))
-            count += 1
+        rows = [(row['date'], row['metal'].lower(), float(row['price_per_gram_usd']), row.get('source', 'csv')) for row in reader]
+
+    db.executemany('''
+        INSERT OR REPLACE INTO metal_prices (date, metal, price_per_gram_usd, source)
+        VALUES (?, ?, ?, ?)
+    ''', rows)
 
     db.commit()
-    return count
+    return len(rows)
 
 
 def import_crypto_csv(csv_path: str) -> int:
     """Import crypto prices from CSV file. Returns count of records imported."""
     db = get_db()
-    count = 0
 
     with open(csv_path, 'r', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        for row in reader:
-            rank = int(row['rank']) if row.get('rank') else None
-            db.execute('''
-                INSERT OR REPLACE INTO crypto_prices (date, symbol, name, price_usd, rank, source)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (row['date'], row['symbol'].upper(), row['name'], float(row['price_usd']), rank, row.get('source', 'csv')))
-            count += 1
+        rows = [
+            (row['date'], row['symbol'].upper(), row['name'], float(row['price_usd']),
+             int(row['rank']) if row.get('rank') else None, row.get('source', 'csv'))
+            for row in reader
+        ]
+
+    db.executemany('''
+        INSERT OR REPLACE INTO crypto_prices (date, symbol, name, price_usd, rank, source)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', rows)
 
     db.commit()
-    return count
+    return len(rows)
 
 
 @click.command('mirror-to-r2')

@@ -325,6 +325,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/utils/shared.js') }}"></script>
 <script src="{{ url_for('static', filename='js/vendor/lz-string.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/currency-autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/crypto-autocomplete.js') }}"></script>

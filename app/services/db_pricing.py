@@ -221,26 +221,25 @@ def get_coverage_flags(date: str) -> dict:
     """
     db = get_db()
 
-    # Check FX
-    fx_row = db.execute('SELECT MAX(date) as effective FROM fx_rates WHERE date <= ?', (date,)).fetchone()
-    fx_exact = db.execute('SELECT COUNT(*) as cnt FROM fx_rates WHERE date = ?', (date,)).fetchone()
-
-    # Check metals
-    metal_row = db.execute('SELECT MAX(date) as effective FROM metal_prices WHERE date <= ?', (date,)).fetchone()
-    metal_exact = db.execute('SELECT COUNT(*) as cnt FROM metal_prices WHERE date = ?', (date,)).fetchone()
-
-    # Check crypto
-    crypto_row = db.execute('SELECT MAX(date) as effective FROM crypto_prices WHERE date <= ?', (date,)).fetchone()
-    crypto_exact = db.execute('SELECT COUNT(*) as cnt FROM crypto_prices WHERE date = ?', (date,)).fetchone()
+    # Single query using subqueries for all coverage info
+    row = db.execute('''
+        SELECT
+            (SELECT MAX(date) FROM fx_rates WHERE date <= ?) as fx_effective,
+            (SELECT COUNT(*) FROM fx_rates WHERE date = ?) as fx_exact,
+            (SELECT MAX(date) FROM metal_prices WHERE date <= ?) as metals_effective,
+            (SELECT COUNT(*) FROM metal_prices WHERE date = ?) as metals_exact,
+            (SELECT MAX(date) FROM crypto_prices WHERE date <= ?) as crypto_effective,
+            (SELECT COUNT(*) FROM crypto_prices WHERE date = ?) as crypto_exact
+    ''', (date, date, date, date, date, date)).fetchone()
 
     return {
-        'fx_available': fx_row['effective'] is not None,
-        'fx_date_exact': fx_exact['cnt'] > 0,
-        'fx_effective_date': fx_row['effective'],
-        'metals_available': metal_row['effective'] is not None,
-        'metals_date_exact': metal_exact['cnt'] > 0,
-        'metals_effective_date': metal_row['effective'],
-        'crypto_available': crypto_row['effective'] is not None,
-        'crypto_date_exact': crypto_exact['cnt'] > 0,
-        'crypto_effective_date': crypto_row['effective'],
+        'fx_available': row['fx_effective'] is not None,
+        'fx_date_exact': row['fx_exact'] > 0,
+        'fx_effective_date': row['fx_effective'],
+        'metals_available': row['metals_effective'] is not None,
+        'metals_date_exact': row['metals_exact'] > 0,
+        'metals_effective_date': row['metals_effective'],
+        'crypto_available': row['crypto_effective'] is not None,
+        'crypto_date_exact': row['crypto_exact'] > 0,
+        'crypto_effective_date': row['crypto_effective'],
     }

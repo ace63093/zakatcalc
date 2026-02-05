@@ -182,16 +182,8 @@ const CsvExport = (function() {
         return effectiveDateEl ? effectiveDateEl.textContent : '';
     }
 
-    /**
-     * Weight unit definitions (must match calculator.js)
-     */
-    const WEIGHT_UNITS = {
-        g: { gramsPerUnit: 1, label: 'Grams (g)', short: 'g' },
-        ozt: { gramsPerUnit: 31.1034768, label: 'Troy ounces (oz t)', short: 'oz t' },
-        tola: { gramsPerUnit: 11.6638038, label: 'Tola', short: 'tola' },
-        vori: { gramsPerUnit: 11.6638038, label: 'Vori', short: 'vori' },
-        aana: { gramsPerUnit: 0.72898774, label: 'Aana', short: 'aana' }
-    };
+    // Use shared weight units
+    const WEIGHT_UNITS = ZakatUtils.WEIGHT_UNITS;
 
     /**
      * Get weight unit info by code
@@ -645,34 +637,8 @@ const CsvExport = (function() {
         URL.revokeObjectURL(url);
     }
 
-    /**
-     * Show a notification toast
-     * @param {string} message - Message to display
-     * @param {string} type - 'success' or 'error'
-     */
-    function showNotification(message, type) {
-        // Remove any existing notification
-        const existing = document.querySelector('.tools-notification');
-        if (existing) {
-            existing.remove();
-        }
-
-        const notification = document.createElement('div');
-        notification.className = 'tools-notification tools-notification-' + type;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-
-        // Trigger animation
-        requestAnimationFrame(() => {
-            notification.classList.add('visible');
-        });
-
-        // Auto-hide after 3 seconds
-        setTimeout(() => {
-            notification.classList.remove('visible');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
-    }
+    // Use shared utility for notifications
+    var showNotification = ZakatUtils.showNotification;
 
     // Public API
     return {

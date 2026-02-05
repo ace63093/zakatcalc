@@ -1,10 +1,12 @@
 """Zakat calculation service."""
 from .fx import convert_to_master
-
-VALID_KARATS = [24, 22, 21, 18, 14, 10, 9]
-ZAKAT_RATE = 0.025
-NISAB_GOLD_GRAMS = 85
-NISAB_SILVER_GRAMS = 595
+from app.constants import (
+    NISAB_GOLD_GRAMS,
+    NISAB_SILVER_GRAMS,
+    ZAKAT_RATE,
+    LOAN_FREQUENCY_MULTIPLIERS,
+    VALID_KARATS,
+)
 
 
 def karat_to_fraction(karat: int) -> float:
@@ -58,36 +60,43 @@ def calculate_gold_subtotal_usd(gold_items: list, gold_price_usd: float, master_
     return {'items': items_out, 'total_pure_grams': round(total_pure, 4), 'total': round(total_value, 2)}
 
 
-def calculate_cash_subtotal(cash_items: list, master_currency: str, fx_rates: dict) -> dict:
+def _calculate_currency_subtotal(items: list, master_currency: str, fx_rates: dict, default_name: str) -> dict:
+    """Generic currency subtotal calculation.
+
+    Args:
+        items: List of dicts with name, amount, currency
+        master_currency: Target currency for conversion
+        fx_rates: FX rate dictionary
+        default_name: Default name to use if item has no name
+
+    Returns:
+        Dict with items list and total
+    """
     items_out = []
     total = 0.0
-    for item in cash_items:
-        converted, rate = convert_to_master(item['amount'], item['currency'], master_currency, fx_rates)
+    for item in items:
+        amount = item.get('amount', 0)
+        currency = item.get('currency', master_currency)
+        converted, rate = convert_to_master(amount, currency, master_currency, fx_rates)
         items_out.append({
-            'name': item.get('name', 'Cash'),
-            'original_currency': item['currency'],
-            'original_amount': item['amount'],
+            'name': item.get('name', default_name),
+            'original_currency': currency,
+            'original_amount': amount,
             'converted_amount': round(converted, 2),
             'fx_rate': round(rate, 6)
         })
         total += converted
     return {'items': items_out, 'total': round(total, 2)}
+
+
+def calculate_cash_subtotal(cash_items: list, master_currency: str, fx_rates: dict) -> dict:
+    """Calculate cash subtotal."""
+    return _calculate_currency_subtotal(cash_items, master_currency, fx_rates, 'Cash')
 
 
 def calculate_bank_subtotal(bank_items: list, master_currency: str, fx_rates: dict) -> dict:
-    items_out = []
-    total = 0.0
-    for item in bank_items:
-        converted, rate = convert_to_master(item['amount'], item['currency'], master_currency, fx_rates)
-        items_out.append({
-            'name': item.get('name', 'Bank'),
-            'original_currency': item['currency'],
-            'original_amount': item['amount'],
-            'converted_amount': round(converted, 2),
-            'fx_rate': round(rate, 6)
-        })
-        total += converted
-    return {'items': items_out, 'total': round(total, 2)}
+    """Calculate bank subtotal."""
+    return _calculate_currency_subtotal(bank_items, master_currency, fx_rates, 'Bank')
 
 
 def calculate_metal_subtotal(metal_items: list, metal_prices: dict, base_currency: str) -> dict:
@@ -156,46 +165,9 @@ def calculate_crypto_subtotal(crypto_items: list, crypto_prices: dict, base_curr
     return {'items': items_out, 'total': round(total, 2)}
 
 
-# Loan frequency multipliers for annualization
-LOAN_FREQUENCY_MULTIPLIERS = {
-    'weekly': 52,
-    'biweekly': 26,
-    'semi_monthly': 24,
-    'monthly': 12,
-    'quarterly': 4,
-    'yearly': 1,
-}
-
-
 def calculate_credit_card_subtotal(credit_card_items: list, master_currency: str, fx_rates: dict) -> dict:
-    """Calculate credit card debt subtotal.
-
-    Args:
-        credit_card_items: List of dicts with name, amount, currency
-        master_currency: Target currency for conversion
-        fx_rates: FX rate dictionary
-
-    Returns:
-        Dict with items list and total
-    """
-    items_out = []
-    total = 0.0
-
-    for item in credit_card_items:
-        amount = item.get('amount', 0)
-        currency = item.get('currency', master_currency)
-        converted, rate = convert_to_master(amount, currency, master_currency, fx_rates)
-
-        items_out.append({
-            'name': item.get('name', 'Credit Card'),
-            'original_currency': currency,
-            'original_amount': amount,
-            'converted_amount': round(converted, 2),
-            'fx_rate': round(rate, 6)
-        })
-        total += converted
-
-    return {'items': items_out, 'total': round(total, 2)}
+    """Calculate credit card debt subtotal."""
+    return _calculate_currency_subtotal(credit_card_items, master_currency, fx_rates, 'Credit Card')
 
 
 def calculate_loan_subtotal(loan_items: list, master_currency: str, fx_rates: dict) -> dict:

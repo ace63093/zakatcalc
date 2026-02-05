@@ -288,42 +288,35 @@ class SnapshotRepository:
             return data
         return None
 
-    # Helper methods for R2 mirroring
-    def _mirror_fx_to_r2(self, effective_date, cadence, data):
-        """Mirror FX snapshot to R2 (best-effort)."""
+    # Helper method for R2 mirroring
+    def _mirror_to_r2(self, snapshot_type: str, effective_date, cadence, data):
+        """Mirror snapshot to R2 (best-effort).
+
+        Args:
+            snapshot_type: 'fx', 'metals', or 'crypto'
+            effective_date: Date of the snapshot
+            cadence: 'daily', 'weekly', or 'monthly'
+            data: Snapshot data to mirror
+        """
         if not self._r2:
             return
         try:
-            self._r2.put_snapshot('fx', cadence, effective_date, {
+            self._r2.put_snapshot(snapshot_type, cadence, effective_date, {
                 'source': 'upstream',
                 'data': data,
             })
         except Exception as e:
-            logger.warning(f"Failed to mirror FX to R2: {e}")
+            logger.warning(f"Failed to mirror {snapshot_type} to R2: {e}")
+
+    # Thin wrappers for backward compatibility
+    def _mirror_fx_to_r2(self, effective_date, cadence, data):
+        self._mirror_to_r2('fx', effective_date, cadence, data)
 
     def _mirror_metals_to_r2(self, effective_date, cadence, data):
-        """Mirror metals snapshot to R2 (best-effort)."""
-        if not self._r2:
-            return
-        try:
-            self._r2.put_snapshot('metals', cadence, effective_date, {
-                'source': 'upstream',
-                'data': data,
-            })
-        except Exception as e:
-            logger.warning(f"Failed to mirror metals to R2: {e}")
+        self._mirror_to_r2('metals', effective_date, cadence, data)
 
     def _mirror_crypto_to_r2(self, effective_date, cadence, data):
-        """Mirror crypto snapshot to R2 (best-effort)."""
-        if not self._r2:
-            return
-        try:
-            self._r2.put_snapshot('crypto', cadence, effective_date, {
-                'source': 'upstream',
-                'data': data,
-            })
-        except Exception as e:
-            logger.warning(f"Failed to mirror crypto to R2: {e}")
+        self._mirror_to_r2('crypto', effective_date, cadence, data)
 
 
 def get_snapshot_repository(

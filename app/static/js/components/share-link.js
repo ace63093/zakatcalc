@@ -513,53 +513,9 @@ var ShareLink = (function() {
         }
     }
 
-    /**
-     * Show notification toast
-     * @param {string} message - Message to show
-     * @param {string} type - 'success' or 'error'
-     */
-    function showNotification(message, type) {
-        // Remove existing notifications
-        var existing = document.querySelector('.tools-notification');
-        if (existing) {
-            existing.remove();
-        }
-
-        var notification = document.createElement('div');
-        notification.className = 'tools-notification tools-notification-' + type;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-
-        // Trigger animation
-        setTimeout(function() {
-            notification.classList.add('visible');
-        }, 10);
-
-        // Auto-remove after 3 seconds
-        setTimeout(function() {
-            notification.classList.remove('visible');
-            setTimeout(function() {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 300);
-        }, 3000);
-    }
-
-    /**
-     * Escape HTML special characters
-     * @param {string} str - String to escape
-     * @returns {string} Escaped string
-     */
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
+    // Use shared utilities
+    var showNotification = ZakatUtils.showNotification;
+    var escapeHtml = ZakatUtils.escapeHtml;
 
     // Public API
     return {

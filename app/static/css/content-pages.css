@@ -1,0 +1,213 @@
+/**
+ * Content Pages Shared Styles
+ * Styles for about_zakat, faq, contact, privacy_policy pages
+ */
+
+/* Content Section - used for article-like content blocks */
+.content-section {
+    margin-bottom: 30px;
+}
+
+.content-section h2 {
+    color: var(--color-primary, #667eea);
+    font-size: var(--font-size-xl, 1.3rem);
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--color-border, #e2e8f0);
+}
+
+.content-section p {
+    color: var(--color-text-secondary, #4a5568);
+    margin-bottom: 12px;
+}
+
+.content-section ul {
+    color: var(--color-text-secondary, #4a5568);
+    margin-left: 20px;
+    margin-bottom: 12px;
+}
+
+.content-section li {
+    margin-bottom: 8px;
+}
+
+/* Alert Boxes - Unified styling for all callout boxes */
+.alert-box {
+    padding: 15px;
+    border-radius: 0 8px 8px 0;
+    border-left: 4px solid;
+    margin: 20px 0;
+}
+
+.alert-box p {
+    margin-bottom: 0;
+}
+
+.alert-box p + p {
+    margin-top: 8px;
+}
+
+/* Info variant (blue) - previously .highlight-box */
+.alert-info,
+.highlight-box {
+    background: var(--color-info-bg, #f0f5ff);
+    border-left-color: var(--color-info-border, #667eea);
+}
+
+.alert-info p,
+.highlight-box p {
+    color: var(--color-info-text, #3c366b);
+    margin-bottom: 0;
+}
+
+/* Warning variant (yellow) - previously .disclaimer */
+.alert-warning,
+.disclaimer {
+    background: var(--color-warning-bg, #fefcbf);
+    border-left-color: var(--color-warning-border, #d69e2e);
+    margin-top: 30px;
+}
+
+.alert-warning p,
+.disclaimer p {
+    color: var(--color-warning-text, #744210);
+    font-size: var(--font-size-sm, 0.9rem);
+    margin-bottom: 0;
+}
+
+/* Success variant (teal) - previously .response-note */
+.alert-success,
+.response-note {
+    background: var(--color-success-bg, #e6fffa);
+    border-left-color: var(--color-success-border, #38b2ac);
+}
+
+.alert-success p,
+.response-note {
+    color: var(--color-success-text, #234e52);
+}
+
+.alert-success strong,
+.response-note strong {
+    color: var(--color-success-text, #234e52);
+}
+
+/* Error variant (red) */
+.alert-error {
+    background: var(--color-error-bg, #fed7d7);
+    border-left-color: var(--color-error-border, #f56565);
+}
+
+.alert-error p {
+    color: var(--color-error-text, #742a2a);
+    margin-bottom: 0;
+}
+
+/* FAQ Styles */
+.faq-item {
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
+    padding-bottom: 25px;
+}
+
+.faq-item:last-child {
+    border-bottom: none;
+}
+
+.faq-question {
+    color: var(--color-primary, #667eea);
+    font-size: var(--font-size-lg, 1.1rem);
+    font-weight: 600;
+    margin-bottom: 10px;
+    cursor: default;
+}
+
+.faq-answer {
+    color: var(--color-text-secondary, #4a5568);
+}
+
+.faq-answer p {
+    margin-bottom: 10px;
+}
+
+.faq-answer ul {
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+
+.faq-answer li {
+    margin-bottom: 6px;
+}
+
+.faq-category {
+    color: var(--color-primary, #667eea);
+    font-size: var(--font-size-xl, 1.3rem);
+    margin: 35px 0 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--color-border, #e2e8f0);
+}
+
+.faq-category:first-of-type {
+    margin-top: 25px;
+}
+
+/* Contact Page Styles */
+.contact-intro {
+    color: var(--color-text-secondary, #4a5568);
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.contact-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.contact-card {
+    background: var(--color-bg-light, #f7fafc);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 10px;
+    padding: 18px;
+}
+
+.contact-card h2 {
+    color: var(--color-primary, #667eea);
+    font-size: var(--font-size-lg, 1.1rem);
+    margin-bottom: 8px;
+}
+
+.contact-card p,
+.contact-card li {
+    color: var(--color-text-secondary, #4a5568);
+    font-size: var(--font-size-sm, 0.95rem);
+}
+
+.contact-card ul {
+    margin-left: 18px;
+    margin-top: 8px;
+}
+
+.contact-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.contact-pill {
+    background: var(--color-bg-primary-lighter, #ebf4ff);
+    color: #2c5282;
+    padding: 8px 12px;
+    border-radius: var(--radius-pill, 999px);
+    font-weight: 600;
+    font-size: var(--font-size-sm, 0.9rem);
+}
+
+@media (min-width: 768px) {
+    .contact-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .contact-card.full {
+        grid-column: 1 / -1;
+    }
+}
