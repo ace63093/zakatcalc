@@ -15,12 +15,17 @@ import time
 from datetime import date, datetime, timedelta
 from typing import Iterable
 
-from app.db import get_schema
-from app.services.providers.fx_providers import FawazExchangeAPIProvider
-from app.services.r2_client import get_r2_client
-from app.services.r2_config import is_r2_enabled
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
-DEFAULT_START = date(2000, 1, 1)
+from app.db import get_schema  # noqa: E402
+from app.services.providers.fx_providers import FawazExchangeAPIProvider  # noqa: E402
+from app.services.r2_client import get_r2_client  # noqa: E402
+from app.services.r2_config import is_r2_enabled  # noqa: E402
+
+EARLIEST_SUPPORTED = date(2024, 4, 1)
+DEFAULT_START = EARLIEST_SUPPORTED
 DEFAULT_END = date(2025, 12, 31)
 EPSILON = 1e-9
 
@@ -41,6 +46,10 @@ def iter_daily(start: date, end: date) -> Iterable[date]:
 
 def iter_monthly(start: date, end: date) -> Iterable[date]:
     current = start.replace(day=1)
+    if current < start:
+        year = current.year + (current.month // 12)
+        month = (current.month % 12) + 1
+        current = date(year, month, 1)
     while current <= end:
         yield current
         year = current.year + (current.month // 12)
@@ -133,6 +142,10 @@ def main() -> int:
     end = min(args.end, DEFAULT_END)
     if args.end > DEFAULT_END:
         print(f"Clamping end date to {DEFAULT_END.isoformat()} (requested {args.end.isoformat()}).")
+
+    if start < EARLIEST_SUPPORTED:
+        print(f"Clamping start date to {EARLIEST_SUPPORTED.isoformat()} (requested {start.isoformat()}).")
+        start = EARLIEST_SUPPORTED
 
     if start > end:
         print('Start date must be on or before end date.')

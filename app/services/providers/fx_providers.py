@@ -15,7 +15,8 @@ class FawazExchangeAPIProvider(FXProvider):
     Provides historical and latest USD-based rates with no API key.
     """
 
-    BASE_URL = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api"
+    GH_BASE_URL = "https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1"
+    NPM_BASE_URL = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api"
     FALLBACK_URL = "https://{date}.currency-api.pages.dev"
     API_VERSION = "v1"
     BASE_CURRENCY = "usd"
@@ -37,10 +38,12 @@ class FawazExchangeAPIProvider(FXProvider):
         date_str = "latest" if target_date >= today else target_date.strftime('%Y-%m-%d')
 
         endpoints = [
-            f"{self.BASE_URL}@{date_str}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.min.json",
+            f"{self.GH_BASE_URL}/{date_str}/currencies/{self.BASE_CURRENCY}.min.json",
+            f"{self.GH_BASE_URL}/{date_str}/currencies/{self.BASE_CURRENCY}.json",
             f"{self.FALLBACK_URL.format(date=date_str)}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.min.json",
-            f"{self.BASE_URL}@{date_str}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.json",
             f"{self.FALLBACK_URL.format(date=date_str)}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.json",
+            f"{self.NPM_BASE_URL}@{date_str}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.min.json",
+            f"{self.NPM_BASE_URL}@{date_str}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.json",
         ]
 
         last_error = None
