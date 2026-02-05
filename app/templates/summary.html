@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Zakat Calculation Summary - Printable{% endblock %}
+
+{% block head %}
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/summary.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="summary-container">
+    <!-- Loading state -->
+    <div id="summaryLoading" class="summary-loading">
+        <p>Loading calculation summary...</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="summaryError" class="summary-error" style="display: none;">
+        <h2>Unable to Load Summary</h2>
+        <p id="summaryErrorMessage">No calculation data found. Please go back to the calculator and use the "Print Summary" button.</p>
+        <a href="/" class="btn-back">Return to Calculator</a>
+    </div>
+
+    <!-- Summary content (hidden until data is loaded) -->
+    <div id="summaryContent" class="summary-content" style="display: none;">
+        <header class="summary-header">
+            <h1>Zakat Calculation Summary</h1>
+            <p class="summary-meta">
+                <span class="summary-date">Date: <strong id="summaryCalcDate"></strong></span>
+                <span class="summary-currency">Currency: <strong id="summaryBaseCurrency"></strong></span>
+            </p>
+        </header>
+
+        <section class="summary-section">
+            <h2>Assets</h2>
+
+            <!-- Basic Assets -->
+            <div id="goldAssets" class="asset-group" style="display: none;">
+                <h3>Gold</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Weight</th>
+                            <th>Purity</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="goldItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td colspan="3">Gold Total</td>
+                            <td class="col-value" id="goldSubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="metalAssets" class="asset-group" style="display: none;">
+                <h3>Other Precious Metals</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Metal</th>
+                            <th>Weight</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="metalItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td colspan="3">Metals Total</td>
+                            <td class="col-value" id="metalSubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="cashAssets" class="asset-group" style="display: none;">
+                <h3>Cash on Hand</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Amount</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cashItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td colspan="2">Cash Total</td>
+                            <td class="col-value" id="cashSubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="bankAssets" class="asset-group" style="display: none;">
+                <h3>Bank Accounts</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Account</th>
+                            <th>Balance</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bankItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td colspan="2">Accounts Total</td>
+                            <td class="col-value" id="bankSubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="cryptoAssets" class="asset-group" style="display: none;">
+                <h3>Cryptocurrency</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Symbol</th>
+                            <th>Amount</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cryptoItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td colspan="3">Crypto Total</td>
+                            <td class="col-value" id="cryptoSubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            {% if feature_flags.advanced_assets_enabled %}
+            <!-- Advanced Assets -->
+            <div id="stockAssets" class="asset-group advanced-group" style="display: none;">
+                <h3>Stocks / ETFs</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Method</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td colspan="2">Stocks Total</td>
+                            <td class="col-value" id="stockSubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="retirementAssets" class="asset-group advanced-group" style="display: none;">
+                <h3>Retirement Accounts</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Account</th>
+                            <th>Method</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="retirementItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td colspan="2">Retirement Total</td>
+                            <td class="col-value" id="retirementSubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="receivableAssets" class="asset-group advanced-group" style="display: none;">
+                <h3>Receivables</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Likelihood</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="receivableItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td colspan="2">Receivables Total</td>
+                            <td class="col-value" id="receivableSubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="businessAssets" class="asset-group advanced-group" style="display: none;">
+                <h3>Business Inventory</h3>
+                <table class="summary-table">
+                    <tbody id="businessItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td>Business Net Value</td>
+                            <td class="col-value" id="businessSubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="propertyAssets" class="asset-group advanced-group" style="display: none;">
+                <h3>Investment Property</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Intent</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="propertyItemsBody"></tbody>
+                    <tfoot>
+                        <tr class="subtotal-row">
+                            <td colspan="2">Property Total</td>
+                            <td class="col-value" id="propertySubtotal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% endif %}
+
+            <div class="grand-total assets-total">
+                <span>Total Assets</span>
+                <span id="assetsGrandTotal"></span>
+            </div>
+        </section>
+
+        <section class="summary-section" id="debtsSection" style="display: none;">
+            <h2>Deductible Debts</h2>
+
+            <div id="creditCardDebts" class="debt-group" style="display: none;">
+                <h3>Credit Cards</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Card</th>
+                            <th>Balance</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="creditCardItemsBody"></tbody>
+                </table>
+            </div>
+
+            <div id="loanDebts" class="debt-group" style="display: none;">
+                <h3>Recurring Loans</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Loan</th>
+                            <th>Payment</th>
+                            <th>Frequency</th>
+                            <th class="col-value">Annual</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loanItemsBody"></tbody>
+                </table>
+            </div>
+
+            {% if feature_flags.advanced_assets_enabled %}
+            <div id="payableDebts" class="debt-group advanced-group" style="display: none;">
+                <h3>Short-term Payables</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th class="col-value">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payableItemsBody"></tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <div class="grand-total debts-total">
+                <span>Total Debts</span>
+                <span id="debtsGrandTotal"></span>
+            </div>
+        </section>
+
+        <section class="summary-section calculation-section">
+            <h2>Zakat Calculation</h2>
+
+            <table class="calculation-table">
+                <tr>
+                    <td>Total Assets</td>
+                    <td class="col-value" id="calcAssetsTotal"></td>
+                </tr>
+                <tr class="deduction-row">
+                    <td>Less: Deductible Debts</td>
+                    <td class="col-value" id="calcDebtsTotal"></td>
+                </tr>
+                <tr class="net-row">
+                    <td>Net Zakatable Wealth</td>
+                    <td class="col-value" id="calcNetTotal"></td>
+                </tr>
+                <tr>
+                    <td>Nisab Threshold (<span id="nisabBasisLabel">Gold</span>)</td>
+                    <td class="col-value" id="calcNisabThreshold"></td>
+                </tr>
+                <tr>
+                    <td>Above Nisab?</td>
+                    <td class="col-value" id="calcAboveNisab"></td>
+                </tr>
+                <tr class="zakat-row">
+                    <td><strong>Zakat Due (2.5%)</strong></td>
+                    <td class="col-value zakat-amount" id="calcZakatDue"></td>
+                </tr>
+            </table>
+        </section>
+
+        <footer class="summary-footer">
+            <p class="print-note">Generated by <a href="https://whatismyzakat.com">whatismyzakat.com</a></p>
+            <p class="generated-time">Generated: <span id="generatedTime"></span></p>
+            <div class="print-actions no-print">
+                <button type="button" onclick="window.print()" class="btn-print">Print This Summary</button>
+                <a href="/" class="btn-back">Return to Calculator</a>
+            </div>
+        </footer>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/utils/shared.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vendor/lz-string.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/summary.js') }}"></script>
+{% endblock %}

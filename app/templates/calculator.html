@@ -476,6 +476,9 @@
                     <div class="tools-buttons">
                         <button type="button" id="share-link-btn">Copy Share Link</button>
                         <button type="button" id="export-csv-btn">Export CSV</button>
+                        {% if feature_flags.print_summary_enabled %}
+                        <button type="button" id="print-summary-btn">Print Summary</button>
+                        {% endif %}
                     </div>
                 </div>
             </form>

@@ -156,6 +156,13 @@ var ShareLink = (function() {
                 event.preventDefault();
                 showShareModal();
             }
+
+            // Print Summary button
+            var printBtn = event.target.closest('#print-summary-btn');
+            if (printBtn) {
+                event.preventDefault();
+                openPrintSummary();
+            }
         });
 
         // Escape key to close modals
@@ -571,6 +578,35 @@ var ShareLink = (function() {
         }
     }
 
+    /**
+     * Open printable summary in new window
+     */
+    function openPrintSummary() {
+        if (typeof ZakatCalculator === 'undefined') {
+            showNotification('Calculator not available.', 'error');
+            return;
+        }
+
+        if (typeof LZString === 'undefined') {
+            showNotification('Compression library not available.', 'error');
+            return;
+        }
+
+        var state = ZakatCalculator.getState();
+        var payload = {
+            v: SCHEMA_VERSION,
+            data: state
+        };
+
+        var json = JSON.stringify(payload);
+        var compressed = LZString.compressToEncodedURIComponent(json);
+
+        var summaryUrl = window.location.origin + '/summary' + HASH_PREFIX + compressed;
+
+        // Open in new tab
+        window.open(summaryUrl, '_blank');
+    }
+
     // Use shared utilities
     var showNotification = ZakatUtils.showNotification;
     var escapeHtml = ZakatUtils.escapeHtml;
@@ -583,6 +619,7 @@ var ShareLink = (function() {
         copyToClipboard: copyToClipboard,
         checkUrlLength: checkUrlLength,
         showShareModal: showShareModal,
-        showLoadConfirmation: showLoadConfirmation
+        showLoadConfirmation: showLoadConfirmation,
+        openPrintSummary: openPrintSummary
     };
 })();

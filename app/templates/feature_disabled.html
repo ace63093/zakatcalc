@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Feature Disabled - Zakat Calculator{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="feature-disabled">
+        <h1>Feature Not Available</h1>
+        <p>The <strong>{{ feature_name }}</strong> feature is currently disabled.</p>
+        <p>Please contact the administrator if you believe this is an error.</p>
+        <a href="/" class="btn-back">Return to Calculator</a>
+    </div>
+</div>
+
+<style>
+.feature-disabled {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.feature-disabled h1 {
+    color: #e53e3e;
+    margin-bottom: 20px;
+}
+
+.feature-disabled p {
+    color: #718096;
+    margin-bottom: 10px;
+}
+
+.feature-disabled .btn-back {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.feature-disabled .btn-back:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+</style>
+{% endblock %}

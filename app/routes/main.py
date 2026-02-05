@@ -46,3 +46,18 @@ def privacy_policy():
 def cad_to_bdt():
     """Render the CAD to BDT conversion page."""
     return render_template('cad_to_bdt.html')
+
+
+@main_bp.route('/summary')
+def summary():
+    """Render the printable summary page.
+
+    This page is designed to be loaded via JavaScript with state passed
+    in the URL fragment. The page reads the state client-side and renders
+    a printable summary without sending data to the server.
+    """
+    feature_flags = get_feature_flags()
+    if not feature_flags.get('print_summary_enabled', True):
+        return render_template('feature_disabled.html',
+                               feature_name='Printable Summary'), 403
+    return render_template('summary.html', feature_flags=feature_flags)
