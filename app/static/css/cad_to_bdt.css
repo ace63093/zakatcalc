@@ -1,0 +1,205 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
+
+html body {
+    background: radial-gradient(circle at top, #111 0%, #050505 45%, #000 85%);
+    color: #f5f5f5;
+    font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+    padding: 0;
+}
+
+.site-nav {
+    display: none;
+}
+
+.page-shell {
+    max-width: none;
+    padding: 32px 20px 60px;
+}
+
+.page-layout {
+    width: 100%;
+}
+
+.cad-bdt-shell {
+    min-height: calc(100vh - 92px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cad-bdt-card {
+    width: min(640px, 100%);
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 32px 28px 28px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    position: relative;
+    overflow: hidden;
+    animation: cad-bdt-rise 0.7s ease-out both;
+}
+
+.cad-bdt-card::before {
+    content: '';
+    position: absolute;
+    inset: -40% 20% auto -20%;
+    height: 220px;
+    background: radial-gradient(circle, rgba(0, 212, 255, 0.2), rgba(0, 0, 0, 0));
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.cad-bdt-card::after {
+    content: '';
+    position: absolute;
+    inset: auto -10% -30% 40%;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255, 214, 0, 0.15), rgba(0, 0, 0, 0));
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.cad-bdt-header {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    margin-bottom: 26px;
+}
+
+.cad-bdt-eyebrow {
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 10px;
+}
+
+.cad-bdt-rate {
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #f8fafc;
+}
+
+#displayCad,
+#displayBdt,
+#rateValue {
+    color: #4ade80;
+}
+
+.cad-bdt-date {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.cad-bdt-note {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: rgba(255, 214, 0, 0.75);
+}
+
+.cad-bdt-controls {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.cad-bdt-controls label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.cad-bdt-controls input[type="date"] {
+    background: #111;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f5f5f5;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 1rem;
+}
+
+.cad-bdt-converter {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 16px;
+}
+
+.cad-bdt-field {
+    display: grid;
+    gap: 8px;
+}
+
+.cad-bdt-field label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.cad-bdt-field input[type="number"] {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #4ade80;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cad-bdt-field input[type="number"]:focus,
+.cad-bdt-controls input[type="date"]:focus {
+    outline: none;
+    border-color: rgba(0, 212, 255, 0.7);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15);
+}
+
+.cad-bdt-footer {
+    position: relative;
+    z-index: 1;
+    margin-top: 22px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.cad-bdt-status {
+    position: relative;
+    z-index: 1;
+    margin-top: 18px;
+    text-align: center;
+    font-size: 0.9rem;
+    min-height: 1.2em;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.cad-bdt-status[data-status="error"] {
+    color: rgba(255, 110, 110, 0.9);
+}
+
+.cad-bdt-status[data-status="loading"] {
+    color: rgba(0, 212, 255, 0.8);
+}
+
+@keyframes cad-bdt-rise {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 640px) {
+    .cad-bdt-card {
+        padding: 28px 20px 24px;
+    }
+
+    .cad-bdt-shell {
+        min-height: auto;
+    }
+}

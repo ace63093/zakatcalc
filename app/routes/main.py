@@ -38,3 +38,9 @@ def contact():
 def privacy_policy():
     """Render the Privacy Policy page."""
     return render_template('privacy_policy.html')
+
+
+@main_bp.route('/cad-to-bdt')
+def cad_to_bdt():
+    """Render the CAD to BDT conversion page."""
+    return render_template('cad_to_bdt.html')

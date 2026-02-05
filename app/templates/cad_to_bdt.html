@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}CAD to BDT - Daily Rate{% endblock %}
+
+{% block head %}
+<meta name="description" content="Private CAD to BDT converter with date selection.">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cad_to_bdt.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="cad-bdt-shell">
+    <div class="cad-bdt-card">
+        <div class="cad-bdt-header">
+            <p class="cad-bdt-eyebrow">CAD to BDT</p>
+            <h1 class="cad-bdt-rate">
+                <span id="displayCad">1</span> CAD = <span id="displayBdt">—</span> BDT
+            </h1>
+            <p class="cad-bdt-date">Rate date: <span id="rateDate">—</span></p>
+            <p class="cad-bdt-note" id="rateNote" hidden></p>
+        </div>
+
+        <div class="cad-bdt-controls">
+            <label for="rateDateInput">Pick a date</label>
+            <input type="date" id="rateDateInput" name="rateDateInput">
+        </div>
+
+        <div class="cad-bdt-converter">
+            <div class="cad-bdt-field">
+                <label for="cadAmount">Amount in CAD</label>
+                <input type="number" id="cadAmount" name="cadAmount" step="0.01" min="0" placeholder="CAD">
+            </div>
+            <div class="cad-bdt-field">
+                <label for="bdtAmount">Amount in BDT</label>
+                <input type="number" id="bdtAmount" name="bdtAmount" step="0.01" min="0" placeholder="BDT">
+            </div>
+        </div>
+
+        <div class="cad-bdt-footer">
+            Rate: 1 CAD = <span id="rateValue">—</span> BDT
+        </div>
+
+        <div class="cad-bdt-status" id="statusMessage"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cad_to_bdt.js') }}"></script>
+{% endblock %}

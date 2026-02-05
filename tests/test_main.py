@@ -65,3 +65,15 @@ def test_privacy_policy_contains_heading(client):
     """GET /privacy-policy should contain Privacy Policy heading."""
     response = client.get('/privacy-policy')
     assert b'Privacy Policy' in response.data
+
+
+def test_cad_to_bdt_returns_200(client):
+    """GET /cad-to-bdt should return status 200."""
+    response = client.get('/cad-to-bdt')
+    assert response.status_code == 200
+
+
+def test_cad_to_bdt_contains_heading(client):
+    """GET /cad-to-bdt should contain CAD to BDT heading."""
+    response = client.get('/cad-to-bdt')
+    assert b'CAD to BDT' in response.data
