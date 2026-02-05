@@ -71,41 +71,49 @@ class TestCalculatorPage:
         assert 'Zakat' in driver.title
 
         # Check main sections exist
-        assert driver.find_element(By.CSS_SELECTOR, '.calculator-container')
-        assert driver.find_element(By.CSS_SELECTOR, '.results-panel')
+        assert driver.find_element(By.CSS_SELECTOR, '.calculator-layout')
+        assert driver.find_element(By.CSS_SELECTOR, '.calculator-results')
 
     def test_base_currency_selector(self, driver):
         """Verify base currency selector works."""
         driver.get(BASE_URL)
 
-        # Find the base currency input
-        base_currency = driver.find_element(By.ID, 'base-currency')
-        assert base_currency.get_attribute('value') == 'CAD'
+        # Find the base currency input (inside the container)
+        base_currency_container = driver.find_element(By.ID, 'baseCurrencyContainer')
+        base_currency = base_currency_container.find_element(By.CSS_SELECTOR, 'input')
+        # Value shows full display like "CAD — Canadian Dollar"
+        assert 'CAD' in base_currency.get_attribute('value')
 
         # Click to open dropdown
         base_currency.click()
 
-        # Wait for dropdown to appear
+        # Wait for dropdown to appear (it's a ul.autocomplete-listbox that becomes visible)
         WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, '.autocomplete-dropdown'))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, '.autocomplete-listbox'))
         )
 
     def test_date_picker_shows_today(self, driver):
-        """Verify date picker defaults to today."""
+        """Verify date picker defaults to today (or close to it due to timezone)."""
         driver.get(BASE_URL)
 
-        date_input = driver.find_element(By.ID, 'calculation-date')
+        date_input = driver.find_element(By.ID, 'calculationDate')
         selected_date = date_input.get_attribute('value')
 
-        # Should be today's date
-        assert selected_date == date.today().isoformat()
+        # Should be today or yesterday/tomorrow (due to timezone differences)
+        today = date.today()
+        acceptable_dates = [
+            (today - __import__('datetime').timedelta(days=1)).isoformat(),
+            today.isoformat(),
+            (today + __import__('datetime').timedelta(days=1)).isoformat(),
+        ]
+        assert selected_date in acceptable_dates
 
     def test_add_gold_item(self, driver):
         """Test adding a gold item."""
         driver.get(BASE_URL)
 
-        # Find and click "Add Gold" button
-        add_gold_btn = driver.find_element(By.CSS_SELECTOR, '[data-add-type="gold"]')
+        # Find and click "Add Gold" button (uses onclick="addGoldRow()")
+        add_gold_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Add Gold')]")
         add_gold_btn.click()
 
         # Verify a gold row was added
@@ -128,8 +136,8 @@ class TestCalculatorPage:
         """Test adding a cash item."""
         driver.get(BASE_URL)
 
-        # Find and click "Add Cash" button
-        add_cash_btn = driver.find_element(By.CSS_SELECTOR, '[data-add-type="cash"]')
+        # Find and click "Add Cash" button (uses onclick="addCashRow()")
+        add_cash_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Add Cash')]")
         add_cash_btn.click()
 
         # Verify a cash row was added
@@ -150,10 +158,11 @@ class TestCalculatorPage:
 
     def test_results_panel_updates(self, driver):
         """Test that results panel updates with totals."""
+        import re
         driver.get(BASE_URL)
 
-        # Add a cash item with significant value
-        add_cash_btn = driver.find_element(By.CSS_SELECTOR, '[data-add-type="cash"]')
+        # Add a cash item with significant value (uses onclick="addCashRow()")
+        add_cash_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Add Cash')]")
         add_cash_btn.click()
 
         cash_rows = driver.find_elements(By.CSS_SELECTOR, '.asset-row[data-type="cash"]')
@@ -161,16 +170,21 @@ class TestCalculatorPage:
         amount_input.clear()
         amount_input.send_keys('50000')
 
-        # Wait for total to update
-        total_element = driver.find_element(By.ID, 'total-assets')
+        # Wait for total to update (extract numeric value from formatted currency)
+        total_element = driver.find_element(By.ID, 'grandTotal')
+
+        def extract_numeric(text):
+            """Extract numeric value from currency text like '$50,000.00' or 'CA$50,000.00'."""
+            match = re.search(r'[\d,]+\.?\d*', text.replace(',', ''))
+            return float(match.group()) if match else 0
+
         WebDriverWait(driver, 5).until(
-            lambda d: float(total_element.text.replace(',', '').replace('$', '') or '0') > 0
+            lambda d: extract_numeric(total_element.text) > 0
         )
 
         # Check zakat amount is calculated
-        zakat_element = driver.find_element(By.ID, 'zakat-amount')
-        zakat_text = zakat_element.text.replace(',', '').replace('$', '')
-        assert float(zakat_text) > 0
+        zakat_element = driver.find_element(By.ID, 'zakatDue')
+        assert extract_numeric(zakat_element.text) > 0
 
     def test_nisab_indicator_visible(self, driver):
         """Test nisab indicator card is visible."""
@@ -179,13 +193,17 @@ class TestCalculatorPage:
         nisab_card = driver.find_element(By.CSS_SELECTOR, '.nisab-indicator')
         assert nisab_card.is_displayed()
 
-        # Should show gold and silver nisab values
-        gold_nisab = driver.find_element(By.ID, 'nisab-gold-value')
-        silver_nisab = driver.find_element(By.ID, 'nisab-silver-value')
+        # Should show threshold value with gold/silver toggle buttons
+        threshold_value = driver.find_element(By.CSS_SELECTOR, '.nisab-indicator .threshold-value')
+        toggle_buttons = driver.find_elements(By.CSS_SELECTOR, '.nisab-toggle-btn')
 
-        # Values should be populated (not empty or zero)
-        assert gold_nisab.text not in ('', '0', '—')
-        assert silver_nisab.text not in ('', '0', '—')
+        # Should have gold and silver toggle buttons
+        assert len(toggle_buttons) == 2
+
+        # Threshold value should be populated after pricing loads
+        WebDriverWait(driver, 5).until(
+            lambda d: threshold_value.text not in ('', '--')
+        )
 
 
 class TestPricingAPI:
@@ -233,7 +251,7 @@ class TestNavigation:
 
         # Test Contact link
         driver.get(BASE_URL)
-        contact_link = driver.find_element(By.LINK_TEXT, 'Contact')
+        contact_link = driver.find_element(By.LINK_TEXT, 'Contact Us')
         contact_link.click()
         WebDriverWait(driver, 5).until(EC.url_contains('/contact'))
         assert '/contact' in driver.current_url
@@ -261,7 +279,7 @@ class TestShareAndExport:
         """Test CSV export button is present."""
         driver.get(BASE_URL)
 
-        export_btn = driver.find_element(By.ID, 'csv-export-btn')
+        export_btn = driver.find_element(By.ID, 'export-csv-btn')
         assert export_btn.is_displayed()
 
 
@@ -274,11 +292,11 @@ class TestResponsive:
         driver.get(BASE_URL)
 
         # Calculator should still be visible
-        calc = driver.find_element(By.CSS_SELECTOR, '.calculator-container')
+        calc = driver.find_element(By.CSS_SELECTOR, '.calculator-layout')
         assert calc.is_displayed()
 
-        # Results panel should be visible
-        results = driver.find_element(By.CSS_SELECTOR, '.results-panel')
+        # Results section should be visible
+        results = driver.find_element(By.CSS_SELECTOR, '.calculator-results')
         assert results.is_displayed()
 
     def test_tablet_layout(self, driver):
@@ -286,7 +304,7 @@ class TestResponsive:
         driver.set_window_size(768, 1024)  # iPad size
         driver.get(BASE_URL)
 
-        calc = driver.find_element(By.CSS_SELECTOR, '.calculator-container')
+        calc = driver.find_element(By.CSS_SELECTOR, '.calculator-layout')
         assert calc.is_displayed()
 
     def test_desktop_layout(self, driver):
@@ -294,7 +312,7 @@ class TestResponsive:
         driver.set_window_size(1920, 1080)
         driver.get(BASE_URL)
 
-        calc = driver.find_element(By.CSS_SELECTOR, '.calculator-container')
+        calc = driver.find_element(By.CSS_SELECTOR, '.calculator-layout')
         assert calc.is_displayed()
 
 
