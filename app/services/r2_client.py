@@ -10,6 +10,7 @@ from datetime import date
 from typing import Any
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from .r2_config import (
@@ -45,6 +46,11 @@ class R2Client:
                 aws_access_key_id=get_r2_access_key(),
                 aws_secret_access_key=get_r2_secret_key(),
                 region_name='auto',
+                config=Config(
+                    s3={'checksum_mode': 'disabled'},
+                    request_checksum_calculation='when_required',
+                    response_checksum_validation='when_required',
+                ),
             )
 
     def _make_key(self, data_type: str, cadence: str, effective_date: date) -> str:
@@ -121,8 +127,12 @@ class R2Client:
 
         try:
             response = self._client.get_object(Bucket=self._bucket, Key=key)
-            compressed = response['Body'].read()
-            json_bytes = gzip.decompress(compressed)
+            body = response['Body'].read()
+            try:
+                json_bytes = gzip.decompress(body)
+            except OSError:
+                # Some clients transparently decompress when Content-Encoding is gzip.
+                json_bytes = body
             payload = json.loads(json_bytes.decode('utf-8'))
             logger.info(f"R2: Downloaded {data_type}/{cadence}/{effective_date}")
             return payload
