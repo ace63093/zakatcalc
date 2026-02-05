@@ -8,6 +8,9 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/nisab-indicator.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/advanced-assets.css') }}">
+{% if feature_flags.date_assistant_enabled %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/date-assistant.css') }}">
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -486,6 +489,11 @@
 
         <!-- Right column: Results Panel (sticky on desktop) -->
         <div class="calculator-results sidebar">
+            {% if feature_flags.date_assistant_enabled %}
+            <!-- Zakat Date Assistant -->
+            <div id="dateAssistantContainer"></div>
+            {% endif %}
+
             <!-- Nisab Indicator Card -->
             <div id="nisabIndicatorContainer"></div>
 
@@ -580,12 +588,18 @@
 <script src="{{ url_for('static', filename='js/components/nisab-indicator.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/share-link.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/csv-export.js') }}"></script>
+{% if feature_flags.date_assistant_enabled %}
+<script src="{{ url_for('static', filename='js/components/date-assistant.js') }}"></script>
+{% endif %}
 <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
 <script>
     // Initialize ShareLink and CsvExport after calculator is ready
     document.addEventListener('DOMContentLoaded', function() {
         ShareLink.init();
         CsvExport.init();
+        {% if feature_flags.date_assistant_enabled %}
+        ZakatDateAssistant.init('dateAssistantContainer');
+        {% endif %}
     });
 </script>
 {% endblock %}

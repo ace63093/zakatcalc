@@ -1,0 +1,235 @@
+/**
+ * Zakat Date Assistant Styles
+ */
+
+.date-assistant {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+/* Header */
+.date-assistant-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    background: linear-gradient(135deg, #f0f4ff 0%, #f5f0ff 100%);
+    border-bottom: 1px solid transparent;
+    transition: background 0.2s;
+}
+
+.date-assistant-header:hover {
+    background: linear-gradient(135deg, #e6ebff 0%, #f0e6ff 100%);
+}
+
+.date-assistant-header:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px rgba(102, 126, 234, 0.4);
+}
+
+.date-assistant-icon {
+    font-size: 1.25rem;
+    margin-right: 10px;
+}
+
+.date-assistant-title {
+    flex: 1;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.date-assistant-toggle {
+    font-size: 1.25rem;
+    color: #667eea;
+    font-weight: bold;
+    width: 24px;
+    text-align: center;
+}
+
+/* Content */
+.date-assistant-content {
+    padding: 16px;
+    background: white;
+}
+
+.date-assistant-section {
+    margin-bottom: 16px;
+}
+
+.date-assistant-section:last-child {
+    margin-bottom: 0;
+}
+
+.date-assistant-section label {
+    display: block;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 4px;
+}
+
+.date-hint {
+    font-size: 0.85rem;
+    color: #718096;
+    margin-bottom: 10px;
+}
+
+/* Date input row */
+.date-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.date-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.date-btn-save {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.date-btn-save:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Date info section */
+.date-info {
+    background: #f7fafc;
+    border-radius: 8px;
+    padding: 12px 14px;
+}
+
+.date-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.date-info-row:not(:last-child) {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.date-info-label {
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.date-info-value {
+    font-weight: 500;
+    color: #4a5568;
+    text-align: right;
+}
+
+/* Urgency indicators */
+.date-today .date-info-value {
+    color: #38a169;
+    font-weight: 600;
+}
+
+.date-soon .date-info-value {
+    color: #d69e2e;
+    font-weight: 600;
+}
+
+.date-overdue .date-info-value {
+    color: #e53e3e;
+    font-weight: 600;
+}
+
+/* Action buttons */
+.date-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.date-btn-export {
+    flex: 1;
+    padding: 10px 16px;
+    background: #38a169;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    min-width: 150px;
+}
+
+.date-btn-export:hover {
+    background: #2f855a;
+}
+
+.date-btn-clear {
+    padding: 10px 16px;
+    background: white;
+    color: #718096;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.date-btn-clear:hover {
+    background: #f7fafc;
+    color: #e53e3e;
+    border-color: #e53e3e;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+    .date-input-row {
+        flex-direction: column;
+    }
+
+    .date-input {
+        width: 100%;
+    }
+
+    .date-btn-save {
+        width: 100%;
+    }
+
+    .date-actions {
+        flex-direction: column;
+    }
+
+    .date-btn-export,
+    .date-btn-clear {
+        width: 100%;
+    }
+
+    .date-info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .date-info-value {
+        text-align: left;
+    }
+}
