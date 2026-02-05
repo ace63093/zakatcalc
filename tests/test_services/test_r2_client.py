@@ -108,6 +108,41 @@ class TestR2ClientListSnapshots:
         assert 'pricing/fx/daily/2026-01-06.json.gz' in fx_daily
 
 
+class TestR2ClientDecompressionFallback:
+    """Test decompression fallback for already-decompressed content."""
+
+    def test_get_snapshot_handles_already_decompressed(self, r2_client, fake_r2):
+        """Verify get handles content already decompressed by client.
+
+        Some S3/R2 clients transparently decompress content when
+        Content-Encoding is gzip. The R2Client should handle both cases.
+        """
+        # Manually store uncompressed JSON (simulating transparent decompression)
+        payload = {
+            'version': '1.0',
+            'type': 'fx',
+            'cadence': 'daily',
+            'effective_date': '2026-01-10',
+            'base': 'USD',
+            'data': {'CAD': 1.40, 'EUR': 0.95},
+        }
+        uncompressed_json = json.dumps(payload).encode('utf-8')
+
+        # Store directly in fake without gzip compression
+        fake_r2._objects['test-bucket/pricing/fx/daily/2026-01-10.json.gz'] = {
+            'Body': uncompressed_json,  # Already decompressed
+            'ContentType': 'application/json',
+            'ContentEncoding': 'gzip',  # Header still says gzip
+        }
+
+        # get_snapshot should handle this gracefully
+        result = r2_client.get_snapshot('fx', 'daily', date(2026, 1, 10))
+
+        assert result is not None
+        assert result['type'] == 'fx'
+        assert result['data'] == {'CAD': 1.40, 'EUR': 0.95}
+
+
 class TestR2ClientKeyNaming:
     """Test key naming convention."""
 

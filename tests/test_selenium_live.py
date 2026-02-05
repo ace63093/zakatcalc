@@ -316,5 +316,78 @@ class TestResponsive:
         assert calc.is_displayed()
 
 
+class TestCadToBdtConverter:
+    """Tests for the CAD to BDT converter page."""
+
+    def test_page_loads(self, driver):
+        """Verify CAD to BDT page loads successfully."""
+        driver.get(f'{BASE_URL}/cad-to-bdt')
+        assert 'CAD to BDT' in driver.title
+
+        # Check main card exists
+        card = driver.find_element(By.CSS_SELECTOR, '.cad-bdt-card')
+        assert card.is_displayed()
+
+    def test_date_picker_exists(self, driver):
+        """Verify date picker is present and defaults to today."""
+        driver.get(f'{BASE_URL}/cad-to-bdt')
+
+        date_input = driver.find_element(By.ID, 'rateDateInput')
+        assert date_input.is_displayed()
+
+        # Should have a value (today's date)
+        selected_date = date_input.get_attribute('value')
+        assert selected_date  # Not empty
+
+    def test_converter_inputs_exist(self, driver):
+        """Verify CAD and BDT input fields are present."""
+        driver.get(f'{BASE_URL}/cad-to-bdt')
+
+        cad_input = driver.find_element(By.ID, 'cadAmount')
+        bdt_input = driver.find_element(By.ID, 'bdtAmount')
+
+        assert cad_input.is_displayed()
+        assert bdt_input.is_displayed()
+
+    def test_rate_displays_after_load(self, driver):
+        """Verify exchange rate is displayed after page loads."""
+        driver.get(f'{BASE_URL}/cad-to-bdt')
+
+        # Wait for rate to load (displayBdt should show a number, not '—')
+        display_bdt = driver.find_element(By.ID, 'displayBdt')
+        WebDriverWait(driver, 10).until(
+            lambda d: display_bdt.text != '—' and display_bdt.text != ''
+        )
+
+        # Rate should be a reasonable number (BDT is typically 80-120 per CAD)
+        rate_text = display_bdt.text.replace(',', '')
+        rate_value = float(rate_text)
+        assert 50 < rate_value < 200  # Reasonable range for CAD to BDT
+
+    def test_cad_input_updates_bdt(self, driver):
+        """Test that entering CAD amount updates BDT amount."""
+        driver.get(f'{BASE_URL}/cad-to-bdt')
+
+        # Wait for rate to load first
+        display_bdt = driver.find_element(By.ID, 'displayBdt')
+        WebDriverWait(driver, 10).until(
+            lambda d: display_bdt.text != '—'
+        )
+
+        # Enter CAD amount
+        cad_input = driver.find_element(By.ID, 'cadAmount')
+        cad_input.clear()
+        cad_input.send_keys('100')
+
+        # BDT input should update
+        bdt_input = driver.find_element(By.ID, 'bdtAmount')
+        WebDriverWait(driver, 5).until(
+            lambda d: bdt_input.get_attribute('value') not in ('', '0')
+        )
+
+        bdt_value = float(bdt_input.get_attribute('value'))
+        assert bdt_value > 0  # Should have a positive conversion
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
