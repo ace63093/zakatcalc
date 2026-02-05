@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/autocomplete.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/nisab-indicator.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/advanced-assets.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -191,9 +192,196 @@
                 </div>
                 <button type="button" class="btn-add" onclick="addCryptoRow()">+ Add Crypto Asset</button>
 
+                {% if feature_flags.advanced_assets_enabled %}
+                <!-- Advanced Mode Toggle -->
+                <div class="advanced-mode-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="advancedModeToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Advanced Assets Mode</span>
+                    <span class="toggle-hint">Include stocks, retirement accounts, receivables, business inventory, and investment property</span>
+                </div>
+
+                <!-- Advanced Assets Sections (hidden by default) -->
+                <div id="advancedAssetsContainer" class="advanced-assets-container" style="display: none;">
+
+                    <!-- Stocks / ETFs -->
+                    <div class="section-title section-title-advanced">Stocks / ETFs</div>
+                    <p class="section-helper">Enter your stock and ETF holdings. Choose valuation method per holding.</p>
+                    <div id="stockItems">
+                        <div class="asset-row" data-type="stock">
+                            <div class="group-name">
+                                <input type="text" name="stock_name" placeholder="Name (e.g., VGRO)" class="input-name">
+                            </div>
+                            <div class="group-middle">
+                                <input type="number" name="stock_value" step="0.01" min="0" placeholder="Value" class="input-amount">
+                                <div class="currency-autocomplete" data-name="stock_currency"></div>
+                            </div>
+                            <div class="group-middle-secondary">
+                                <select name="stock_method" class="input-method">
+                                    <option value="market_value" selected>Full Value</option>
+                                    <option value="zakatable_portion">30% Only</option>
+                                </select>
+                            </div>
+                            <div class="group-value">
+                                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+                            </div>
+                            <div class="group-remove">
+                                <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-add" onclick="addStockRow()">+ Add Stock/ETF</button>
+
+                    <!-- Retirement Accounts -->
+                    <div class="section-title section-title-advanced">Retirement Accounts</div>
+                    <p class="section-helper">RRSP, 401(k), IRA, etc. Choose how to value based on accessibility.</p>
+                    <div id="retirementItems">
+                        <div class="asset-row" data-type="retirement">
+                            <div class="group-name">
+                                <input type="text" name="retirement_name" placeholder="Name (e.g., RRSP)" class="input-name">
+                            </div>
+                            <div class="group-middle">
+                                <input type="number" name="retirement_balance" step="0.01" min="0" placeholder="Balance" class="input-amount">
+                                <div class="currency-autocomplete" data-name="retirement_currency"></div>
+                            </div>
+                            <div class="group-middle-secondary">
+                                <select name="retirement_method" class="input-method">
+                                    <option value="accessible_only" selected>If Accessible</option>
+                                    <option value="full_balance">Full Balance</option>
+                                    <option value="penalty_adjusted">After 10% Penalty</option>
+                                </select>
+                                <label class="checkbox-inline">
+                                    <input type="checkbox" name="retirement_accessible" checked> Accessible
+                                </label>
+                            </div>
+                            <div class="group-value">
+                                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+                            </div>
+                            <div class="group-remove">
+                                <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-add" onclick="addRetirementRow()">+ Add Retirement Account</button>
+
+                    <!-- Receivables -->
+                    <div class="section-title section-title-advanced">Receivables</div>
+                    <p class="section-helper">Money owed to you. Only "likely" receivables are included by default.</p>
+                    <div id="receivableItems">
+                        <div class="asset-row" data-type="receivable">
+                            <div class="group-name">
+                                <input type="text" name="receivable_name" placeholder="Name (e.g., Client A)" class="input-name">
+                            </div>
+                            <div class="group-middle">
+                                <input type="number" name="receivable_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                                <div class="currency-autocomplete" data-name="receivable_currency"></div>
+                            </div>
+                            <div class="group-middle-secondary">
+                                <select name="receivable_likelihood" class="input-likelihood">
+                                    <option value="likely" selected>Likely</option>
+                                    <option value="uncertain">Uncertain</option>
+                                    <option value="doubtful">Doubtful</option>
+                                </select>
+                            </div>
+                            <div class="group-value">
+                                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+                            </div>
+                            <div class="group-remove">
+                                <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="receivables-options">
+                        <label class="checkbox-inline">
+                            <input type="checkbox" id="includeUncertainReceivables"> Include uncertain receivables at 50%
+                        </label>
+                    </div>
+                    <button type="button" class="btn-add" onclick="addReceivableRow()">+ Add Receivable</button>
+
+                    <!-- Business Inventory -->
+                    <div class="section-title section-title-advanced">Business Inventory</div>
+                    <p class="section-helper">Trade goods and inventory held for resale. Personal-use items are exempt.</p>
+                    <div id="businessInventory" class="business-inventory-section">
+                        <div class="business-row">
+                            <label>Business Name</label>
+                            <input type="text" name="business_name" placeholder="Business name">
+                        </div>
+                        <div class="business-row">
+                            <label>Inventory Resale Value</label>
+                            <div class="business-input-group">
+                                <input type="number" name="business_resale_value" step="0.01" min="0" placeholder="0.00">
+                                <div class="currency-autocomplete" data-name="business_currency"></div>
+                            </div>
+                        </div>
+                        <div class="business-row">
+                            <label>Business Cash</label>
+                            <input type="number" name="business_cash" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="business-row">
+                            <label>Business Receivables</label>
+                            <input type="number" name="business_receivables" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="business-row">
+                            <label>Business Payables</label>
+                            <input type="number" name="business_payables" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="business-subtotal">
+                            <span>Net Business Value:</span>
+                            <span class="base-value-pill pill-empty" id="businessSubtotal">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Investment Property -->
+                    <div class="section-title section-title-advanced">Investment Property</div>
+                    <p class="section-helper">Properties held for income or resale. Primary residence is exempt.</p>
+                    <div id="propertyItems">
+                        <div class="asset-row" data-type="property">
+                            <div class="group-name">
+                                <input type="text" name="property_name" placeholder="Name (e.g., Rental Unit)" class="input-name">
+                            </div>
+                            <div class="group-middle">
+                                <input type="number" name="property_market_value" step="0.01" min="0" placeholder="Market Value" class="input-amount">
+                                <div class="currency-autocomplete" data-name="property_currency"></div>
+                            </div>
+                            <div class="group-middle-secondary">
+                                <select name="property_intent" class="input-intent">
+                                    <option value="rental" selected>Rental Income</option>
+                                    <option value="resale">For Resale</option>
+                                </select>
+                            </div>
+                            <div class="group-value">
+                                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+                            </div>
+                            <div class="group-remove">
+                                <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="section-helper property-rental-note" id="propertyRentalNote" style="display: none;">
+                        For rental properties, enter saved rental income (not market value) to be included in zakat calculation.
+                    </p>
+                    <button type="button" class="btn-add" onclick="addPropertyRow()">+ Add Property</button>
+
+                </div>
+                {% endif %}
+
                 <!-- Debts (Deductible) -->
                 <div class="section-title section-title-debts">Debts (Deductible)</div>
                 <p class="section-helper">Deductible debts reduce your zakat-eligible total.</p>
+
+                {% if feature_flags.advanced_assets_enabled %}
+                <!-- Debt Policy Selector (Advanced Mode) -->
+                <div id="debtPolicyContainer" class="debt-policy-container" style="display: none;">
+                    <label for="debtPolicy">Debt Deduction Policy:</label>
+                    <select id="debtPolicy" name="debt_policy" class="input-policy">
+                        <option value="12_months" selected>Next 12 months only</option>
+                        <option value="total">Total outstanding</option>
+                    </select>
+                    <span class="policy-hint" id="policyHint">Only debts due within the next year are deducted</span>
+                </div>
+                {% endif %}
 
                 <!-- Credit Cards subsection -->
                 <div class="subsection-title">Credit Cards</div>
@@ -248,6 +436,40 @@
                 </div>
                 <button type="button" class="btn-add" onclick="addLoanRow()">+ Add Loan</button>
 
+                {% if feature_flags.advanced_assets_enabled %}
+                <!-- Short-term Payables subsection (Advanced Mode) -->
+                <div id="shortTermPayablesContainer" class="short-term-payables-container" style="display: none;">
+                    <div class="subsection-title">Short-term Payables</div>
+                    <p class="section-helper">Taxes, rent, utilities, and other bills due soon.</p>
+                    <div id="payableItems">
+                        <div class="asset-row" data-type="payable">
+                            <div class="group-name">
+                                <input type="text" name="payable_name" placeholder="Name (e.g., Income Tax)" class="input-name">
+                            </div>
+                            <div class="group-middle">
+                                <input type="number" name="payable_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                                <div class="currency-autocomplete" data-name="payable_currency"></div>
+                            </div>
+                            <div class="group-middle-secondary">
+                                <select name="payable_type" class="input-payable-type">
+                                    <option value="taxes" selected>Taxes</option>
+                                    <option value="rent">Rent</option>
+                                    <option value="utilities">Utilities</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="group-value">
+                                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+                            </div>
+                            <div class="group-remove">
+                                <button type="button" class="btn-remove" onclick="removeRow(this)">−</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-add" onclick="addPayableRow()">+ Add Payable</button>
+                </div>
+                {% endif %}
+
                 <!-- Tools Section -->
                 <div class="tools-section">
                     <h3>Tools</h3>
@@ -288,6 +510,29 @@
                     <div class="result-row">
                         <span class="result-label">Crypto Total</span>
                         <span class="result-value" id="cryptoTotal">$0.00</span>
+                    </div>
+                    <!-- Advanced Assets Subtotals (hidden by default) -->
+                    <div id="advancedSubtotals" class="advanced-subtotals" style="display: none;">
+                        <div class="result-row">
+                            <span class="result-label">Stocks/ETFs Total</span>
+                            <span class="result-value" id="stockTotal">$0.00</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Retirement Total</span>
+                            <span class="result-value" id="retirementTotal">$0.00</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Receivables Total</span>
+                            <span class="result-value" id="receivablesTotal">$0.00</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Business Total</span>
+                            <span class="result-value" id="businessTotal">$0.00</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Property Total</span>
+                            <span class="result-value" id="propertyTotal">$0.00</span>
+                        </div>
                     </div>
                 </div>
 

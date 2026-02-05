@@ -1,6 +1,8 @@
 """Main routes for the Zakat Calculator UI."""
 from flask import Blueprint, render_template, redirect
 
+from app.services.config import get_feature_flags
+
 main_bp = Blueprint('main', __name__)
 
 
@@ -13,7 +15,7 @@ def ads_txt():
 @main_bp.route('/')
 def calculator():
     """Render the Zakat calculator UI."""
-    return render_template('calculator.html')
+    return render_template('calculator.html', feature_flags=get_feature_flags())
 
 
 @main_bp.route('/about-zakat')

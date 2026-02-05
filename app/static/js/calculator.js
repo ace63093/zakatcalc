@@ -209,6 +209,142 @@ const ZakatCalculator = (function() {
                 var amount = parseFloat(row.querySelector('[name="' + prefix + '_payment_amount"]')?.value) || 0;
                 return amount > 0;
             }
+        },
+        // Advanced Asset Types (v2)
+        stock: {
+            containerId: 'stockItems',
+            prefix: 'stock',
+            defaultName: 'Stock',
+            hasCurrency: true,
+            calcFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Stock',
+                    value: parseFloat(row.querySelector('[name="' + prefix + '_value"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    method: row.querySelector('[name="' + prefix + '_method"]')?.value || 'market_value'
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    value: parseFloat(row.querySelector('[name="' + prefix + '_value"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    method: row.querySelector('[name="' + prefix + '_method"]')?.value || 'market_value'
+                };
+            },
+            isValid: function(row, prefix) {
+                var value = parseFloat(row.querySelector('[name="' + prefix + '_value"]')?.value) || 0;
+                return value > 0;
+            }
+        },
+        retirement: {
+            containerId: 'retirementItems',
+            prefix: 'retirement',
+            defaultName: 'Retirement',
+            hasCurrency: true,
+            calcFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Retirement',
+                    balance: parseFloat(row.querySelector('[name="' + prefix + '_balance"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    method: row.querySelector('[name="' + prefix + '_method"]')?.value || 'accessible_only',
+                    accessible_now: row.querySelector('[name="' + prefix + '_accessible"]')?.checked || false
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    balance: parseFloat(row.querySelector('[name="' + prefix + '_balance"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    method: row.querySelector('[name="' + prefix + '_method"]')?.value || 'accessible_only',
+                    accessible_now: row.querySelector('[name="' + prefix + '_accessible"]')?.checked || false
+                };
+            },
+            isValid: function(row, prefix) {
+                var balance = parseFloat(row.querySelector('[name="' + prefix + '_balance"]')?.value) || 0;
+                return balance > 0;
+            }
+        },
+        receivable: {
+            containerId: 'receivableItems',
+            prefix: 'receivable',
+            defaultName: 'Receivable',
+            hasCurrency: true,
+            calcFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Receivable',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    likelihood: row.querySelector('[name="' + prefix + '_likelihood"]')?.value || 'likely'
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    likelihood: row.querySelector('[name="' + prefix + '_likelihood"]')?.value || 'likely'
+                };
+            },
+            isValid: function(row, prefix) {
+                var amount = parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0;
+                return amount > 0;
+            }
+        },
+        property: {
+            containerId: 'propertyItems',
+            prefix: 'property',
+            defaultName: 'Property',
+            hasCurrency: true,
+            calcFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Property',
+                    market_value: parseFloat(row.querySelector('[name="' + prefix + '_market_value"]')?.value) || 0,
+                    rental_income: parseFloat(row.querySelector('[name="' + prefix + '_rental_income"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    intent: row.querySelector('[name="' + prefix + '_intent"]')?.value || 'rental'
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    market_value: parseFloat(row.querySelector('[name="' + prefix + '_market_value"]')?.value) || 0,
+                    rental_income: parseFloat(row.querySelector('[name="' + prefix + '_rental_income"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    intent: row.querySelector('[name="' + prefix + '_intent"]')?.value || 'rental'
+                };
+            },
+            isValid: function(row, prefix) {
+                var marketValue = parseFloat(row.querySelector('[name="' + prefix + '_market_value"]')?.value) || 0;
+                var rentalIncome = parseFloat(row.querySelector('[name="' + prefix + '_rental_income"]')?.value) || 0;
+                return marketValue > 0 || rentalIncome > 0;
+            }
+        },
+        payable: {
+            containerId: 'payableItems',
+            prefix: 'payable',
+            defaultName: 'Payable',
+            hasCurrency: true,
+            calcFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Payable',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    type: row.querySelector('[name="' + prefix + '_type"]')?.value || 'other'
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    type: row.querySelector('[name="' + prefix + '_type"]')?.value || 'other'
+                };
+            },
+            isValid: function(row, prefix) {
+                var amount = parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0;
+                return amount > 0;
+            }
         }
     };
 
@@ -246,6 +382,11 @@ const ZakatCalculator = (function() {
     let nisabBasis = 'gold';
     let debounceTimer = null;
     let lastCalculationResult = null;
+
+    // Advanced Mode State (v2)
+    let advancedMode = false;
+    let debtPolicy = '12_months';
+    let includeUncertainReceivables = false;
 
     // Currency symbols for display (expanded set)
     const CURRENCY_SYMBOLS = {
@@ -412,6 +553,7 @@ const ZakatCalculator = (function() {
             initDatePicker();
             initNisabIndicator();
             initAssetRows();
+            initAdvancedMode();
             bindEvents();
 
             // Initial calculation
@@ -1598,6 +1740,255 @@ const ZakatCalculator = (function() {
         initCurrencyAutocompletes();
     }
 
+    // ========== Advanced Mode Functions (v2) ==========
+
+    /**
+     * Toggle advanced mode UI visibility
+     * @param {boolean} enabled - Whether advanced mode is enabled
+     */
+    function toggleAdvancedMode(enabled) {
+        advancedMode = enabled;
+
+        // Toggle visibility of advanced sections
+        var advancedContainer = document.getElementById('advancedAssetsContainer');
+        var advancedSubtotals = document.getElementById('advancedSubtotals');
+        var debtPolicyContainer = document.getElementById('debtPolicyContainer');
+        var payablesContainer = document.getElementById('shortTermPayablesContainer');
+
+        if (advancedContainer) {
+            advancedContainer.style.display = enabled ? 'block' : 'none';
+        }
+        if (advancedSubtotals) {
+            advancedSubtotals.style.display = enabled ? 'block' : 'none';
+        }
+        if (debtPolicyContainer) {
+            debtPolicyContainer.style.display = enabled ? 'flex' : 'none';
+        }
+        if (payablesContainer) {
+            payablesContainer.style.display = enabled ? 'block' : 'none';
+        }
+
+        // Initialize currency autocompletes for advanced sections if enabling
+        if (enabled) {
+            initCurrencyAutocompletes();
+        }
+
+        // Recalculate to update totals
+        recalculate();
+    }
+
+    /**
+     * Update debt policy hint text
+     */
+    function updateDebtPolicyHint() {
+        var hint = document.getElementById('policyHint');
+        if (!hint) return;
+
+        var hints = {
+            '12_months': 'Only debts due within the next year are deducted',
+            'total': 'Full outstanding balance of all debts is deducted'
+        };
+
+        hint.textContent = hints[debtPolicy] || '';
+    }
+
+    /**
+     * Initialize advanced mode event listeners
+     */
+    function initAdvancedMode() {
+        var toggle = document.getElementById('advancedModeToggle');
+        if (toggle) {
+            toggle.addEventListener('change', function() {
+                toggleAdvancedMode(this.checked);
+            });
+        }
+
+        var policySelect = document.getElementById('debtPolicy');
+        if (policySelect) {
+            policySelect.addEventListener('change', function() {
+                debtPolicy = this.value;
+                updateDebtPolicyHint();
+                recalculate();
+            });
+        }
+
+        var uncertainCheckbox = document.getElementById('includeUncertainReceivables');
+        if (uncertainCheckbox) {
+            uncertainCheckbox.addEventListener('change', function() {
+                includeUncertainReceivables = this.checked;
+                recalculate();
+            });
+        }
+    }
+
+    // Advanced asset row functions
+    function addStockRow() {
+        const container = document.getElementById('stockItems');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'asset-row';
+        row.dataset.type = 'stock';
+        row.innerHTML = `
+            <div class="group-name">
+                <input type="text" name="stock_name" placeholder="Name (e.g., VGRO)" class="input-name">
+            </div>
+            <div class="group-middle">
+                <input type="number" name="stock_value" step="0.01" min="0" placeholder="Value" class="input-amount">
+                <div class="currency-autocomplete" data-name="stock_currency"></div>
+            </div>
+            <div class="group-middle-secondary">
+                <select name="stock_method" class="input-method">
+                    <option value="market_value" selected>Full Value</option>
+                    <option value="zakatable_portion">30% Only</option>
+                </select>
+            </div>
+            <div class="group-value">
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+            </div>
+            <div class="group-remove">
+                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
+            </div>
+        `;
+        container.appendChild(row);
+        initCurrencyAutocompletes();
+    }
+
+    function addRetirementRow() {
+        const container = document.getElementById('retirementItems');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'asset-row';
+        row.dataset.type = 'retirement';
+        row.innerHTML = `
+            <div class="group-name">
+                <input type="text" name="retirement_name" placeholder="Name (e.g., RRSP)" class="input-name">
+            </div>
+            <div class="group-middle">
+                <input type="number" name="retirement_balance" step="0.01" min="0" placeholder="Balance" class="input-amount">
+                <div class="currency-autocomplete" data-name="retirement_currency"></div>
+            </div>
+            <div class="group-middle-secondary">
+                <select name="retirement_method" class="input-method">
+                    <option value="accessible_only" selected>If Accessible</option>
+                    <option value="full_balance">Full Balance</option>
+                    <option value="penalty_adjusted">After 10% Penalty</option>
+                </select>
+                <label class="checkbox-inline">
+                    <input type="checkbox" name="retirement_accessible" checked> Accessible
+                </label>
+            </div>
+            <div class="group-value">
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+            </div>
+            <div class="group-remove">
+                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
+            </div>
+        `;
+        container.appendChild(row);
+        initCurrencyAutocompletes();
+    }
+
+    function addReceivableRow() {
+        const container = document.getElementById('receivableItems');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'asset-row';
+        row.dataset.type = 'receivable';
+        row.innerHTML = `
+            <div class="group-name">
+                <input type="text" name="receivable_name" placeholder="Name (e.g., Client A)" class="input-name">
+            </div>
+            <div class="group-middle">
+                <input type="number" name="receivable_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                <div class="currency-autocomplete" data-name="receivable_currency"></div>
+            </div>
+            <div class="group-middle-secondary">
+                <select name="receivable_likelihood" class="input-likelihood">
+                    <option value="likely" selected>Likely</option>
+                    <option value="uncertain">Uncertain</option>
+                    <option value="doubtful">Doubtful</option>
+                </select>
+            </div>
+            <div class="group-value">
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+            </div>
+            <div class="group-remove">
+                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
+            </div>
+        `;
+        container.appendChild(row);
+        initCurrencyAutocompletes();
+    }
+
+    function addPropertyRow() {
+        const container = document.getElementById('propertyItems');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'asset-row';
+        row.dataset.type = 'property';
+        row.innerHTML = `
+            <div class="group-name">
+                <input type="text" name="property_name" placeholder="Name (e.g., Rental Unit)" class="input-name">
+            </div>
+            <div class="group-middle">
+                <input type="number" name="property_market_value" step="0.01" min="0" placeholder="Market Value" class="input-amount">
+                <div class="currency-autocomplete" data-name="property_currency"></div>
+            </div>
+            <div class="group-middle-secondary">
+                <select name="property_intent" class="input-intent">
+                    <option value="rental" selected>Rental Income</option>
+                    <option value="resale">For Resale</option>
+                </select>
+            </div>
+            <div class="group-value">
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+            </div>
+            <div class="group-remove">
+                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
+            </div>
+        `;
+        container.appendChild(row);
+        initCurrencyAutocompletes();
+    }
+
+    function addPayableRow() {
+        const container = document.getElementById('payableItems');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'asset-row';
+        row.dataset.type = 'payable';
+        row.innerHTML = `
+            <div class="group-name">
+                <input type="text" name="payable_name" placeholder="Name (e.g., Income Tax)" class="input-name">
+            </div>
+            <div class="group-middle">
+                <input type="number" name="payable_amount" step="0.01" min="0" placeholder="Amount" class="input-amount">
+                <div class="currency-autocomplete" data-name="payable_currency"></div>
+            </div>
+            <div class="group-middle-secondary">
+                <select name="payable_type" class="input-payable-type">
+                    <option value="taxes" selected>Taxes</option>
+                    <option value="rent">Rent</option>
+                    <option value="utilities">Utilities</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="group-value">
+                <span class="base-value-pill pill-empty" data-field="base_value">—</span>
+            </div>
+            <div class="group-remove">
+                <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>
+            </div>
+        `;
+        container.appendChild(row);
+        initCurrencyAutocompletes();
+    }
+
     function removeRow(button) {
         const row = button.closest('.asset-row');
         const container = row.parentElement;
@@ -1638,7 +2029,7 @@ const ZakatCalculator = (function() {
      * @returns {Object} Current form state
      */
     function getState() {
-        return {
+        var state = {
             base_currency: baseCurrency,
             calculation_date: calculationDate,
             nisab_basis: typeof NisabIndicator !== 'undefined' ? NisabIndicator.getBasis() : nisabBasis,
@@ -1648,7 +2039,55 @@ const ZakatCalculator = (function() {
             metal_items: collectMetalItemsFull(),
             crypto_items: collectCryptoItemsFull(),
             credit_card_items: collectCreditCardItemsFull(),
-            loan_items: collectLoanItemsFull()
+            loan_items: collectLoanItemsFull(),
+            // Advanced mode state (v2)
+            advanced_mode: advancedMode,
+            debt_policy: debtPolicy,
+            include_uncertain_receivables: includeUncertainReceivables
+        };
+
+        // Only include advanced assets if advanced mode is enabled
+        if (advancedMode) {
+            state.stock_items = collectStockItemsFull();
+            state.retirement_items = collectRetirementItemsFull();
+            state.receivable_items = collectReceivableItemsFull();
+            state.investment_property = collectPropertyItemsFull();
+            state.short_term_payables = collectPayableItemsFull();
+            state.business_inventory = collectBusinessInventory();
+        }
+
+        return state;
+    }
+
+    /**
+     * Collect business inventory data
+     * @returns {Object|null} Business inventory object or null if empty
+     */
+    function collectBusinessInventory() {
+        var nameInput = document.querySelector('[name="business_name"]');
+        var resaleInput = document.querySelector('[name="business_resale_value"]');
+        var cashInput = document.querySelector('[name="business_cash"]');
+        var receivablesInput = document.querySelector('[name="business_receivables"]');
+        var payablesInput = document.querySelector('[name="business_payables"]');
+        var currencyInput = document.querySelector('[name="business_currency"]');
+
+        var resaleValue = parseFloat(resaleInput?.value) || 0;
+        var businessCash = parseFloat(cashInput?.value) || 0;
+        var receivables = parseFloat(receivablesInput?.value) || 0;
+        var payables = parseFloat(payablesInput?.value) || 0;
+
+        // Return null if no business data entered
+        if (resaleValue === 0 && businessCash === 0 && receivables === 0 && payables === 0) {
+            return null;
+        }
+
+        return {
+            name: nameInput?.value || 'Business',
+            resale_value: resaleValue,
+            business_cash: businessCash,
+            receivables: receivables,
+            payables: payables,
+            currency: currencyInput?.value || baseCurrency
         };
     }
 
@@ -1660,6 +2099,12 @@ const ZakatCalculator = (function() {
     function collectCryptoItemsFull() { return _collectItems('crypto', { full: true }); }
     function collectCreditCardItemsFull() { return _collectItems('credit_card', { full: true }); }
     function collectLoanItemsFull() { return _collectItems('loan', { full: true }); }
+    // Advanced assets (v2)
+    function collectStockItemsFull() { return _collectItems('stock', { full: true }); }
+    function collectRetirementItemsFull() { return _collectItems('retirement', { full: true }); }
+    function collectReceivableItemsFull() { return _collectItems('receivable', { full: true }); }
+    function collectPropertyItemsFull() { return _collectItems('property', { full: true }); }
+    function collectPayableItemsFull() { return _collectItems('payable', { full: true }); }
 
     /**
      * Set the calculator state from a state object
@@ -1728,6 +2173,55 @@ const ZakatCalculator = (function() {
         // Restore loan items
         if (state.loan_items) {
             restoreLoanItems(state.loan_items);
+        }
+
+        // Restore advanced mode settings (v2)
+        if (state.advanced_mode !== undefined) {
+            advancedMode = state.advanced_mode;
+            var toggle = document.getElementById('advancedModeToggle');
+            if (toggle) {
+                toggle.checked = advancedMode;
+                toggleAdvancedMode(advancedMode);
+            }
+        }
+
+        if (state.debt_policy) {
+            debtPolicy = state.debt_policy;
+            var policySelect = document.getElementById('debtPolicy');
+            if (policySelect) {
+                policySelect.value = state.debt_policy;
+                updateDebtPolicyHint();
+            }
+        }
+
+        if (state.include_uncertain_receivables !== undefined) {
+            includeUncertainReceivables = state.include_uncertain_receivables;
+            var checkbox = document.getElementById('includeUncertainReceivables');
+            if (checkbox) {
+                checkbox.checked = includeUncertainReceivables;
+            }
+        }
+
+        // Restore advanced assets (only if advanced mode is enabled)
+        if (advancedMode) {
+            if (state.stock_items) {
+                restoreStockItems(state.stock_items);
+            }
+            if (state.retirement_items) {
+                restoreRetirementItems(state.retirement_items);
+            }
+            if (state.receivable_items) {
+                restoreReceivableItems(state.receivable_items);
+            }
+            if (state.investment_property) {
+                restorePropertyItems(state.investment_property);
+            }
+            if (state.short_term_payables) {
+                restorePayableItems(state.short_term_payables);
+            }
+            if (state.business_inventory) {
+                restoreBusinessInventory(state.business_inventory);
+            }
         }
 
         // Reload pricing for the new date/currency and recalculate
@@ -2065,6 +2559,223 @@ const ZakatCalculator = (function() {
         initCurrencyAutocompletesWithValue();
     }
 
+    // ========== Advanced Asset Restore Functions (v2) ==========
+
+    function restoreStockItems(items) {
+        var container = document.getElementById('stockItems');
+        if (!container) return;
+
+        container.innerHTML = '';
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', value: 0, currency: baseCurrency, method: 'market_value' }];
+        itemsToRestore.forEach(function(item) {
+            var method = item.method || 'market_value';
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'stock';
+            row.innerHTML = [
+                '<div class="group-name">',
+                '    <input type="text" name="stock_name" placeholder="Name (e.g., VGRO)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '</div>',
+                '<div class="group-middle">',
+                '    <input type="number" name="stock_value" step="0.01" min="0" placeholder="Value" class="input-amount" value="' + (item.value || '') + '">',
+                '    <div class="currency-autocomplete" data-name="stock_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '</div>',
+                '<div class="group-middle-secondary">',
+                '    <select name="stock_method" class="input-method">',
+                '        <option value="market_value"' + (method === 'market_value' ? ' selected' : '') + '>Full Value</option>',
+                '        <option value="zakatable_portion"' + (method === 'zakatable_portion' ? ' selected' : '') + '>30% Only</option>',
+                '    </select>',
+                '</div>',
+                '<div class="group-value">',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
+                '</div>',
+                '<div class="group-remove">',
+                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
+                '</div>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+        initCurrencyAutocompletesWithValue();
+    }
+
+    function restoreRetirementItems(items) {
+        var container = document.getElementById('retirementItems');
+        if (!container) return;
+
+        container.innerHTML = '';
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', balance: 0, currency: baseCurrency, method: 'accessible_only', accessible_now: true }];
+        itemsToRestore.forEach(function(item) {
+            var method = item.method || 'accessible_only';
+            var accessible = item.accessible_now !== false;
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'retirement';
+            row.innerHTML = [
+                '<div class="group-name">',
+                '    <input type="text" name="retirement_name" placeholder="Name (e.g., RRSP)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '</div>',
+                '<div class="group-middle">',
+                '    <input type="number" name="retirement_balance" step="0.01" min="0" placeholder="Balance" class="input-amount" value="' + (item.balance || '') + '">',
+                '    <div class="currency-autocomplete" data-name="retirement_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '</div>',
+                '<div class="group-middle-secondary">',
+                '    <select name="retirement_method" class="input-method">',
+                '        <option value="accessible_only"' + (method === 'accessible_only' ? ' selected' : '') + '>If Accessible</option>',
+                '        <option value="full_balance"' + (method === 'full_balance' ? ' selected' : '') + '>Full Balance</option>',
+                '        <option value="penalty_adjusted"' + (method === 'penalty_adjusted' ? ' selected' : '') + '>After 10% Penalty</option>',
+                '    </select>',
+                '    <label class="checkbox-inline">',
+                '        <input type="checkbox" name="retirement_accessible"' + (accessible ? ' checked' : '') + '> Accessible',
+                '    </label>',
+                '</div>',
+                '<div class="group-value">',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
+                '</div>',
+                '<div class="group-remove">',
+                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
+                '</div>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+        initCurrencyAutocompletesWithValue();
+    }
+
+    function restoreReceivableItems(items) {
+        var container = document.getElementById('receivableItems');
+        if (!container) return;
+
+        container.innerHTML = '';
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', amount: 0, currency: baseCurrency, likelihood: 'likely' }];
+        itemsToRestore.forEach(function(item) {
+            var likelihood = item.likelihood || 'likely';
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'receivable';
+            row.innerHTML = [
+                '<div class="group-name">',
+                '    <input type="text" name="receivable_name" placeholder="Name (e.g., Client A)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '</div>',
+                '<div class="group-middle">',
+                '    <input type="number" name="receivable_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
+                '    <div class="currency-autocomplete" data-name="receivable_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '</div>',
+                '<div class="group-middle-secondary">',
+                '    <select name="receivable_likelihood" class="input-likelihood">',
+                '        <option value="likely"' + (likelihood === 'likely' ? ' selected' : '') + '>Likely</option>',
+                '        <option value="uncertain"' + (likelihood === 'uncertain' ? ' selected' : '') + '>Uncertain</option>',
+                '        <option value="doubtful"' + (likelihood === 'doubtful' ? ' selected' : '') + '>Doubtful</option>',
+                '    </select>',
+                '</div>',
+                '<div class="group-value">',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
+                '</div>',
+                '<div class="group-remove">',
+                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
+                '</div>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+        initCurrencyAutocompletesWithValue();
+    }
+
+    function restorePropertyItems(items) {
+        var container = document.getElementById('propertyItems');
+        if (!container) return;
+
+        container.innerHTML = '';
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', market_value: 0, rental_income: 0, currency: baseCurrency, intent: 'rental' }];
+        itemsToRestore.forEach(function(item) {
+            var intent = item.intent || 'rental';
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'property';
+            row.innerHTML = [
+                '<div class="group-name">',
+                '    <input type="text" name="property_name" placeholder="Name (e.g., Rental Unit)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '</div>',
+                '<div class="group-middle">',
+                '    <input type="number" name="property_market_value" step="0.01" min="0" placeholder="Market Value" class="input-amount" value="' + (item.market_value || '') + '">',
+                '    <div class="currency-autocomplete" data-name="property_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '</div>',
+                '<div class="group-middle-secondary">',
+                '    <select name="property_intent" class="input-intent">',
+                '        <option value="rental"' + (intent === 'rental' ? ' selected' : '') + '>Rental Income</option>',
+                '        <option value="resale"' + (intent === 'resale' ? ' selected' : '') + '>For Resale</option>',
+                '    </select>',
+                '</div>',
+                '<div class="group-value">',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
+                '</div>',
+                '<div class="group-remove">',
+                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
+                '</div>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+        initCurrencyAutocompletesWithValue();
+    }
+
+    function restorePayableItems(items) {
+        var container = document.getElementById('payableItems');
+        if (!container) return;
+
+        container.innerHTML = '';
+        var itemsToRestore = items.length > 0 ? items : [{ name: '', amount: 0, currency: baseCurrency, type: 'taxes' }];
+        itemsToRestore.forEach(function(item) {
+            var payableType = item.type || 'taxes';
+            var row = document.createElement('div');
+            row.className = 'asset-row';
+            row.dataset.type = 'payable';
+            row.innerHTML = [
+                '<div class="group-name">',
+                '    <input type="text" name="payable_name" placeholder="Name (e.g., Income Tax)" class="input-name" value="' + escapeHtml(item.name || '') + '">',
+                '</div>',
+                '<div class="group-middle">',
+                '    <input type="number" name="payable_amount" step="0.01" min="0" placeholder="Amount" class="input-amount" value="' + (item.amount || '') + '">',
+                '    <div class="currency-autocomplete" data-name="payable_currency" data-initial="' + (item.currency || baseCurrency) + '"></div>',
+                '</div>',
+                '<div class="group-middle-secondary">',
+                '    <select name="payable_type" class="input-payable-type">',
+                '        <option value="taxes"' + (payableType === 'taxes' ? ' selected' : '') + '>Taxes</option>',
+                '        <option value="rent"' + (payableType === 'rent' ? ' selected' : '') + '>Rent</option>',
+                '        <option value="utilities"' + (payableType === 'utilities' ? ' selected' : '') + '>Utilities</option>',
+                '        <option value="other"' + (payableType === 'other' ? ' selected' : '') + '>Other</option>',
+                '    </select>',
+                '</div>',
+                '<div class="group-value">',
+                '    <span class="base-value-pill pill-empty" data-field="base_value">—</span>',
+                '</div>',
+                '<div class="group-remove">',
+                '    <button type="button" class="btn-remove" onclick="ZakatCalculator.removeRow(this)">−</button>',
+                '</div>'
+            ].join('\n');
+            container.appendChild(row);
+        });
+        initCurrencyAutocompletesWithValue();
+    }
+
+    function restoreBusinessInventory(business) {
+        if (!business) return;
+
+        var nameInput = document.querySelector('[name="business_name"]');
+        var resaleInput = document.querySelector('[name="business_resale_value"]');
+        var cashInput = document.querySelector('[name="business_cash"]');
+        var receivablesInput = document.querySelector('[name="business_receivables"]');
+        var payablesInput = document.querySelector('[name="business_payables"]');
+
+        if (nameInput) nameInput.value = business.name || '';
+        if (resaleInput) resaleInput.value = business.resale_value || '';
+        if (cashInput) cashInput.value = business.business_cash || '';
+        if (receivablesInput) receivablesInput.value = business.receivables || '';
+        if (payablesInput) payablesInput.value = business.payables || '';
+
+        // Set currency via autocomplete if available
+        var currencyContainer = document.querySelector('[data-name="business_currency"]');
+        if (currencyContainer && typeof CurrencyAutocomplete !== 'undefined' && business.currency) {
+            CurrencyAutocomplete.setValue(currencyContainer, business.currency);
+        }
+    }
+
     /**
      * Initialize currency autocompletes with initial values from data attributes
      */
@@ -2132,6 +2843,13 @@ const ZakatCalculator = (function() {
         addCryptoRow: addCryptoRow,
         addCreditCardRow: addCreditCardRow,
         addLoanRow: addLoanRow,
+        // Advanced asset functions (v2)
+        addStockRow: addStockRow,
+        addRetirementRow: addRetirementRow,
+        addReceivableRow: addReceivableRow,
+        addPropertyRow: addPropertyRow,
+        addPayableRow: addPayableRow,
+        toggleAdvancedMode: toggleAdvancedMode,
         removeRow: removeRow,
         getState: getState,
         setState: setState,
@@ -2152,4 +2870,10 @@ function addMetalRow() { ZakatCalculator.addMetalRow(); }
 function addCryptoRow() { ZakatCalculator.addCryptoRow(); }
 function addCreditCardRow() { ZakatCalculator.addCreditCardRow(); }
 function addLoanRow() { ZakatCalculator.addLoanRow(); }
+// Advanced asset legacy functions (v2)
+function addStockRow() { ZakatCalculator.addStockRow(); }
+function addRetirementRow() { ZakatCalculator.addRetirementRow(); }
+function addReceivableRow() { ZakatCalculator.addReceivableRow(); }
+function addPropertyRow() { ZakatCalculator.addPropertyRow(); }
+function addPayableRow() { ZakatCalculator.addPayableRow(); }
 function removeRow(btn) { ZakatCalculator.removeRow(btn); }

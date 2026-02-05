@@ -16,7 +16,7 @@ var ShareLink = (function() {
 
     // Constants
     var MAX_URL_LENGTH = 2000;
-    var SCHEMA_VERSION = 1;
+    var SCHEMA_VERSION = 2;  // v2 adds advanced assets, debt_policy, date_assistant
     var HASH_PREFIX = '#data=';
 
     // State
@@ -200,6 +200,30 @@ var ShareLink = (function() {
     }
 
     /**
+     * Migrate v1 state to v2 format
+     * v2 adds: stock_items, retirement_items, receivable_items, business_inventory,
+     * investment_property, short_term_payables, debt_policy, include_uncertain_receivables,
+     * advanced_mode
+     * @param {Object} state - v1 state object
+     * @returns {Object} v2 state object
+     */
+    function migrateV1toV2(state) {
+        return Object.assign({}, state, {
+            // Advanced assets (all empty arrays/null by default)
+            stock_items: state.stock_items || [],
+            retirement_items: state.retirement_items || [],
+            receivable_items: state.receivable_items || [],
+            business_inventory: state.business_inventory || null,
+            investment_property: state.investment_property || [],
+            short_term_payables: state.short_term_payables || [],
+            // Advanced mode settings
+            debt_policy: state.debt_policy || '12_months',
+            include_uncertain_receivables: state.include_uncertain_receivables || false,
+            advanced_mode: state.advanced_mode || false
+        });
+    }
+
+    /**
      * Parse share payload from URL hash
      * @returns {Object|null} Parsed state or null if invalid
      */
@@ -233,18 +257,23 @@ var ShareLink = (function() {
                 return { error: 'invalid', message: 'Invalid share link format.' };
             }
 
-            if (payload.v !== SCHEMA_VERSION) {
-                return {
-                    error: 'version',
-                    message: 'This link was created with a different version (v' + payload.v + '). Current version is v' + SCHEMA_VERSION + '.'
-                };
-            }
-
-            if (!payload.data) {
+            // Handle version migration
+            var data = payload.data;
+            if (!data) {
                 return { error: 'invalid', message: 'No calculation data found in link.' };
             }
 
-            return { success: true, data: payload.data };
+            if (payload.v === 1) {
+                // Migrate v1 to v2
+                data = migrateV1toV2(data);
+            } else if (payload.v > SCHEMA_VERSION) {
+                return {
+                    error: 'version',
+                    message: 'This link was created with a newer version (v' + payload.v + '). Please update your calculator.'
+                };
+            }
+
+            return { success: true, data: data };
         } catch (e) {
             console.error('ShareLink: Failed to parse share link', e);
             return { error: 'corrupt', message: 'The share link data is corrupted.' };
@@ -421,7 +450,7 @@ var ShareLink = (function() {
         items.push('<div class="share-preview-item"><strong>Base Currency:</strong> ' + escapeHtml(state.base_currency || 'N/A') + '</div>');
         items.push('<div class="share-preview-item"><strong>Date:</strong> ' + escapeHtml(state.calculation_date || 'Today') + '</div>');
 
-        // Count assets
+        // Count basic assets
         var goldCount = (state.gold_items || []).filter(function(i) { return i.weight_grams > 0; }).length;
         var cashCount = (state.cash_items || []).filter(function(i) { return i.amount > 0; }).length;
         var bankCount = (state.bank_items || []).filter(function(i) { return i.amount > 0; }).length;
@@ -441,16 +470,45 @@ var ShareLink = (function() {
             items.push('<div class="share-preview-item"><strong>Assets:</strong> None</div>');
         }
 
+        // Count advanced assets (v2)
+        var stockCount = (state.stock_items || []).filter(function(i) { return i.value > 0; }).length;
+        var retirementCount = (state.retirement_items || []).filter(function(i) { return i.balance > 0; }).length;
+        var receivableCount = (state.receivable_items || []).filter(function(i) { return i.amount > 0; }).length;
+        var propertyCount = (state.investment_property || []).filter(function(i) { return i.market_value > 0 || i.rental_income > 0; }).length;
+        var hasBusiness = state.business_inventory && (
+            state.business_inventory.resale_value > 0 ||
+            state.business_inventory.business_cash > 0 ||
+            state.business_inventory.receivables > 0
+        );
+
+        var advancedSummary = [];
+        if (stockCount > 0) advancedSummary.push(stockCount + ' stock' + (stockCount > 1 ? 's' : ''));
+        if (retirementCount > 0) advancedSummary.push(retirementCount + ' retirement account' + (retirementCount > 1 ? 's' : ''));
+        if (receivableCount > 0) advancedSummary.push(receivableCount + ' receivable' + (receivableCount > 1 ? 's' : ''));
+        if (propertyCount > 0) advancedSummary.push(propertyCount + ' propert' + (propertyCount > 1 ? 'ies' : 'y'));
+        if (hasBusiness) advancedSummary.push('business inventory');
+
+        if (advancedSummary.length > 0) {
+            items.push('<div class="share-preview-item"><strong>Advanced Assets:</strong> ' + advancedSummary.join(', ') + '</div>');
+        }
+
         // Count debts
         var creditCardCount = (state.credit_card_items || []).filter(function(i) { return i.amount > 0; }).length;
         var loanCount = (state.loan_items || []).filter(function(i) { return i.payment_amount > 0; }).length;
+        var payablesCount = (state.short_term_payables || []).filter(function(i) { return i.amount > 0; }).length;
 
         var debtSummary = [];
         if (creditCardCount > 0) debtSummary.push(creditCardCount + ' credit card' + (creditCardCount > 1 ? 's' : ''));
         if (loanCount > 0) debtSummary.push(loanCount + ' loan' + (loanCount > 1 ? 's' : ''));
+        if (payablesCount > 0) debtSummary.push(payablesCount + ' payable' + (payablesCount > 1 ? 's' : ''));
 
         if (debtSummary.length > 0) {
             items.push('<div class="share-preview-item"><strong>Debts:</strong> ' + debtSummary.join(', ') + '</div>');
+        }
+
+        // Show advanced mode indicator
+        if (state.advanced_mode) {
+            items.push('<div class="share-preview-item"><strong>Mode:</strong> Advanced Assets</div>');
         }
 
         return items.join('');
