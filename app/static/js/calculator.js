@@ -21,6 +21,222 @@ const ZakatCalculator = (function() {
     // Local constants
     const DEBOUNCE_DELAY = 100;
 
+    // Asset type configurations for generic collect/restore operations
+    const ASSET_CONFIGS = {
+        gold: {
+            containerId: 'goldItems',
+            prefix: 'gold',
+            defaultName: 'Gold',
+            hasWeight: true,
+            fields: ['name', 'weight', 'weight_unit', 'karat'],
+            calcFields: function(row, prefix) {
+                var displayWeight = parseFloat(row.querySelector('[name="' + prefix + '_weight"]')?.value) || 0;
+                var rowUnit = row.querySelector('[name="' + prefix + '_weight_unit"]')?.value || 'g';
+                var karat = parseInt(row.querySelector('[name="' + prefix + '_karat"]')?.value) || 22;
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Gold',
+                    weight_grams: toGrams(displayWeight, rowUnit),
+                    purity_karat: karat
+                };
+            },
+            fullFields: function(row, prefix) {
+                var displayWeight = parseFloat(row.querySelector('[name="' + prefix + '_weight"]')?.value) || 0;
+                var rowUnit = row.querySelector('[name="' + prefix + '_weight_unit"]')?.value || 'g';
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    weight: displayWeight,
+                    weight_unit: rowUnit,
+                    weight_grams: toGrams(displayWeight, rowUnit),
+                    purity_karat: parseInt(row.querySelector('[name="' + prefix + '_karat"]')?.value) || 22
+                };
+            },
+            isValid: function(row, prefix) {
+                var displayWeight = parseFloat(row.querySelector('[name="' + prefix + '_weight"]')?.value) || 0;
+                return displayWeight > 0;
+            }
+        },
+        cash: {
+            containerId: 'cashItems',
+            prefix: 'cash',
+            defaultName: 'Cash',
+            hasCurrency: true,
+            calcFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Cash',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency
+                };
+            },
+            isValid: function(row, prefix) {
+                var amount = parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0;
+                return amount > 0;
+            }
+        },
+        bank: {
+            containerId: 'bankItems',
+            prefix: 'bank',
+            defaultName: 'Bank',
+            hasCurrency: true,
+            calcFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Bank',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency
+                };
+            },
+            isValid: function(row, prefix) {
+                var amount = parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0;
+                return amount > 0;
+            }
+        },
+        metal: {
+            containerId: 'metalItems',
+            prefix: 'metal',
+            defaultName: 'Silver',
+            hasWeight: true,
+            calcFields: function(row, prefix) {
+                var displayWeight = parseFloat(row.querySelector('[name="' + prefix + '_weight"]')?.value) || 0;
+                var rowUnit = row.querySelector('[name="' + prefix + '_weight_unit"]')?.value || 'g';
+                var metal = row.querySelector('[name="' + prefix + '_type"]')?.value || 'silver';
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || metal,
+                    metal: metal,
+                    weight_grams: toGrams(displayWeight, rowUnit)
+                };
+            },
+            fullFields: function(row, prefix) {
+                var displayWeight = parseFloat(row.querySelector('[name="' + prefix + '_weight"]')?.value) || 0;
+                var rowUnit = row.querySelector('[name="' + prefix + '_weight_unit"]')?.value || 'g';
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    metal: row.querySelector('[name="' + prefix + '_type"]')?.value || 'silver',
+                    weight: displayWeight,
+                    weight_unit: rowUnit,
+                    weight_grams: toGrams(displayWeight, rowUnit)
+                };
+            },
+            isValid: function(row, prefix) {
+                var displayWeight = parseFloat(row.querySelector('[name="' + prefix + '_weight"]')?.value) || 0;
+                return displayWeight > 0;
+            }
+        },
+        crypto: {
+            containerId: 'cryptoItems',
+            prefix: 'crypto',
+            defaultName: '',
+            hasCrypto: true,
+            calcFields: function(row, prefix) {
+                var symbol = row.querySelector('[name="' + prefix + '_symbol"]')?.value || '';
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || symbol,
+                    symbol: symbol,
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    symbol: row.querySelector('[name="' + prefix + '_symbol"]')?.value || '',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0
+                };
+            },
+            isValid: function(row, prefix) {
+                var amount = parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0;
+                var symbol = row.querySelector('[name="' + prefix + '_symbol"]')?.value || '';
+                return amount > 0 && symbol;
+            }
+        },
+        credit_card: {
+            containerId: 'creditCardItems',
+            prefix: 'credit_card',
+            defaultName: 'Credit Card',
+            hasCurrency: true,
+            calcFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Credit Card',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    amount: parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency
+                };
+            },
+            isValid: function(row, prefix) {
+                var amount = parseFloat(row.querySelector('[name="' + prefix + '_amount"]')?.value) || 0;
+                return amount > 0;
+            }
+        },
+        loan: {
+            containerId: 'loanItems',
+            prefix: 'loan',
+            defaultName: 'Loan',
+            hasCurrency: true,
+            calcFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || 'Loan',
+                    payment_amount: parseFloat(row.querySelector('[name="' + prefix + '_payment_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    frequency: row.querySelector('[name="' + prefix + '_frequency"]')?.value || 'monthly'
+                };
+            },
+            fullFields: function(row, prefix) {
+                return {
+                    name: row.querySelector('[name="' + prefix + '_name"]')?.value || '',
+                    payment_amount: parseFloat(row.querySelector('[name="' + prefix + '_payment_amount"]')?.value) || 0,
+                    currency: row.querySelector('[name="' + prefix + '_currency"]')?.value || baseCurrency,
+                    frequency: row.querySelector('[name="' + prefix + '_frequency"]')?.value || 'monthly'
+                };
+            },
+            isValid: function(row, prefix) {
+                var amount = parseFloat(row.querySelector('[name="' + prefix + '_payment_amount"]')?.value) || 0;
+                return amount > 0;
+            }
+        }
+    };
+
+    /**
+     * Generic item collection function
+     * @param {string} assetType - Asset type key from ASSET_CONFIGS
+     * @param {Object} options - { full: boolean } - if true, includes all items including empty
+     * @returns {Array} Collected items
+     */
+    function _collectItems(assetType, options) {
+        var config = ASSET_CONFIGS[assetType];
+        if (!config) return [];
+
+        var items = [];
+        var full = options && options.full;
+        var selector = '#' + config.containerId + ' .asset-row';
+
+        document.querySelectorAll(selector).forEach(function(row) {
+            if (full) {
+                items.push(config.fullFields(row, config.prefix));
+            } else if (config.isValid(row, config.prefix)) {
+                items.push(config.calcFields(row, config.prefix));
+            }
+        });
+
+        return items;
+    }
+
     // State
     let currencies = [];
     let cryptos = [];
@@ -543,144 +759,14 @@ const ZakatCalculator = (function() {
             });
     }
 
-    /**
-     * Collect gold items from form
-     * Weight is entered in row's display unit, converted to grams for storage
-     */
-    function collectGoldItems() {
-        const items = [];
-        document.querySelectorAll('#goldItems .asset-row').forEach(function(row) {
-            const displayWeight = parseFloat(row.querySelector('[name="gold_weight"]')?.value) || 0;
-            const rowUnit = row.querySelector('[name="gold_weight_unit"]')?.value || 'g';
-            const karat = parseInt(row.querySelector('[name="gold_karat"]')?.value) || 22;
-            if (displayWeight > 0) {
-                items.push({
-                    name: row.querySelector('[name="gold_name"]')?.value || 'Gold',
-                    weight_grams: toGrams(displayWeight, rowUnit),
-                    purity_karat: karat
-                });
-            }
-        });
-        return items;
-    }
-
-    /**
-     * Collect cash items from form
-     */
-    function collectCashItems() {
-        const items = [];
-        document.querySelectorAll('#cashItems .asset-row').forEach(function(row) {
-            const amount = parseFloat(row.querySelector('[name="cash_amount"]')?.value) || 0;
-            const currency = row.querySelector('[name="cash_currency"]')?.value || baseCurrency;
-            if (amount > 0) {
-                items.push({
-                    name: row.querySelector('[name="cash_name"]')?.value || 'Cash',
-                    amount: amount,
-                    currency: currency
-                });
-            }
-        });
-        return items;
-    }
-
-    /**
-     * Collect bank items from form
-     */
-    function collectBankItems() {
-        const items = [];
-        document.querySelectorAll('#bankItems .asset-row').forEach(function(row) {
-            const amount = parseFloat(row.querySelector('[name="bank_amount"]')?.value) || 0;
-            const currency = row.querySelector('[name="bank_currency"]')?.value || baseCurrency;
-            if (amount > 0) {
-                items.push({
-                    name: row.querySelector('[name="bank_name"]')?.value || 'Bank',
-                    amount: amount,
-                    currency: currency
-                });
-            }
-        });
-        return items;
-    }
-
-    /**
-     * Collect metal items from form (silver, platinum, palladium)
-     * Weight is entered in row's display unit, converted to grams for storage
-     */
-    function collectMetalItems() {
-        const items = [];
-        document.querySelectorAll('#metalItems .asset-row').forEach(function(row) {
-            const displayWeight = parseFloat(row.querySelector('[name="metal_weight"]')?.value) || 0;
-            const rowUnit = row.querySelector('[name="metal_weight_unit"]')?.value || 'g';
-            const metal = row.querySelector('[name="metal_type"]')?.value || 'silver';
-            if (displayWeight > 0) {
-                items.push({
-                    name: row.querySelector('[name="metal_name"]')?.value || metal,
-                    metal: metal,
-                    weight_grams: toGrams(displayWeight, rowUnit)
-                });
-            }
-        });
-        return items;
-    }
-
-    /**
-     * Collect crypto items from form
-     */
-    function collectCryptoItems() {
-        const items = [];
-        document.querySelectorAll('#cryptoItems .asset-row').forEach(function(row) {
-            const amount = parseFloat(row.querySelector('[name="crypto_amount"]')?.value) || 0;
-            const symbol = row.querySelector('[name="crypto_symbol"]')?.value || '';
-            if (amount > 0 && symbol) {
-                items.push({
-                    name: row.querySelector('[name="crypto_name"]')?.value || symbol,
-                    symbol: symbol,
-                    amount: amount
-                });
-            }
-        });
-        return items;
-    }
-
-    /**
-     * Collect credit card items from form
-     */
-    function collectCreditCardItems() {
-        const items = [];
-        document.querySelectorAll('#creditCardItems .asset-row').forEach(function(row) {
-            const amount = parseFloat(row.querySelector('[name="credit_card_amount"]')?.value) || 0;
-            const currency = row.querySelector('[name="credit_card_currency"]')?.value || baseCurrency;
-            if (amount > 0) {
-                items.push({
-                    name: row.querySelector('[name="credit_card_name"]')?.value || 'Credit Card',
-                    amount: amount,
-                    currency: currency
-                });
-            }
-        });
-        return items;
-    }
-
-    /**
-     * Collect loan items from form
-     */
-    function collectLoanItems() {
-        const items = [];
-        document.querySelectorAll('#loanItems .asset-row').forEach(function(row) {
-            const paymentAmount = parseFloat(row.querySelector('[name="loan_payment_amount"]')?.value) || 0;
-            const currency = row.querySelector('[name="loan_currency"]')?.value || baseCurrency;
-            const frequency = row.querySelector('[name="loan_frequency"]')?.value || 'monthly';
-            if (paymentAmount > 0) {
-                items.push({
-                    name: row.querySelector('[name="loan_name"]')?.value || 'Loan',
-                    payment_amount: paymentAmount,
-                    currency: currency,
-                    frequency: frequency
-                });
-            }
-        });
-        return items;
-    }
+    // Collect functions - thin wrappers around _collectItems
+    function collectGoldItems() { return _collectItems('gold'); }
+    function collectCashItems() { return _collectItems('cash'); }
+    function collectBankItems() { return _collectItems('bank'); }
+    function collectMetalItems() { return _collectItems('metal'); }
+    function collectCryptoItems() { return _collectItems('crypto'); }
+    function collectCreditCardItems() { return _collectItems('credit_card'); }
+    function collectLoanItems() { return _collectItems('loan'); }
 
     /**
      * Calculate gold total in base currency
@@ -1566,121 +1652,14 @@ const ZakatCalculator = (function() {
         };
     }
 
-    /**
-     * Collect gold items with all fields (including empty)
-     * Stores display weight, unit, and calculated grams
-     */
-    function collectGoldItemsFull() {
-        var items = [];
-        document.querySelectorAll('#goldItems .asset-row').forEach(function(row) {
-            var displayWeight = parseFloat(row.querySelector('[name="gold_weight"]')?.value) || 0;
-            var rowUnit = row.querySelector('[name="gold_weight_unit"]')?.value || 'g';
-            items.push({
-                name: row.querySelector('[name="gold_name"]')?.value || '',
-                weight: displayWeight,
-                weight_unit: rowUnit,
-                weight_grams: toGrams(displayWeight, rowUnit),
-                purity_karat: parseInt(row.querySelector('[name="gold_karat"]')?.value) || 22
-            });
-        });
-        return items;
-    }
-
-    /**
-     * Collect cash items with all fields (including empty)
-     */
-    function collectCashItemsFull() {
-        var items = [];
-        document.querySelectorAll('#cashItems .asset-row').forEach(function(row) {
-            items.push({
-                name: row.querySelector('[name="cash_name"]')?.value || '',
-                amount: parseFloat(row.querySelector('[name="cash_amount"]')?.value) || 0,
-                currency: row.querySelector('[name="cash_currency"]')?.value || baseCurrency
-            });
-        });
-        return items;
-    }
-
-    /**
-     * Collect bank items with all fields (including empty)
-     */
-    function collectBankItemsFull() {
-        var items = [];
-        document.querySelectorAll('#bankItems .asset-row').forEach(function(row) {
-            items.push({
-                name: row.querySelector('[name="bank_name"]')?.value || '',
-                amount: parseFloat(row.querySelector('[name="bank_amount"]')?.value) || 0,
-                currency: row.querySelector('[name="bank_currency"]')?.value || baseCurrency
-            });
-        });
-        return items;
-    }
-
-    /**
-     * Collect metal items with all fields (including empty)
-     * Stores display weight, unit, and calculated grams
-     */
-    function collectMetalItemsFull() {
-        var items = [];
-        document.querySelectorAll('#metalItems .asset-row').forEach(function(row) {
-            var displayWeight = parseFloat(row.querySelector('[name="metal_weight"]')?.value) || 0;
-            var rowUnit = row.querySelector('[name="metal_weight_unit"]')?.value || 'g';
-            items.push({
-                name: row.querySelector('[name="metal_name"]')?.value || '',
-                metal: row.querySelector('[name="metal_type"]')?.value || 'silver',
-                weight: displayWeight,
-                weight_unit: rowUnit,
-                weight_grams: toGrams(displayWeight, rowUnit)
-            });
-        });
-        return items;
-    }
-
-    /**
-     * Collect crypto items with all fields (including empty)
-     */
-    function collectCryptoItemsFull() {
-        var items = [];
-        document.querySelectorAll('#cryptoItems .asset-row').forEach(function(row) {
-            items.push({
-                name: row.querySelector('[name="crypto_name"]')?.value || '',
-                symbol: row.querySelector('[name="crypto_symbol"]')?.value || '',
-                amount: parseFloat(row.querySelector('[name="crypto_amount"]')?.value) || 0
-            });
-        });
-        return items;
-    }
-
-    /**
-     * Collect credit card items with all fields (including empty)
-     */
-    function collectCreditCardItemsFull() {
-        var items = [];
-        document.querySelectorAll('#creditCardItems .asset-row').forEach(function(row) {
-            items.push({
-                name: row.querySelector('[name="credit_card_name"]')?.value || '',
-                amount: parseFloat(row.querySelector('[name="credit_card_amount"]')?.value) || 0,
-                currency: row.querySelector('[name="credit_card_currency"]')?.value || baseCurrency
-            });
-        });
-        return items;
-    }
-
-    /**
-     * Collect loan items with all fields (including empty)
-     */
-    function collectLoanItemsFull() {
-        var items = [];
-        document.querySelectorAll('#loanItems .asset-row').forEach(function(row) {
-            items.push({
-                name: row.querySelector('[name="loan_name"]')?.value || '',
-                payment_amount: parseFloat(row.querySelector('[name="loan_payment_amount"]')?.value) || 0,
-                currency: row.querySelector('[name="loan_currency"]')?.value || baseCurrency,
-                frequency: row.querySelector('[name="loan_frequency"]')?.value || 'monthly'
-            });
-        });
-        return items;
-    }
+    // CollectFull functions - thin wrappers around _collectItems with full option
+    function collectGoldItemsFull() { return _collectItems('gold', { full: true }); }
+    function collectCashItemsFull() { return _collectItems('cash', { full: true }); }
+    function collectBankItemsFull() { return _collectItems('bank', { full: true }); }
+    function collectMetalItemsFull() { return _collectItems('metal', { full: true }); }
+    function collectCryptoItemsFull() { return _collectItems('crypto', { full: true }); }
+    function collectCreditCardItemsFull() { return _collectItems('credit_card', { full: true }); }
+    function collectLoanItemsFull() { return _collectItems('loan', { full: true }); }
 
     /**
      * Set the calculator state from a state object
