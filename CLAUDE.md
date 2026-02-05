@@ -44,6 +44,10 @@ docker compose run --rm web flask import-fx-csv data/seed/fx_rates.csv
 docker compose run --rm web flask import-metals-csv data/seed/metal_prices.csv
 docker compose run --rm web flask import-crypto-csv data/seed/crypto_prices.csv
 
+# One-time FX backfill from Fawaz (writes to SQLite + R2)
+# Note: Fawaz historical availability starts around 2024-04-01.
+docker compose run --rm web python scripts/backfill_fx_fawaz.py --start 2024-04-01 --end 2025-12-31 --daily
+
 # Sync pricing from upstream providers (requires PRICING_ALLOW_NETWORK=1)
 docker compose run --rm web flask sync-prices                              # Sync today
 docker compose run --rm web flask sync-prices --start 2026-01-27           # Sync single date
@@ -66,6 +70,7 @@ Each successful fetch populates lower-tier caches. R2 is optional and best-effor
 ### Pricing Sync Configuration
 - `PRICING_ALLOW_NETWORK` gates network sync (app default: 0; docker compose default: 1)
 - `PRICING_AUTO_SYNC` controls auto-sync; in-app thread requires `PRICING_BACKGROUND_SYNC=1`
+- `PRICING_SYNC_INTERVAL_SECONDS` controls auto-sync cadence (default 21600 = 6h; 86400 = daily)
 - Daemon settings: `PRICING_SYNC_INTERVAL_SECONDS`, `PRICING_LOOKBACK_MONTHS`, `PRICING_RECENT_DAYS`, `PRICING_MONTHLY_LIMIT`
 - Optional provider keys: `OPENEXCHANGERATES_APP_ID`, `GOLDAPI_KEY`, `METALPRICEAPI_KEY`, `METALS_DEV_API_KEY`, `COINMARKETCAP_API_KEY`
 - R2 cache config uses `R2_*` env vars (`R2_ENABLED`, `R2_BUCKET`, `R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PREFIX`)
@@ -125,12 +130,13 @@ Debts reduce the zakat-eligible total. The calculation uses:
 Response includes `assets_total`, `debts_total`, `net_total`, and `subtotals.debts`.
 
 ### Provider Selection Order
-- FX: OpenExchangeRates (if key) → ExchangeRateAPI → Fallback
+- FX: OpenExchangeRates (if key) → ExchangeRateAPI (latest) with Fawaz fallback for historical/missing → Fallback
 - Metals: MetalPriceAPI (if key) → GoldAPI (if key) → Metals.dev (if key) → Fallback
 - Crypto: CoinMarketCap (if key) → CoinGecko → Fallback
 
 ### UI Routes & Content
 - `/` - Calculator UI
+- `/cad-to-bdt` - Hidden CAD→BDT converter (no nav link)
 - `/about-zakat` - About Zakat page
 - `/faq` - FAQ page
 - `/contact` - Contact page

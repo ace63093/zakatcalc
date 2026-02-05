@@ -29,6 +29,10 @@ docker compose run --rm web flask seed-all
 docker compose run --rm web flask import-fx-csv data/seed/fx_rates.csv
 docker compose run --rm web flask import-metals-csv data/seed/metal_prices.csv
 docker compose run --rm web flask import-crypto-csv data/seed/crypto_prices.csv
+
+# One-time FX backfill from Fawaz (writes to SQLite + R2)
+# Note: Fawaz historical availability starts around 2024-04-01.
+docker compose run --rm web python scripts/backfill_fx_fawaz.py --start 2024-04-01 --end 2025-12-31 --daily
 ```
 
 ## File Structure
@@ -64,6 +68,7 @@ app/
 
 scripts/
 └── pricing_sync_daemon.py   # Background pricing sync service
+└── backfill_fx_fawaz.py      # One-time FX backfill (Fawaz)
 
 tests/
 ├── conftest.py              # Fixtures (client, db_client, frozen_time)
@@ -103,15 +108,18 @@ WEIGHT_UNITS = {
 
 - Network sync is gated by `PRICING_ALLOW_NETWORK` (app default: 0; docker compose default: 1).
 - Auto-sync is controlled by `PRICING_AUTO_SYNC`; in-app thread requires `PRICING_BACKGROUND_SYNC=1`.
+- `PRICING_SYNC_INTERVAL_SECONDS` controls auto-sync cadence (default 21600 = 6h; 86400 = daily).
 - Daemon service uses `PRICING_SYNC_INTERVAL_SECONDS`, `PRICING_LOOKBACK_MONTHS`, `PRICING_RECENT_DAYS`, `PRICING_MONTHLY_LIMIT` (optional).
 - Provider API keys (optional): `OPENEXCHANGERATES_APP_ID`, `GOLDAPI_KEY`, `METALPRICEAPI_KEY`, `METALS_DEV_API_KEY`, `COINMARKETCAP_API_KEY`.
 - R2 cache config uses `R2_*` env vars (`R2_ENABLED`, `R2_BUCKET`, `R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PREFIX`).
+- FX provider order: OpenExchangeRates (if key) → ExchangeRateAPI (latest) with Fawaz fallback for historical/missing.
 
 ## UI Routes & Content
 
 | Path | Description |
 |------|-------------|
 | `/` | Calculator UI |
+| `/cad-to-bdt` | Hidden CAD→BDT converter (no nav link) |
 | `/about-zakat` | About Zakat page |
 | `/faq` | FAQ page |
 | `/contact` | Contact page |
