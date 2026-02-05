@@ -32,9 +32,27 @@ def get_r2_prefix() -> str:
 
 def is_r2_enabled() -> bool:
     """Check if R2 is fully configured."""
-    return os.environ.get('R2_ENABLED', '').lower() in ('1', 'true', 'yes') and all([
-        get_r2_endpoint(),
-        get_r2_bucket(),
-        get_r2_access_key(),
-        get_r2_secret_key(),
-    ])
+    if os.environ.get('R2_ENABLED', '').lower() not in ('1', 'true', 'yes'):
+        return False
+
+    endpoint = get_r2_endpoint()
+    bucket = get_r2_bucket()
+    access_key = get_r2_access_key()
+    secret_key = get_r2_secret_key()
+
+    if not all([endpoint, bucket, access_key, secret_key]):
+        return False
+
+    placeholders = {
+        'your-bucket-name',
+        'your-access-key-id',
+        'your-secret-access-key',
+    }
+
+    if bucket in placeholders or access_key in placeholders or secret_key in placeholders:
+        return False
+
+    if 'YOUR_ACCOUNT_ID' in endpoint:
+        return False
+
+    return True

@@ -7,7 +7,12 @@ from app.services.config import (
     get_coinmarketcap_key,
 )
 from . import FXProvider, MetalProvider, CryptoProvider
-from .fx_providers import ExchangeRateAPIProvider, OpenExchangeRatesProvider, FallbackFXProvider
+from .fx_providers import (
+    ExchangeRateAPIProvider,
+    OpenExchangeRatesProvider,
+    FawazExchangeAPIProvider,
+    ChainedFXProvider,
+)
 from .metal_providers import MetalPriceAPIProvider, MetalsDevAPIProvider, GoldAPIProvider, FallbackMetalProvider
 from .crypto_providers import CoinGeckoProvider, CoinMarketCapProvider, FallbackCryptoProvider
 
@@ -17,12 +22,15 @@ def get_fx_provider() -> FXProvider:
 
     Priority:
     1. OpenExchangeRates (if key configured) - best historical support
-    2. ExchangeRateAPI (no key) - good fallback
-    3. Fallback (empty results)
+    2. ExchangeRateAPI (no key) - current rates only
+       (falls back to Fawaz Exchange API for historical/failed requests)
     """
     if get_openexchangerates_key():
         return OpenExchangeRatesProvider()
-    return ExchangeRateAPIProvider()
+    return ChainedFXProvider(
+        primary=ExchangeRateAPIProvider(),
+        fallback=FawazExchangeAPIProvider(),
+    )
 
 
 def get_metal_provider() -> MetalProvider:

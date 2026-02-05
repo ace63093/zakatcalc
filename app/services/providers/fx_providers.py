@@ -9,6 +9,86 @@ from app.services.config import get_openexchangerates_key, get_user_agent
 from . import FXProvider, FXRate, ProviderError, RateLimitError, NetworkError
 
 
+class FawazExchangeAPIProvider(FXProvider):
+    """fawazahmed0/exchange-api provider (via jsDelivr with Cloudflare fallback).
+
+    Provides historical and latest USD-based rates with no API key.
+    """
+
+    BASE_URL = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api"
+    FALLBACK_URL = "https://{date}.currency-api.pages.dev"
+    API_VERSION = "v1"
+    BASE_CURRENCY = "usd"
+
+    @property
+    def name(self) -> str:
+        return "fawaz-exchange-api"
+
+    @property
+    def requires_api_key(self) -> bool:
+        return False
+
+    def is_configured(self) -> bool:
+        return True  # No key required
+
+    def get_rates(self, target_date: date) -> list[FXRate]:
+        """Fetch FX rates for a specific date (or latest)."""
+        today = datetime.now().date()
+        date_str = "latest" if target_date >= today else target_date.strftime('%Y-%m-%d')
+
+        endpoints = [
+            f"{self.BASE_URL}@{date_str}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.min.json",
+            f"{self.FALLBACK_URL.format(date=date_str)}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.min.json",
+            f"{self.BASE_URL}@{date_str}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.json",
+            f"{self.FALLBACK_URL.format(date=date_str)}/{self.API_VERSION}/currencies/{self.BASE_CURRENCY}.json",
+        ]
+
+        last_error = None
+        for url in endpoints:
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': get_user_agent()})
+                with urllib.request.urlopen(req, timeout=30) as response:
+                    data = json.loads(response.read().decode('utf-8'))
+
+                rates_blob = data.get(self.BASE_CURRENCY)
+                if not isinstance(rates_blob, dict):
+                    raise ProviderError("Unexpected response format")
+
+                rates = []
+                for currency, rate in rates_blob.items():
+                    try:
+                        rate_value = float(rate)
+                    except (TypeError, ValueError):
+                        continue
+
+                    rates.append(FXRate(
+                        currency=str(currency).upper(),
+                        rate_to_usd=rate_value,
+                        source=self.name
+                    ))
+
+                if not any(r.currency == 'USD' for r in rates):
+                    rates.append(FXRate(currency='USD', rate_to_usd=1.0, source=self.name))
+
+                return rates
+
+            except urllib.error.HTTPError as e:
+                last_error = e
+                if e.code == 429:
+                    raise RateLimitError("Rate limit exceeded")
+                continue
+            except urllib.error.URLError as e:
+                last_error = e
+                continue
+            except json.JSONDecodeError as e:
+                last_error = e
+                continue
+
+        if last_error:
+            raise ProviderError(f"Failed to fetch rates: {last_error}")
+        raise ProviderError("Failed to fetch rates")
+
+
 class ExchangeRateAPIProvider(FXProvider):
     """ExchangeRate-API provider - free tier without API key.
 
@@ -125,6 +205,58 @@ class OpenExchangeRatesProvider(FXProvider):
             raise NetworkError(f"Network error: {e.reason}")
         except json.JSONDecodeError:
             raise ProviderError("Invalid JSON response")
+
+
+class ChainedFXProvider(FXProvider):
+    """Try a primary provider, then fall back when needed."""
+
+    def __init__(self, primary: FXProvider, fallback: FXProvider):
+        self._primary = primary
+        self._fallback = fallback
+        self._last_provider = primary
+
+    @property
+    def name(self) -> str:
+        return self._last_provider.name
+
+    @property
+    def requires_api_key(self) -> bool:
+        return self._primary.requires_api_key and self._fallback.requires_api_key
+
+    def is_configured(self) -> bool:
+        return self._primary.is_configured() or self._fallback.is_configured()
+
+    def _should_use_primary(self, target_date: date) -> bool:
+        if isinstance(self._primary, ExchangeRateAPIProvider):
+            today = datetime.now().date()
+            if target_date < today:
+                return False
+        return True
+
+    def get_rates(self, target_date: date) -> list[FXRate]:
+        """Fetch FX rates using primary, with fallback on failure or unsupported dates."""
+        primary_error = None
+
+        if self._should_use_primary(target_date):
+            try:
+                rates = self._primary.get_rates(target_date)
+                if rates:
+                    self._last_provider = self._primary
+                    return rates
+            except (RateLimitError, NetworkError, ProviderError) as exc:
+                primary_error = exc
+
+        try:
+            rates = self._fallback.get_rates(target_date)
+            if rates:
+                self._last_provider = self._fallback
+                return rates
+        except (RateLimitError, NetworkError, ProviderError) as exc:
+            raise exc
+
+        if primary_error:
+            raise ProviderError(f"Primary provider failed: {primary_error}")
+        raise ProviderError("No rates returned from providers")
 
 
 class FallbackFXProvider(FXProvider):
