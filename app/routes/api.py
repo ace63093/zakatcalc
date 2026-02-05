@@ -4,7 +4,9 @@ from flask import Blueprint, jsonify, request, current_app
 
 from app.services.pricing import get_pricing, format_pricing_response
 from app.services.calc import calculate_zakat, calculate_zakat_v2
+from app.services.advanced_calc import calculate_zakat_v3
 from app.services.fx import SUPPORTED_CURRENCIES
+from app.services.config import get_feature_flags
 from app.data.metals import is_valid_metal
 from app.data.crypto import is_valid_crypto
 from app.services.db_pricing import (
@@ -25,7 +27,19 @@ from app.services.providers.registry import get_provider_status
 from app.services.cadence import get_effective_snapshot_date, get_cadence_boundaries
 from app.services.time_provider import get_today
 from app.services.r2_config import is_r2_enabled
-from app.constants import NISAB_GOLD_GRAMS, NISAB_SILVER_GRAMS, ZAKAT_RATE, LOAN_FREQUENCY_MULTIPLIERS
+from app.constants import (
+    NISAB_GOLD_GRAMS,
+    NISAB_SILVER_GRAMS,
+    ZAKAT_RATE,
+    LOAN_FREQUENCY_MULTIPLIERS,
+    STOCK_METHODS,
+    RETIREMENT_METHODS,
+    RECEIVABLE_LIKELIHOODS,
+    PROPERTY_INTENTS,
+    PAYABLE_TYPES,
+    DEBT_POLICIES,
+    DEFAULT_DEBT_POLICY,
+)
 
 api_bp = Blueprint('api', __name__)
 
@@ -186,37 +200,47 @@ def pricing_refresh():
 def calculate():
     """Calculate zakat from submitted assets.
 
-    Accepts both legacy format (master_currency, gold, cash, bank) and
-    new format (base_currency, calculation_date, gold_items, etc.).
+    Supports three formats:
+    - v3 (advanced): Includes stocks, retirement, receivables, business, property
+    - v2 (standard): base_currency, calculation_date, gold_items, etc.
+    - v1 (legacy): master_currency, gold, cash, bank
 
-    New format JSON body:
+    v3 format (advanced assets):
     {
         "base_currency": "CAD",
         "calculation_date": "2026-01-05",
-        "gold_items": [{"name": "Ring", "weight_grams": 10, "purity_karat": 22}],
-        "cash_items": [{"name": "Wallet", "amount": 500, "currency": "CAD"}],
-        "bank_items": [{"name": "Savings", "amount": 10000, "currency": "USD"}],
-        "metal_items": [{"name": "Silver Coins", "metal": "silver", "weight_grams": 500}],
-        "crypto_items": [{"name": "BTC Holdings", "symbol": "BTC", "amount": 0.5}],
-        "credit_card_items": [{"name": "Visa", "amount": 2000, "currency": "CAD"}],
-        "loan_items": [{"name": "Car Loan", "payment_amount": 500, "currency": "CAD", "frequency": "monthly"}]
-    }
-
-    Legacy format (still supported):
-    {
-        "master_currency": "CAD",
-        "gold": [...],
-        "cash": [...],
-        "bank": [...]
+        "gold_items": [...],
+        "cash_items": [...],
+        "bank_items": [...],
+        "metal_items": [...],
+        "crypto_items": [...],
+        "credit_card_items": [...],
+        "loan_items": [...],
+        "stock_items": [{"name": "ETF", "value": 10000, "currency": "CAD", "method": "market_value"}],
+        "retirement_items": [{"name": "RRSP", "balance": 50000, "currency": "CAD", "accessible_now": true}],
+        "receivable_items": [{"name": "Client A", "amount": 5000, "currency": "CAD", "likelihood": "likely"}],
+        "business_inventory": {"resale_value": 20000, "business_cash": 5000, ...},
+        "investment_property": [{"name": "Condo", "intent": "resale", "market_value": 300000, ...}],
+        "short_term_payables": [{"name": "Tax", "amount": 5000, "currency": "CAD", "type": "taxes"}],
+        "debt_policy": "12_months"
     }
     """
     body = request.get_json() or {}
 
-    # Detect format: new format uses base_currency or calculation_date
+    # Detect v3 format: has advanced asset fields
+    is_v3_format = any(key in body for key in [
+        'stock_items', 'retirement_items', 'receivable_items',
+        'business_inventory', 'investment_property', 'short_term_payables',
+        'debt_policy', 'advanced_mode'
+    ])
+
+    # Detect v2 format: new format with base_currency, etc.
     is_new_format = 'base_currency' in body or 'calculation_date' in body or \
                     'gold_items' in body or 'metal_items' in body or 'crypto_items' in body
 
-    if is_new_format:
+    if is_v3_format:
+        return _calculate_v3(body)
+    elif is_new_format:
         return _calculate_v2(body)
     else:
         return _calculate_legacy(body)
@@ -385,6 +409,243 @@ def _calculate_v2(body: dict):
     effective_date = fx_effective or metals_effective or crypto_effective
     result['calculation_date'] = calculation_date
     result['effective_date'] = effective_date
+    result['pricing_metadata'] = {
+        'requested_date': calculation_date,
+        'effective_date': effective_date,
+        'coverage': {
+            'fx_date_exact': coverage['fx_date_exact'],
+            'metals_date_exact': coverage['metals_date_exact'],
+            'crypto_date_exact': coverage['crypto_date_exact'],
+        },
+    }
+
+    return jsonify(result)
+
+
+def _calculate_v3(body: dict):
+    """Handle v3 calculate request with advanced asset categories.
+
+    This extends v2 with:
+    - Stocks/ETFs (with method selection)
+    - Retirement accounts (with accessibility toggle)
+    - Receivables (with likelihood classification)
+    - Business inventory/trade goods
+    - Investment property (with intent-based inclusion)
+    - Short-term payables (additional debt types)
+    - Debt policy selection
+    """
+    # Check if advanced assets feature is enabled
+    feature_flags = get_feature_flags()
+    if not feature_flags.get('advanced_assets_enabled', True):
+        return jsonify({
+            'error': 'Advanced assets feature is disabled',
+            'message': 'Set ENABLE_ADVANCED_ASSETS=1 to enable'
+        }), 403
+
+    # Parse and validate base_currency
+    base_currency = body.get('base_currency', DEFAULT_CURRENCY).upper()
+    if not is_valid_currency(base_currency):
+        return jsonify({'error': f'Invalid currency: {base_currency}'}), 400
+
+    # Parse and validate calculation_date
+    calculation_date = body.get('calculation_date', get_today().isoformat())
+    try:
+        datetime.strptime(calculation_date, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
+    # Parse nisab_basis
+    nisab_basis = body.get('nisab_basis', 'gold').lower()
+    if nisab_basis not in ('gold', 'silver'):
+        nisab_basis = 'gold'
+
+    # Parse debt_policy
+    debt_policy = body.get('debt_policy', DEFAULT_DEBT_POLICY)
+    if debt_policy not in DEBT_POLICIES:
+        debt_policy = DEFAULT_DEBT_POLICY
+
+    # ==================== BASIC ITEMS ====================
+    gold_items = body.get('gold_items', body.get('gold', []))
+    cash_items = body.get('cash_items', body.get('cash', []))
+    bank_items = body.get('bank_items', body.get('bank', []))
+    metal_items = body.get('metal_items', [])
+    crypto_items = body.get('crypto_items', [])
+    credit_card_items = body.get('credit_card_items', [])
+    loan_items = body.get('loan_items', [])
+
+    # ==================== ADVANCED ITEMS ====================
+    stock_items = body.get('stock_items', [])
+    retirement_items = body.get('retirement_items', [])
+    receivable_items = body.get('receivable_items', [])
+    business_inventory = body.get('business_inventory')
+    investment_property = body.get('investment_property', [])
+    short_term_payables = body.get('short_term_payables', [])
+    include_uncertain_receivables = body.get('include_uncertain_receivables', False)
+
+    # ==================== VALIDATE BASIC ITEMS ====================
+    # (Same validation as v2)
+    for item in gold_items:
+        if 'weight_grams' not in item or 'purity_karat' not in item:
+            return jsonify({'error': 'Gold items require weight_grams and purity_karat'}), 400
+
+    for item in cash_items:
+        if 'amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Cash items require amount and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+
+    for item in bank_items:
+        if 'amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Bank items require amount and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+
+    for item in metal_items:
+        if 'metal' not in item or 'weight_grams' not in item:
+            return jsonify({'error': 'Metal items require metal and weight_grams'}), 400
+        if not is_valid_metal(item['metal']):
+            return jsonify({'error': f"Invalid metal: {item['metal']}"}), 400
+
+    for item in crypto_items:
+        if 'symbol' not in item or 'amount' not in item:
+            return jsonify({'error': 'Crypto items require symbol and amount'}), 400
+
+    for item in credit_card_items:
+        if 'amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Credit card items require amount and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+
+    valid_frequencies = list(LOAN_FREQUENCY_MULTIPLIERS.keys())
+    for item in loan_items:
+        if 'payment_amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Loan items require payment_amount and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+        frequency = item.get('frequency', 'monthly')
+        if frequency not in valid_frequencies:
+            return jsonify({'error': f"Invalid loan frequency: {frequency}"}), 400
+
+    # ==================== VALIDATE ADVANCED ITEMS ====================
+    # Validate stock items
+    valid_stock_methods = list(STOCK_METHODS.keys())
+    for item in stock_items:
+        if 'value' not in item or 'currency' not in item:
+            return jsonify({'error': 'Stock items require value and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+        method = item.get('method', 'market_value')
+        if method not in valid_stock_methods:
+            return jsonify({'error': f"Invalid stock method: {method}"}), 400
+
+    # Validate retirement items
+    valid_retirement_methods = list(RETIREMENT_METHODS.keys())
+    for item in retirement_items:
+        if 'balance' not in item or 'currency' not in item:
+            return jsonify({'error': 'Retirement items require balance and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+        method = item.get('method', 'accessible_only')
+        if method not in valid_retirement_methods:
+            return jsonify({'error': f"Invalid retirement method: {method}"}), 400
+
+    # Validate receivable items
+    valid_likelihoods = list(RECEIVABLE_LIKELIHOODS.keys())
+    for item in receivable_items:
+        if 'amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Receivable items require amount and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+        likelihood = item.get('likelihood', 'likely')
+        if likelihood not in valid_likelihoods:
+            return jsonify({'error': f"Invalid receivable likelihood: {likelihood}"}), 400
+
+    # Validate business inventory
+    if business_inventory:
+        if 'currency' not in business_inventory:
+            return jsonify({'error': 'Business inventory requires currency'}), 400
+        if not is_valid_currency(business_inventory['currency']):
+            return jsonify({'error': f"Invalid currency: {business_inventory['currency']}"}), 400
+
+    # Validate investment property
+    valid_intents = list(PROPERTY_INTENTS.keys())
+    for item in investment_property:
+        if 'currency' not in item:
+            return jsonify({'error': 'Investment property items require currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+        intent = item.get('intent', 'rental')
+        if intent not in valid_intents:
+            return jsonify({'error': f"Invalid property intent: {intent}"}), 400
+
+    # Validate short-term payables
+    valid_payable_types = list(PAYABLE_TYPES.keys())
+    for item in short_term_payables:
+        if 'amount' not in item or 'currency' not in item:
+            return jsonify({'error': 'Short-term payables require amount and currency'}), 400
+        if not is_valid_currency(item['currency']):
+            return jsonify({'error': f"Invalid currency: {item['currency']}"}), 400
+        payable_type = item.get('type', 'other')
+        if payable_type not in valid_payable_types:
+            return jsonify({'error': f"Invalid payable type: {payable_type}"}), 400
+
+    # ==================== GET PRICING DATA ====================
+    coverage = get_coverage_flags(calculation_date)
+
+    if not coverage['fx_available'] and not coverage['metals_available']:
+        min_date, max_date = get_available_date_range()
+        return jsonify({
+            'error': 'No pricing data available for calculation date',
+            'calculation_date': calculation_date,
+            'earliest_available': min_date,
+            'latest_available': max_date,
+        }), 404
+
+    fx_effective, fx_rates = get_fx_snapshot(calculation_date, base_currency)
+    metals_effective, metals = get_metal_snapshot(calculation_date, base_currency)
+    crypto_effective, crypto = get_crypto_snapshot(calculation_date, base_currency)
+
+    pricing = {
+        'fx_rates': fx_rates,
+        'metals': {
+            'gold': {'price_per_gram': metals.get('gold', 0)},
+            'silver': {'price_per_gram': metals.get('silver', 0)},
+            'platinum': {'price_per_gram': metals.get('platinum', 0)},
+            'palladium': {'price_per_gram': metals.get('palladium', 0)},
+        },
+        'crypto': crypto,
+    }
+
+    # ==================== CALCULATE ZAKAT ====================
+    result = calculate_zakat_v3(
+        # Basic assets
+        gold_items=gold_items,
+        cash_items=cash_items,
+        bank_items=bank_items,
+        metal_items=metal_items,
+        crypto_items=crypto_items,
+        base_currency=base_currency,
+        pricing=pricing,
+        nisab_basis=nisab_basis,
+        credit_card_items=credit_card_items,
+        loan_items=loan_items,
+        # Advanced assets
+        stock_items=stock_items,
+        retirement_items=retirement_items,
+        receivable_items=receivable_items,
+        business_inventory=business_inventory,
+        investment_property=investment_property,
+        short_term_payables=short_term_payables,
+        # Settings
+        debt_policy=debt_policy,
+        include_uncertain_receivables=include_uncertain_receivables,
+    )
+
+    # Add calculation metadata
+    effective_date = fx_effective or metals_effective or crypto_effective
+    result['calculation_date'] = calculation_date
+    result['effective_date'] = effective_date
+    result['api_version'] = 'v3'
     result['pricing_metadata'] = {
         'requested_date': calculation_date,
         'effective_date': effective_date,

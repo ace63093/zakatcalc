@@ -112,3 +112,62 @@ def get_provider_keys_status() -> dict:
         'metalsdev': bool(get_metalsdev_key()),
         'coinmarketcap': bool(get_coinmarketcap_key()),
     }
+
+
+# ============================================================
+# Feature Flags for Calculator Enhancements
+# ============================================================
+
+def is_advanced_assets_enabled() -> bool:
+    """Check if advanced assets mode is enabled.
+
+    Controlled by ENABLE_ADVANCED_ASSETS env var (default: 1/true).
+    When enabled, users can toggle advanced mode to see stocks, retirement, etc.
+    """
+    return os.environ.get('ENABLE_ADVANCED_ASSETS', '1').lower() in ('1', 'true', 'yes')
+
+
+def is_date_assistant_enabled() -> bool:
+    """Check if zakat date assistant is enabled.
+
+    Controlled by ENABLE_DATE_ASSISTANT env var (default: 1/true).
+    When enabled, users can set zakat anniversary and get calendar reminders.
+    """
+    return os.environ.get('ENABLE_DATE_ASSISTANT', '1').lower() in ('1', 'true', 'yes')
+
+
+def is_autosave_enabled() -> bool:
+    """Check if localStorage autosave is enabled.
+
+    Controlled by ENABLE_AUTOSAVE env var (default: 1/true).
+    When enabled, calculator state is saved to localStorage automatically.
+    """
+    return os.environ.get('ENABLE_AUTOSAVE', '1').lower() in ('1', 'true', 'yes')
+
+
+def is_print_summary_enabled() -> bool:
+    """Check if printable summary feature is enabled.
+
+    Controlled by ENABLE_PRINT_SUMMARY env var (default: 1/true).
+    When enabled, /summary route renders a print-friendly breakdown.
+    """
+    return os.environ.get('ENABLE_PRINT_SUMMARY', '1').lower() in ('1', 'true', 'yes')
+
+
+def get_canonical_host() -> str:
+    """Get the canonical host for SEO.
+
+    Controlled by CANONICAL_HOST env var (default: whatismyzakat.com).
+    """
+    return os.environ.get('CANONICAL_HOST', 'whatismyzakat.com')
+
+
+def get_feature_flags() -> dict:
+    """Get all feature flag statuses."""
+    return {
+        'advanced_assets_enabled': is_advanced_assets_enabled(),
+        'date_assistant_enabled': is_date_assistant_enabled(),
+        'autosave_enabled': is_autosave_enabled(),
+        'print_summary_enabled': is_print_summary_enabled(),
+        'canonical_host': get_canonical_host(),
+    }
