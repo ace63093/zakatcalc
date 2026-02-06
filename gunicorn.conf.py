@@ -18,6 +18,9 @@ loglevel = 'info'
 # Process naming
 proc_name = 'zakat-calculator'
 
+# Proxy settings
+forwarded_allow_ips = '*'
+
 # Server mechanics
 daemon = False
 pidfile = None

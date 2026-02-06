@@ -162,6 +162,38 @@ def get_canonical_host() -> str:
     return os.environ.get('CANONICAL_HOST', 'whatismyzakat.com')
 
 
+def is_visitor_logging_enabled() -> bool:
+    """Check if visitor logging is enabled.
+
+    Controlled by ENABLE_VISITOR_LOGGING env var (default: 1/true).
+    """
+    return os.environ.get('ENABLE_VISITOR_LOGGING', '1').lower() in ('1', 'true', 'yes')
+
+
+def is_geolocation_enabled() -> bool:
+    """Check if IP geolocation is enabled.
+
+    Controlled by ENABLE_GEOLOCATION env var (default: 1/true).
+    """
+    return os.environ.get('ENABLE_GEOLOCATION', '1').lower() in ('1', 'true', 'yes')
+
+
+def get_geodb_refresh_interval_seconds() -> int:
+    """Get the geodb refresh interval in seconds.
+
+    Controlled by GEODB_REFRESH_INTERVAL_SECONDS env var (default: 604800 = 1 week).
+    """
+    return int(os.environ.get('GEODB_REFRESH_INTERVAL_SECONDS', '604800'))
+
+
+def get_visitor_hash_salt() -> str:
+    """Get the salt for hashing visitor IPs.
+
+    Controlled by VISITOR_HASH_SALT env var.
+    """
+    return os.environ.get('VISITOR_HASH_SALT', 'zakat-visitor-salt-change-me')
+
+
 def get_feature_flags() -> dict:
     """Get all feature flag statuses."""
     return {
@@ -170,4 +202,6 @@ def get_feature_flags() -> dict:
         'autosave_enabled': is_autosave_enabled(),
         'print_summary_enabled': is_print_summary_enabled(),
         'canonical_host': get_canonical_host(),
+        'visitor_logging_enabled': is_visitor_logging_enabled(),
+        'geolocation_enabled': is_geolocation_enabled(),
     }

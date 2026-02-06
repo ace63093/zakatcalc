@@ -378,7 +378,11 @@ const ZakatCalculator = (function() {
     let cryptos = [];
     let pricingSnapshot = null;
     let baseCurrency = 'CAD';
-    let calculationDate = new Date().toISOString().split('T')[0];
+    let calculationDate = (function() {
+        var now = new Date();
+        var local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 10);
+    })();
     let nisabBasis = 'gold';
     let debounceTimer = null;
     let lastCalculationResult = null;

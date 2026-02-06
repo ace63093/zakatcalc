@@ -128,6 +128,38 @@ CREATE TABLE IF NOT EXISTS meta (
     value TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- IP geolocation: parsed Apple CSV CIDR ranges
+--   ip_start/ip_end: zero-padded hex for sortable range queries
+--   ip_version: 4 or 6
+CREATE TABLE IF NOT EXISTS ip_geolocation (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_start TEXT NOT NULL,
+    ip_end TEXT NOT NULL,
+    cidr TEXT NOT NULL,
+    country_code TEXT NOT NULL,
+    region_code TEXT,
+    city TEXT,
+    ip_version INTEGER NOT NULL DEFAULT 4,
+    UNIQUE(cidr)
+);
+CREATE INDEX IF NOT EXISTS idx_ip_geo_v4_range ON ip_geolocation(ip_version, ip_start, ip_end);
+
+-- Visitors: unique visitor log, deduped by hashed IP
+CREATE TABLE IF NOT EXISTS visitors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_hash TEXT NOT NULL,
+    country_code TEXT,
+    region_code TEXT,
+    city TEXT,
+    user_agent TEXT,
+    first_seen TEXT NOT NULL DEFAULT (datetime('now')),
+    last_seen TEXT NOT NULL DEFAULT (datetime('now')),
+    visit_count INTEGER NOT NULL DEFAULT 1,
+    UNIQUE(ip_hash)
+);
+CREATE INDEX IF NOT EXISTS idx_visitors_country ON visitors(country_code);
+CREATE INDEX IF NOT EXISTS idx_visitors_last_seen ON visitors(last_seen);
 '''
 
 

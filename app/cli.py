@@ -465,6 +465,59 @@ def sync_prices_command(start_date, end_date, types):
     click.echo(f'\nSync complete: {success_count} succeeded, {error_count} failed')
 
 
+@click.command('refresh-geodb')
+@with_appcontext
+def refresh_geodb_command():
+    """Download Apple geodb, store to R2 + SQLite, reload memory index."""
+    from app.services.geolocation import (
+        download_and_parse_apple_geodb,
+        store_geodb_to_sqlite,
+        store_geodb_to_r2,
+        GeoIndex,
+        set_geo_index,
+    )
+    from app.services.r2_client import get_r2_client
+    from app.services.r2_config import is_r2_enabled
+
+    click.echo('Downloading Apple geodb...')
+    try:
+        rows = download_and_parse_apple_geodb()
+    except Exception as e:
+        click.echo(f'Error downloading geodb: {e}')
+        return
+
+    click.echo(f'Parsed {len(rows)} CIDR entries')
+
+    if not rows:
+        click.echo('Empty geodb, aborting')
+        return
+
+    # Store to R2
+    if is_r2_enabled():
+        r2 = get_r2_client()
+        if r2:
+            try:
+                store_geodb_to_r2(r2, rows)
+                click.echo('Stored to R2')
+            except Exception as e:
+                click.echo(f'R2 store failed: {e}')
+    else:
+        click.echo('R2 not enabled, skipping')
+
+    # Store to SQLite
+    db = get_db()
+    store_geodb_to_sqlite(db, rows)
+    click.echo('Stored to SQLite')
+
+    # Reload in-memory index
+    index = GeoIndex()
+    index.load_from_rows(rows)
+    set_geo_index(index)
+    click.echo(f'Memory index loaded: {index.size} entries')
+
+    click.echo('Geodb refresh complete!')
+
+
 def register_cli(app):
     """Register CLI commands with the Flask app."""
     app.cli.add_command(init_db_command)
@@ -475,3 +528,4 @@ def register_cli(app):
     app.cli.add_command(mirror_to_r2_command)
     app.cli.add_command(backfill_r2_command)
     app.cli.add_command(sync_prices_command)
+    app.cli.add_command(refresh_geodb_command)
