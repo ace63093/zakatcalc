@@ -86,7 +86,10 @@ Historical pricing uses tiered snapshot granularity (`app/services/cadence.py`):
 - `calculate_zakat()`: Legacy v1 format (gold, cash, bank only)
 - `calculate_zakat_v2()`: Full format (adds metals, crypto, nisab basis selection, deductible debts)
 
-Both use constants: `ZAKAT_RATE = 0.025`, `NISAB_GOLD_GRAMS = 85`, `NISAB_SILVER_GRAMS = 595`
+`app/services/advanced_calc.py` contains:
+- `calculate_zakat_v3()`: Advanced format (adds stocks, retirement, receivables, business inventory, investment property, short-term payables, debt policy)
+
+All use constants: `ZAKAT_RATE = 0.025`, `NISAB_GOLD_GRAMS = 85`, `NISAB_SILVER_GRAMS = 595`
 
 #### Deductible Debts
 Debts reduce the zakat-eligible total. The calculation uses:
@@ -138,8 +141,11 @@ Response includes `assets_total`, `debts_total`, `net_total`, and `subtotals.deb
 - `/` - Calculator UI
 - `/cad-to-bdt` - Hidden CAD→BDT converter (no nav link)
 - `/about-zakat` - About Zakat page
-- `/faq` - FAQ page
+- `/methodology` - Calculation methodology page (JSON-LD Article schema)
+- `/faq` - FAQ page (JSON-LD FAQPage schema)
 - `/contact` - Contact page
+- `/summary` - Printable summary (data in URL fragment, client-side render)
+- `/privacy-policy` - Privacy policy page
 
 #### Content Links
 - Contribute button (global nav): https://buymeacoffee.com/zakatcalculator
@@ -167,19 +173,26 @@ Rates only appear for assets the user has actually entered. Collapsed by default
 
 ### Frontend
 Single-page calculator at `/` using vanilla JS. Key components in `app/static/js/`:
-- `calculator.js`: Main calculation logic with live updates
+- `calculator.js`: Main calculation logic with live updates, state management (`getState()`/`setState()`)
+- `utils/shared.js`: Shared constants and utilities (NISAB, ZAKAT_RATE, WEIGHT_UNITS, LOAN_FREQUENCY_MULTIPLIERS)
 - `components/currency-autocomplete.js`: 179 ISO 4217 currencies with compact mode
 - `components/crypto-autocomplete.js`: Top 100 cryptocurrencies
 - `components/nisab-indicator.js`: Visual nisab threshold indicator with expandable conversion rates
-- `components/share-link.js`: Shareable URL generation with LZ-string compression
+- `components/share-link.js`: Shareable URL generation with LZ-string compression (`#data=` prefix)
 - `components/csv-export.js`: Export assets to CSV
+- `components/autosave.js`: LocalStorage autosave with debounced save (2s), restore on load, toast notification
+- `components/date-assistant.js`: Zakat anniversary tracker with Hijri conversion, countdown, ICS export
+- `components/summary.js`: Client-side printable summary renderer
 
 Templates in `app/templates/`:
 - `base.html`: Shared layout + nav (includes Contribute button)
 - `calculator.html`
 - `about_zakat.html`
+- `methodology.html`
 - `faq.html`
 - `contact.html`
+- `summary.html`
+- `feature_disabled.html`
 
 #### Currency Autocomplete Modes
 - **Full mode** (base currency selector): Shows "CAD — Canadian Dollar"
@@ -195,6 +208,19 @@ Per-row weight unit selection for gold/metal assets. Supported units in `WEIGHT_
 
 Weight is always stored/transmitted in grams; UI shows a "grams pill" with converted value.
 
+#### Advanced Assets Mode
+Toggle switch enables additional asset sections (feature-flagged via `ENABLE_ADVANCED_ASSETS`):
+- **Stocks/ETFs**: Name, value, valuation method (full market value or 30% zakatable portion)
+- **Retirement Accounts**: Name, balance, accessibility (full, accessible only, penalty-adjusted)
+- **Receivables**: Name, amount, likelihood (likely 100%, uncertain 50%, doubtful 0%)
+- **Business Inventory**: Inventory value, business cash, business receivables, business payables
+- **Investment Property**: Name, value, intent (resale or rental income)
+- **Short-term Payables**: Taxes, rent, utilities, other (deductible)
+- **Debt Policy**: 12-month or total outstanding selector
+
+Backend: `app/services/advanced_calc.py` → `calculate_zakat_v3()`
+API: `POST /api/v1/calculate` auto-detects v1/v2/v3 format
+
 #### Debt Section
 The "Debts (Deductible)" section appears below Cryptocurrency and above Tools:
 - **Credit Cards subsection**: Same structure as bank accounts (name, balance, currency)
@@ -202,11 +228,40 @@ The "Debts (Deductible)" section appears below Cryptocurrency and above Tools:
 - Results panel shows: Assets Total, Debts Total (with minus sign), Net Total
 - Share link and CSV export include debt items
 
+#### Precious Metals Clarification
+The "Other Precious Metals" section title has a `?` tooltip (`.section-note` CSS class) explaining that platinum and palladium are not universally considered zakatable by all scholars. Pure CSS hover tooltip.
+
 ### CSS Structure
 - `app/static/css/autocomplete.css`: Currency/crypto autocomplete styling, compact mode
 - `app/static/css/nisab-indicator.css`: Nisab threshold indicator card
-- `app/static/css/tools.css`: Share link and export buttons
+- `app/static/css/tools.css`: Share link, export buttons, autosave notice toast
+- `app/static/css/advanced-assets.css`: Advanced assets mode toggle and sections
+- `app/static/css/date-assistant.css`: Zakat date assistant component
+- `app/static/css/summary.css`: Print-optimized summary page styles
+- `app/static/css/content-pages.css`: Shared styles for about, FAQ, methodology, contact, privacy pages
 - `app/templates/base.html`: Main styles embedded (gradients, layout, responsive breakpoints)
+
+### Feature Flags
+Controlled by environment variables in `app/services/config.py` via `get_feature_flags()`:
+- `ENABLE_ADVANCED_ASSETS` (default: 1) - Advanced assets mode toggle (stocks, retirement, etc.)
+- `ENABLE_DATE_ASSISTANT` (default: 1) - Zakat date assistant in results sidebar
+- `ENABLE_AUTOSAVE` (default: 1) - LocalStorage autosave/restore
+- `ENABLE_PRINT_SUMMARY` (default: 1) - Print summary button and `/summary` route
+
+Feature flags are passed to templates as `feature_flags` dict. Frontend uses `{% if feature_flags.X %}` conditionally.
+
+### Autosave System
+- `Autosave` IIFE module in `components/autosave.js`
+- Saves `ZakatCalculator.getState()` to `localStorage` key `zakatCalculator_autosave` (debounced 2s)
+- Restores on page load unless share-link (`#data=`) is in URL (share-link takes priority)
+- Shows toast notification with "Clear" and dismiss buttons on restore
+- Schema-versioned payload: `{ v: 2, ts: timestamp, data: state }`
+
+### Share Link System
+- `ShareLink` IIFE module in `components/share-link.js`
+- Uses LZ-string compression in URL fragment with `#data=` prefix
+- Schema version 2 with v1-to-v2 migration for backward compatibility
+- Share-link takes priority over autosave restore
 
 ### Responsive Layout (3 Viewport Modes)
 
@@ -238,6 +293,15 @@ Used by both purple value pills (`.base-value-pill`) and grams pills (`.weight-g
 - Every new endpoint needs a test
 - No network calls in tests (use fixtures and fakes)
 - Tests use frozen time (`FROZEN_TODAY = date(2026, 1, 15)`) for cadence determinism
+
+### Test Suites
+- **Unit/integration tests** (318 tests): `docker compose run --rm web pytest`
+- **Selenium live tests** (production): `pytest tests/test_selenium_live.py -v`
+- **Selenium local tests** (localhost): `python3 -m pytest tests/test_selenium_local.py -v --noconftest`
+  - Uses `--noconftest` to bypass Flask import in conftest.py
+  - Defaults to `http://localhost:8080`, override with `LIVE_TEST_URL` env var
+  - Set `HEADLESS=0` to see the browser
+  - 33 tests covering: date assistant, autosave, metals tooltip, methodology, print summary, advanced assets, share link, navigation, regression
 
 ## Git Workflow
 
