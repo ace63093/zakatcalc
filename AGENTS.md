@@ -33,13 +33,16 @@ docker compose run --rm web flask import-crypto-csv data/seed/crypto_prices.csv
 # One-time FX backfill from Fawaz (writes to SQLite + R2)
 # Note: Fawaz historical availability starts around 2024-04-01.
 docker compose run --rm web python scripts/backfill_fx_fawaz.py --start 2024-04-01 --end 2025-12-31 --daily
+
+# Refresh IP geolocation database
+docker compose run --rm web flask refresh-geodb
 ```
 
 ## File Structure
 
 ```
 app/
-├── __init__.py              # create_app() factory
+├── __init__.py              # create_app() factory + ProxyFix + visitor logging hook
 ├── constants.py             # Shared constants (NISAB, ZAKAT_RATE, etc.)
 ├── routes/
 │   ├── main.py              # UI routes (/, /methodology, /summary, etc.)
@@ -51,6 +54,9 @@ app/
 │   ├── calc.py              # Core zakat calculation (v1/v2)
 │   ├── cadence.py           # Date snapshot granularity
 │   ├── config.py            # Env-based config + feature flags
+│   ├── geolocation.py       # IP geolocation: CIDR parsing, GeoIndex, Apple CSV, R2/SQLite
+│   ├── geodb_sync.py        # Background geodb refresh thread + visitor R2 backup
+│   ├── visitor_logging.py   # Visitor upsert (hashed IP), R2 backup/restore
 │   ├── providers/           # FX/metal/crypto providers + registry
 │   ├── r2_client.py         # Cloudflare R2 cache client
 │   ├── r2_config.py         # R2 env config
@@ -92,8 +98,10 @@ scripts/
 └── backfill_fx_fawaz.py     # One-time FX backfill (Fawaz)
 
 tests/
-├── conftest.py              # Fixtures (client, db_client, frozen_time)
+├── conftest.py              # Fixtures (client, db_client, frozen_time, fake_r2)
 ├── test_main.py             # Route tests (16 tests including methodology)
+├── test_geolocation.py      # Geolocation tests (24 tests: CIDR, GeoIndex, hash, R2)
+├── test_visitor_logging.py  # Visitor logging tests (7 tests: upsert, R2 backup)
 ├── test_selenium_live.py    # Selenium tests against production
 ├── test_selenium_local.py   # Selenium tests against localhost (33 tests)
 └── test_services/
@@ -141,6 +149,18 @@ WEIGHT_UNITS = {
 - R2 cache config uses `R2_*` env vars (`R2_ENABLED`, `R2_BUCKET`, `R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PREFIX`).
 - FX provider order: OpenExchangeRates (if key) → ExchangeRateAPI (latest) with Fawaz fallback for historical/missing.
 
+## Visitor Logging + IP Geolocation
+
+- **Geodb**: Apple CSV (`https://ip-geolocation.apple.com/`) → R2 (primary) → SQLite (mirror) → In-memory GeoIndex (binary search, O(log n))
+- **Visitors**: SQLite primary (upsert by hashed IP) → R2 backup (periodic snapshot)
+- **Privacy**: IPs hashed with SHA-256 + configurable salt, raw IPs never stored
+- **Background thread** (`geodb-refresh`): downloads Apple CSV weekly, stores R2 + SQLite, reloads memory, backs up visitors
+- **before_request hook**: skips `/static/`, `/api/`, `/healthz`; stores geo on `g.visitor_geo`
+- **ProxyFix**: trusts `X-Forwarded-For` for real client IP; gunicorn `forwarded_allow_ips = '*'`
+- **R2 keys**: `{prefix}geolocation/apple_geodb.json.gz`, `{prefix}visitors/snapshot.json.gz`
+- **CLI**: `flask refresh-geodb`
+- No new Python dependencies (stdlib `ipaddress`, `bisect`, `hashlib`, `urllib.request`)
+
 ## Feature Flags
 
 Controlled by env vars in `app/services/config.py` via `get_feature_flags()`:
@@ -151,6 +171,15 @@ Controlled by env vars in `app/services/config.py` via `get_feature_flags()`:
 | `ENABLE_DATE_ASSISTANT` | 1 | Zakat date assistant in results sidebar |
 | `ENABLE_AUTOSAVE` | 1 | LocalStorage autosave/restore |
 | `ENABLE_PRINT_SUMMARY` | 1 | Print summary button and `/summary` route |
+| `ENABLE_VISITOR_LOGGING` | 1 | Visitor logging (hashed IP upsert to SQLite) |
+| `ENABLE_GEOLOCATION` | 1 | IP geolocation via Apple CSV geodb |
+
+Additional visitor/geo config:
+
+| Env Var | Default | Description |
+|---------|---------|-------------|
+| `GEODB_REFRESH_INTERVAL_SECONDS` | 604800 | Background refresh cadence (1 week) |
+| `VISITOR_HASH_SALT` | `zakat-visitor-salt-change-me` | Salt for SHA-256 IP hashing |
 
 ## UI Routes & Content
 
@@ -226,7 +255,7 @@ Additional breakpoints: 1023px, 767px, 640px, 600px.
 1. Every endpoint needs a test
 2. No network calls (use fixtures)
 3. Use `FROZEN_TODAY = date(2026, 1, 15)` for time-dependent tests
-4. Unit tests: `docker compose run --rm web pytest` (318 tests)
+4. Unit tests: `docker compose run --rm web pytest` (349 tests)
 5. Selenium local: `python3 -m pytest tests/test_selenium_local.py -v --noconftest` (33 tests, needs `docker compose up --build -d web` running)
 6. Selenium live: `pytest tests/test_selenium_live.py -v` (against production)
 

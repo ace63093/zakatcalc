@@ -53,12 +53,16 @@ docker compose run --rm web flask sync-prices                              # Syn
 docker compose run --rm web flask sync-prices --start 2026-01-27           # Sync single date
 docker compose run --rm web flask sync-prices --start 2026-01-27 --end 2026-01-31  # Sync range
 docker compose run --rm web flask sync-prices --types fx,metals            # Sync only specific types
+
+# Refresh IP geolocation database (downloads Apple CSV → R2 → SQLite → memory)
+docker compose run --rm web flask refresh-geodb
 ```
 
 ## Architecture
 
 ### Flask App Factory Pattern
 - `app/__init__.py`: `create_app()` factory configures Flask, registers blueprints, initializes DB
+- ProxyFix middleware for `X-Forwarded-For` (real client IP behind reverse proxy)
 - Blueprints: `main_bp` (UI), `health_bp` (/healthz), `api_bp` (/api/v1/*)
 
 ### Pricing Data Flow (3-Tier Fallback)
@@ -74,6 +78,31 @@ Each successful fetch populates lower-tier caches. R2 is optional and best-effor
 - Daemon settings: `PRICING_SYNC_INTERVAL_SECONDS`, `PRICING_LOOKBACK_MONTHS`, `PRICING_RECENT_DAYS`, `PRICING_MONTHLY_LIMIT`
 - Optional provider keys: `OPENEXCHANGERATES_APP_ID`, `GOLDAPI_KEY`, `METALPRICEAPI_KEY`, `METALS_DEV_API_KEY`, `COINMARKETCAP_API_KEY`
 - R2 cache config uses `R2_*` env vars (`R2_ENABLED`, `R2_BUCKET`, `R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PREFIX`)
+
+### Visitor Logging + IP Geolocation
+Privacy-preserving visitor logging with Apple CSV geodb for IP geolocation.
+
+**Geolocation Database (3-tier, R2 is primary)**:
+```
+Read:  In-memory GeoIndex → SQLite (mirror) → R2 (primary) → Apple (upstream)
+Write: Apple download → R2 → SQLite → In-memory index
+```
+
+**Visitor Logs (2-tier, R2 backup)**:
+```
+Write: before_request → SQLite (primary) → R2 (periodic backup)
+Read:  SQLite. On startup if empty → restore from R2.
+```
+
+Key components:
+- `app/services/geolocation.py`: CIDR parsing, GeoIndex (binary search via `bisect`), Apple CSV download, R2/SQLite store/load, IP hashing (SHA-256 + salt)
+- `app/services/visitor_logging.py`: Visitor upsert (deduped by hashed IP), geo enrichment, R2 backup/restore
+- `app/services/geodb_sync.py`: Background refresh thread (weekly by default), also backs up visitors to R2
+- `before_request` hook in `app/__init__.py`: skips `/static/`, `/api/`, `/healthz`; stores geo on `g.visitor_geo`
+- IPs hashed with SHA-256 + configurable salt (`VISITOR_HASH_SALT`), raw IPs never persisted
+- R2 keys: `{prefix}geolocation/apple_geodb.json.gz`, `{prefix}visitors/snapshot.json.gz`
+- CLI: `flask refresh-geodb` for manual download + R2 store + SQLite mirror + memory reload
+- Gunicorn: `forwarded_allow_ips = '*'` for ProxyFix compatibility
 
 ### Cadence System
 Historical pricing uses tiered snapshot granularity (`app/services/cadence.py`):
@@ -247,6 +276,12 @@ Controlled by environment variables in `app/services/config.py` via `get_feature
 - `ENABLE_DATE_ASSISTANT` (default: 1) - Zakat date assistant in results sidebar
 - `ENABLE_AUTOSAVE` (default: 1) - LocalStorage autosave/restore
 - `ENABLE_PRINT_SUMMARY` (default: 1) - Print summary button and `/summary` route
+- `ENABLE_VISITOR_LOGGING` (default: 1) - Visitor logging (hashed IP upsert to SQLite)
+- `ENABLE_GEOLOCATION` (default: 1) - IP geolocation via Apple CSV geodb
+
+Additional visitor/geo config (not in `get_feature_flags()`):
+- `GEODB_REFRESH_INTERVAL_SECONDS` (default: 604800 = 1 week) - Background refresh cadence
+- `VISITOR_HASH_SALT` (default: `zakat-visitor-salt-change-me`) - Salt for IP hashing
 
 Feature flags are passed to templates as `feature_flags` dict. Frontend uses `{% if feature_flags.X %}` conditionally.
 
@@ -295,7 +330,7 @@ Used by both purple value pills (`.base-value-pill`) and grams pills (`.weight-g
 - Tests use frozen time (`FROZEN_TODAY = date(2026, 1, 15)`) for cadence determinism
 
 ### Test Suites
-- **Unit/integration tests** (318 tests): `docker compose run --rm web pytest`
+- **Unit/integration tests** (349 tests): `docker compose run --rm web pytest`
 - **Selenium live tests** (production): `pytest tests/test_selenium_live.py -v`
 - **Selenium local tests** (localhost): `python3 -m pytest tests/test_selenium_local.py -v --noconftest`
   - Uses `--noconftest` to bypass Flask import in conftest.py
