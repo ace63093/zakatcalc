@@ -19,6 +19,23 @@ def test_calculator_contains_zakat_title(client):
     assert b'Zakat Calculator' in response.data
 
 
+def test_calculator_crypto_section_scoped_to_advanced_mode_when_enabled(client):
+    """When advanced mode toggle exists, crypto section should live inside advanced container."""
+    response = client.get('/')
+    html = response.data.decode('utf-8')
+
+    if 'id="advancedModeToggle"' not in html:
+        assert 'id="cryptoItems"' in html
+        return
+
+    advanced_index = html.find('id="advancedAssetsContainer"')
+    crypto_index = html.find('id="cryptoItems"')
+
+    assert advanced_index != -1
+    assert crypto_index != -1
+    assert crypto_index > advanced_index
+
+
 def test_about_zakat_returns_200(client):
     """GET /about-zakat should return status 200."""
     response = client.get('/about-zakat')

@@ -35,6 +35,7 @@ const CsvExport = (function() {
         const baseCurrency = getBaseCurrency();
         const calculationDate = getCalculationDate();
         const effectiveDate = getEffectivePricingDate();
+        const cryptoEnabled = isCryptoEnabled();
         const nisabInfo = getNisabInfo();
         const totals = getTotals();
 
@@ -118,7 +119,7 @@ const CsvExport = (function() {
         rows.push(['Other Metals', totals.metals]);
         rows.push(['Cash', totals.cash]);
         rows.push(['Bank Accounts', totals.bank]);
-        rows.push(['Cryptocurrency', totals.crypto]);
+        rows.push(['Cryptocurrency', cryptoEnabled ? totals.crypto : '$0.00']);
         rows.push([]);
         rows.push(['Assets Total', totals.grandTotal]);
         rows.push(['Credit Cards', totals.creditCards || '$0.00']);
@@ -256,6 +257,18 @@ const CsvExport = (function() {
     function getElementText(id) {
         const el = document.getElementById(id);
         return el ? el.textContent : '$0.00';
+    }
+
+    /**
+     * Whether cryptocurrency is enabled in the current calculator mode.
+     * If advanced mode toggle exists, crypto is only active when enabled.
+     */
+    function isCryptoEnabled() {
+        const advancedToggle = document.getElementById('advancedModeToggle');
+        if (!advancedToggle) {
+            return true;
+        }
+        return advancedToggle.checked;
     }
 
     /**
@@ -427,6 +440,10 @@ const CsvExport = (function() {
      * @returns {Array} Array of asset rows
      */
     function collectCryptoAssets(baseCurrency) {
+        if (!isCryptoEnabled()) {
+            return [];
+        }
+
         const rows = [];
         const cryptoItems = document.querySelectorAll('#cryptoItems .asset-row');
 

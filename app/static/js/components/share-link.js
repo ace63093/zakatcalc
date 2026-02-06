@@ -215,6 +215,11 @@ var ShareLink = (function() {
      * @returns {Object} v2 state object
      */
     function migrateV1toV2(state) {
+        var hasCryptoData = (state.crypto_items || []).some(function(item) {
+            var amount = parseFloat(item.amount) || 0;
+            return amount > 0 && !!item.symbol;
+        });
+
         return Object.assign({}, state, {
             // Advanced assets (all empty arrays/null by default)
             stock_items: state.stock_items || [],
@@ -226,7 +231,8 @@ var ShareLink = (function() {
             // Advanced mode settings
             debt_policy: state.debt_policy || '12_months',
             include_uncertain_receivables: state.include_uncertain_receivables || false,
-            advanced_mode: state.advanced_mode || false
+            // In v1, crypto was always active. Preserve that behavior if crypto data exists.
+            advanced_mode: state.advanced_mode || hasCryptoData
         });
     }
 
