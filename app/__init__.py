@@ -92,7 +92,12 @@ def create_app(config: dict | None = None) -> Flask:
         try:
             from app.db import get_db
             from app.services.visitor_logging import log_visitor
-            result = log_visitor(get_db(), request.remote_addr, request.user_agent.string)
+            result = log_visitor(
+                get_db(),
+                request.remote_addr,
+                request.user_agent.string,
+                request.host,
+            )
             g.visitor_geo = result
         except Exception:
             # Visitor logging must never break page loads

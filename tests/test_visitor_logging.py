@@ -82,34 +82,81 @@ class TestLogVisitor:
         count = visitor_db.execute('SELECT COUNT(*) FROM visitors').fetchone()[0]
         assert count == 2
 
+    def test_tracks_domain_visits_by_host(self, visitor_db):
+        log_visitor(visitor_db, '192.168.1.1', 'Browser/1.0', 'whatismyzakat.com')
+        log_visitor(visitor_db, '192.168.1.1', 'Browser/1.0', 'whatismyzakat.ca')
+        log_visitor(visitor_db, '192.168.1.1', 'Browser/1.0', 'whatismyzakat.com')
+
+        rows = visitor_db.execute(
+            'SELECT host, visit_count FROM visitor_domains ORDER BY host'
+        ).fetchall()
+        assert len(rows) == 2
+        assert rows[0]['host'] == 'whatismyzakat.ca'
+        assert rows[0]['visit_count'] == 1
+        assert rows[1]['host'] == 'whatismyzakat.com'
+        assert rows[1]['visit_count'] == 2
+
+    def test_normalizes_host_before_storing(self, visitor_db):
+        log_visitor(visitor_db, '192.168.1.1', 'Browser/1.0', 'WhatIsMyZakat.COM:443')
+        row = visitor_db.execute('SELECT host FROM visitor_domains').fetchone()
+        assert row['host'] == 'whatismyzakat.com'
+
 
 class TestR2BackupRestore:
     def test_backup_restore_round_trip(self, visitor_db, r2_client_fixture):
         # Insert some visitors
-        log_visitor(visitor_db, '10.0.0.1', 'Browser/1.0')
-        log_visitor(visitor_db, '10.0.0.2', 'Browser/2.0')
+        log_visitor(visitor_db, '10.0.0.1', 'Browser/1.0', 'whatismyzakat.com')
+        log_visitor(visitor_db, '10.0.0.2', 'Browser/2.0', 'whatismyzakat.ca')
 
         # Backup to R2
         backup_visitors_to_r2(visitor_db, r2_client_fixture)
 
         # Clear SQLite
         visitor_db.execute('DELETE FROM visitors')
+        visitor_db.execute('DELETE FROM visitor_domains')
         visitor_db.commit()
         assert visitor_db.execute('SELECT COUNT(*) FROM visitors').fetchone()[0] == 0
 
         # Restore from R2
         restore_visitors_from_r2(visitor_db, r2_client_fixture)
         count = visitor_db.execute('SELECT COUNT(*) FROM visitors').fetchone()[0]
+        domain_count = visitor_db.execute('SELECT COUNT(*) FROM visitor_domains').fetchone()[0]
         assert count == 2
+        assert domain_count == 2
 
     def test_restore_skips_if_data_exists(self, visitor_db, r2_client_fixture):
-        log_visitor(visitor_db, '10.0.0.1', 'Browser/1.0')
+        log_visitor(visitor_db, '10.0.0.1', 'Browser/1.0', 'whatismyzakat.com')
         backup_visitors_to_r2(visitor_db, r2_client_fixture)
 
         # Add another visitor after backup
-        log_visitor(visitor_db, '10.0.0.2', 'Browser/2.0')
+        log_visitor(visitor_db, '10.0.0.2', 'Browser/2.0', 'whatismyzakat.ca')
 
         # Restore should skip since table has data
         restore_visitors_from_r2(visitor_db, r2_client_fixture)
         count = visitor_db.execute('SELECT COUNT(*) FROM visitors').fetchone()[0]
         assert count == 2  # Still 2, not overwritten
+
+    def test_restore_v1_payload_without_domains(self, visitor_db, r2_client_fixture):
+        # Simulate existing v1 snapshot payload (list format only).
+        payload = [
+            {
+                'h': 'hash-1', 'cc': 'US', 'rc': 'CA', 'ci': 'SF',
+                'ua': 'UA', 'fs': '2026-01-01 00:00:00',
+                'ls': '2026-01-01 00:00:00', 'vc': 3,
+            }
+        ]
+        import gzip
+        import json
+        r2_client_fixture._client.put_object(
+            Bucket='test-bucket',
+            Key='visitors/snapshot.json.gz',
+            Body=gzip.compress(json.dumps(payload).encode('utf-8')),
+            ContentType='application/json',
+            ContentEncoding='gzip',
+        )
+
+        restore_visitors_from_r2(visitor_db, r2_client_fixture)
+        visitors_count = visitor_db.execute('SELECT COUNT(*) FROM visitors').fetchone()[0]
+        domains_count = visitor_db.execute('SELECT COUNT(*) FROM visitor_domains').fetchone()[0]
+        assert visitors_count == 1
+        assert domains_count == 0
