@@ -127,7 +127,9 @@ var ZakatSummary = (function() {
         renderMetalItems();
         renderCashItems();
         renderBankItems();
-        renderCryptoItems();
+        if (isCryptoEnabledInState()) {
+            renderCryptoItems();
+        }
 
         // Render advanced assets if present
         if (state.advanced_mode) {
@@ -280,6 +282,17 @@ var ZakatSummary = (function() {
         });
 
         document.getElementById('cryptoAssets').style.display = 'block';
+    }
+
+    /**
+     * Whether crypto should be shown for this summary payload.
+     * For backward compatibility, missing advanced_mode means enabled.
+     */
+    function isCryptoEnabledInState() {
+        if (state.advanced_mode === undefined) {
+            return true;
+        }
+        return !!state.advanced_mode;
     }
 
     /**

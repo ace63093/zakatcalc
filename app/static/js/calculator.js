@@ -765,6 +765,21 @@ const ZakatCalculator = (function() {
     }
 
     /**
+     * Determine whether crypto is controlled by the advanced mode toggle.
+     * If the toggle exists, crypto should only be active in advanced mode.
+     */
+    function isCryptoAdvancedControlled() {
+        return !!document.getElementById('advancedModeToggle');
+    }
+
+    /**
+     * Determine whether crypto should be included in calculations/exports.
+     */
+    function isCryptoEnabled() {
+        return !isCryptoAdvancedControlled() || advancedMode;
+    }
+
+    /**
      * Main calculation function - runs client-side
      */
     function recalculate() {
@@ -778,7 +793,7 @@ const ZakatCalculator = (function() {
         const cashItems = collectCashItems();
         const bankItems = collectBankItems();
         const metalItems = collectMetalItems();
-        const cryptoItems = collectCryptoItems();
+        const cryptoItems = isCryptoEnabled() ? collectCryptoItems() : [];
 
         // Collect debt items
         const creditCardItems = collectCreditCardItems();
@@ -789,7 +804,7 @@ const ZakatCalculator = (function() {
         const cashTotal = calculateCashTotal(cashItems);
         const bankTotal = calculateBankTotal(bankItems);
         const metalTotal = calculateMetalTotal(metalItems);
-        const cryptoTotal = calculateCryptoTotal(cryptoItems);
+        const cryptoTotal = isCryptoEnabled() ? calculateCryptoTotal(cryptoItems) : 0;
 
         // Calculate debt subtotals
         const creditCardTotal = calculateCreditCardTotal(creditCardItems);
@@ -1802,6 +1817,8 @@ const ZakatCalculator = (function() {
     function initAdvancedMode() {
         var toggle = document.getElementById('advancedModeToggle');
         if (toggle) {
+            // Enforce UI state from the current toggle value on first load.
+            toggleAdvancedMode(!!toggle.checked);
             toggle.addEventListener('change', function() {
                 toggleAdvancedMode(this.checked);
             });
