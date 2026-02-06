@@ -103,6 +103,53 @@
     margin-bottom: 0;
 }
 
+/* Methodology Page Styles */
+.content-section h3 {
+    color: var(--color-text-primary, #2d3748);
+    font-size: var(--font-size-lg, 1.05rem);
+    margin: 20px 0 10px;
+}
+
+.formula-box {
+    background: var(--color-info-bg, #f0f5ff);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-left: 4px solid var(--color-primary, #667eea);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 12px 0 16px;
+    font-size: 0.95rem;
+    color: var(--color-text-primary, #2d3748);
+    line-height: 1.6;
+}
+
+.methodology-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 0.9rem;
+}
+
+.methodology-table th,
+.methodology-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.methodology-table th {
+    background: var(--color-bg-light, #f7fafc);
+    color: var(--color-text-primary, #2d3748);
+    font-weight: 600;
+}
+
+.methodology-table td {
+    color: var(--color-text-secondary, #4a5568);
+}
+
+.methodology-table tbody tr:hover {
+    background: var(--color-bg-light, #f7fafc);
+}
+
 /* FAQ Styles */
 .faq-item {
     margin-bottom: 25px;

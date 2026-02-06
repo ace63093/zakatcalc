@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Calculation Methodology - How We Calculate Zakat{% endblock %}
+
+{% block head %}
+<meta name="description" content="Detailed methodology behind our Zakat calculator. Learn how we determine Nisab thresholds, handle currency conversion, calculate on different asset types, and apply debt deductions.">
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Zakat Calculation Methodology",
+    "description": "How the Zakat Calculator determines your obligation across gold, silver, cash, investments, cryptocurrency, and debts.",
+    "author": {
+        "@type": "Organization",
+        "name": "What Is My Zakat"
+    }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Calculation Methodology</h1>
+    <p class="subtitle">How we calculate your Zakat obligation</p>
+
+    <div class="content-section">
+        <h2>Overview</h2>
+        <p>Our calculator applies a <strong>2.5% (1/40)</strong> rate to your net zakatable wealth that exceeds the Nisab threshold, following the principle agreed upon by the four major Sunni schools of jurisprudence (madhahib).</p>
+        <p>The formula is:</p>
+        <div class="formula-box">
+            <strong>Zakat Due</strong> = (Total Assets &minus; Deductible Debts) &times; 2.5%<br>
+            <em>Only if net wealth &ge; Nisab threshold</em>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <h2>Nisab Threshold</h2>
+        <p>The Nisab is the minimum wealth one must possess for one lunar year (Hawl) before Zakat becomes obligatory. There are two standards:</p>
+        <ul>
+            <li><strong>Gold standard:</strong> 85 grams of pure gold (approximately 7.5 tola)</li>
+            <li><strong>Silver standard:</strong> 595 grams of pure silver (approximately 52.5 tola)</li>
+        </ul>
+        <p>The silver threshold is significantly lower in monetary terms, meaning more people would be eligible to pay Zakat under it. Many scholars recommend using the silver standard as it benefits more recipients, while others advise using whichever standard was historically used in your community. Our calculator lets you choose either.</p>
+        <p>The monetary value of the Nisab changes daily with metal market prices. We use real-time gold and silver prices to compute the current Nisab in your selected base currency.</p>
+    </div>
+
+    <div class="content-section">
+        <h2>Asset Categories</h2>
+
+        <h3>Gold</h3>
+        <p>Gold is zakatable by unanimous scholarly agreement. We calculate the pure gold content based on karat purity:</p>
+        <div class="formula-box">
+            <strong>Pure gold</strong> = Weight &times; (Karat / 24)
+        </div>
+        <p>The pure gold weight is then valued at the current market price per gram. We support entry in grams, troy ounces, tola, vori, and aana.</p>
+
+        <h3>Silver and Other Metals</h3>
+        <p>Silver is unanimously considered zakatable. We value silver at the current market price per gram.</p>
+        <p><strong>Platinum and Palladium:</strong> These metals are not universally considered zakatable by all scholars. Some contemporary scholars include them as trade goods (uruud al-tijarah) if held for investment, while others exclude them. Our calculator includes them for completeness, but consult a scholar regarding your specific situation.</p>
+
+        <h3>Cash and Bank Accounts</h3>
+        <p>All cash holdings and bank balances are zakatable. Amounts in foreign currencies are converted to your base currency using current exchange rates.</p>
+
+        <h3>Cryptocurrency</h3>
+        <p>Most contemporary scholars consider cryptocurrency zakatable, treating it as a digital asset similar to cash or trade goods. We value holdings at the current market price in your base currency.</p>
+    </div>
+
+    <div class="content-section">
+        <h2>Advanced Asset Types</h2>
+
+        <h3>Stocks and ETFs</h3>
+        <p>Two approaches are supported:</p>
+        <ul>
+            <li><strong>Full market value:</strong> The total current value of your holdings. Used when stocks are held primarily for trading.</li>
+            <li><strong>Zakatable portion (30%):</strong> An approximate proportion representing the underlying zakatable assets of the company. Used by some scholars for long-term holdings where you are not actively trading.</li>
+        </ul>
+
+        <h3>Retirement Accounts</h3>
+        <p>Scholars differ on retirement accounts due to restricted access. We offer three options:</p>
+        <ul>
+            <li><strong>Full balance:</strong> The entire account value is zakatable</li>
+            <li><strong>Accessible portion only:</strong> Only the amount you can withdraw without penalty</li>
+            <li><strong>Penalty-adjusted:</strong> Full balance minus early withdrawal penalties</li>
+        </ul>
+
+        <h3>Receivables</h3>
+        <p>Debts owed to you are categorized by likelihood of collection:</p>
+        <ul>
+            <li><strong>Likely (100%):</strong> Expected to be repaid &mdash; counted in full</li>
+            <li><strong>Uncertain (50%):</strong> Repayment unclear &mdash; counted at half value</li>
+            <li><strong>Doubtful (0%):</strong> Unlikely to be repaid &mdash; excluded from calculation</li>
+        </ul>
+
+        <h3>Investment Property</h3>
+        <p>Treatment depends on your intent:</p>
+        <ul>
+            <li><strong>Held for resale:</strong> The full market value is zakatable as a trade good</li>
+            <li><strong>Held for rental income:</strong> Only the accumulated rental income is zakatable, not the property itself</li>
+        </ul>
+
+        <h3>Business Inventory</h3>
+        <p>Trade goods (inventory held for sale) are zakatable at their current market value. We calculate: inventory value + business cash + business receivables &minus; business payables.</p>
+    </div>
+
+    <div class="content-section">
+        <h2>Debt Deductions</h2>
+        <p>Debts you owe can reduce your zakatable wealth. We support two categories:</p>
+
+        <h3>Credit Cards</h3>
+        <p>Outstanding credit card balances are deducted in full from your total assets.</p>
+
+        <h3>Recurring Loans</h3>
+        <p>Loan payments are annualized based on their frequency and then deducted. The annualization multipliers are:</p>
+        <table class="methodology-table">
+            <thead>
+                <tr><th>Frequency</th><th>Multiplier</th><th>Example</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Weekly</td><td>&times; 52</td><td>$100/week = $5,200/year</td></tr>
+                <tr><td>Biweekly</td><td>&times; 26</td><td>$200/2 weeks = $5,200/year</td></tr>
+                <tr><td>Semi-monthly</td><td>&times; 24</td><td>$250/semi-month = $6,000/year</td></tr>
+                <tr><td>Monthly</td><td>&times; 12</td><td>$500/month = $6,000/year</td></tr>
+                <tr><td>Quarterly</td><td>&times; 4</td><td>$1,500/quarter = $6,000/year</td></tr>
+                <tr><td>Yearly</td><td>&times; 1</td><td>$6,000/year = $6,000/year</td></tr>
+            </tbody>
+        </table>
+        <p>Some scholars only deduct the next 12 months of payments, while others deduct the full outstanding balance. Our calculator defaults to the 12-month approach.</p>
+    </div>
+
+    <div class="content-section">
+        <h2>Currency Conversion</h2>
+        <p>All assets are converted to your chosen base currency using real-time exchange rates. We source rates from multiple providers with automatic fallback to ensure availability.</p>
+    </div>
+
+    <div class="content-section">
+        <h2>Pricing Data</h2>
+        <p>Metal prices, exchange rates, and cryptocurrency valuations are sourced from reputable market data providers and updated regularly. Historical snapshots follow a tiered cadence: daily for recent dates, weekly for the past 1-3 months, and monthly for older dates.</p>
+    </div>
+
+    <div class="content-section">
+        <h2>Disclaimer</h2>
+        <p>This calculator is a tool to assist with Zakat estimation. It should not replace consultation with a qualified Islamic scholar, especially for complex financial situations. Scholarly opinions vary on several matters including jewelry exemptions, retirement accounts, and non-traditional assets. When in doubt, consult a scholar you trust.</p>
+    </div>
+</div>
+{% endblock %}

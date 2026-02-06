@@ -172,7 +172,7 @@ var ZakatDateAssistant = (function() {
     }
 
     /**
-     * Bind event listeners
+     * Bind event listeners (called once; survives render via delegation)
      */
     function bindEvents() {
         container.addEventListener('click', function(e) {
@@ -181,7 +181,6 @@ var ZakatDateAssistant = (function() {
             if (header) {
                 expanded = !expanded;
                 render();
-                bindEvents();
                 return;
             }
 
@@ -192,7 +191,6 @@ var ZakatDateAssistant = (function() {
                     anniversaryDate = new Date(input.value + 'T00:00:00');
                     saveDate();
                     render();
-                    bindEvents();
                     showNotification('Zakat anniversary date saved!', 'success');
                 }
                 return;
@@ -209,7 +207,6 @@ var ZakatDateAssistant = (function() {
                 anniversaryDate = null;
                 saveDate();
                 render();
-                bindEvents();
                 showNotification('Zakat anniversary date cleared.', 'info');
                 return;
             }
@@ -222,7 +219,6 @@ var ZakatDateAssistant = (function() {
                 e.preventDefault();
                 expanded = !expanded;
                 render();
-                bindEvents();
             }
         });
     }
@@ -383,7 +379,6 @@ var ZakatDateAssistant = (function() {
             saveDate();
             if (container) {
                 render();
-                bindEvents();
             }
         }
     }

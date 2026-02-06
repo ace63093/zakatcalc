@@ -67,6 +67,25 @@ def test_privacy_policy_contains_heading(client):
     assert b'Privacy Policy' in response.data
 
 
+def test_methodology_returns_200(client):
+    """GET /methodology should return status 200."""
+    response = client.get('/methodology')
+    assert response.status_code == 200
+
+
+def test_methodology_contains_heading(client):
+    """GET /methodology should contain Methodology heading."""
+    response = client.get('/methodology')
+    assert b'Calculation Methodology' in response.data
+
+
+def test_methodology_contains_jsonld(client):
+    """GET /methodology should contain JSON-LD structured data."""
+    response = client.get('/methodology')
+    assert b'application/ld+json' in response.data
+    assert b'schema.org' in response.data
+
+
 def test_cad_to_bdt_returns_200(client):
     """GET /cad-to-bdt should return status 200."""
     response = client.get('/cad-to-bdt')

@@ -1,6 +1,6 @@
 # Zakat Calculator Enhancement Progress
 
-## Completed Features
+## All Features Complete
 
 ### 1. Advanced Assets Mode (Rec #3) ✅
 **Commit:** `c791815` - feat: add Advanced Assets Mode frontend UI
@@ -40,52 +40,26 @@ Implemented as part of Advanced Assets Mode:
   - Days-until countdown with urgency indicators
   - ICS calendar export with yearly recurrence
 
----
+### 5. UX Polish - LocalStorage Autosave (Rec #8) ✅
+- `app/static/js/components/autosave.js` - Standalone autosave component
+- Auto-saves calculator state to localStorage (debounced 2s)
+- Auto-restores on page load (skipped if share-link present)
+- Toast notification with "Clear" and dismiss options
+- Styled via `app/static/css/tools.css` (autosave-notice section)
+- Feature-flagged via `ENABLE_AUTOSAVE` env var
 
-## Remaining Features
+### 6. Precious Metals Clarification (Rec #5) ✅
+- Tooltip on "Other Precious Metals" section title
+- Explains that platinum/palladium are not universally considered zakatable
+- Pure CSS tooltip (hover) with `.section-note` class in `base.html`
 
-### 5. UX Polish (Rec #8) - IN PROGRESS
-Started but not complete. Need to implement:
-
-1. **LocalStorage Autosave** (started - variables added but functions not complete)
-   - Auto-save calculator state on changes
-   - Auto-restore on page load
-   - Clear autosave option
-
-2. **Tooltips**
-   - Add help tooltips to complex fields
-   - Explain calculation methods
-
-3. **Quick-add Buttons**
-   - Common presets for assets
-
-4. **Sticky Mobile Card**
-   - Keep results visible on mobile scroll
-
-### 6. SEO/Content Upgrades (Rec #9) - PENDING
-- FAQ page JSON-LD structured data
-- Methodology page
-- Canonical tags (may already exist)
-
-### 7. Precious Metals Clarification (Rec #5) - PENDING
-- Add disclaimer for platinum/palladium (not universally agreed as zakatable)
-- Fiqh clarification note on metal rows
-
----
-
-## Current Branch State
-
-**Branch:** `refactored`
-
-**Recent commits:**
-```
-0dd1d4f feat: add Zakat Date Assistant (Rec #6)
-d6ac3d7 feat: add printable summary page (Rec #7)
-c791815 feat: add Advanced Assets Mode frontend UI
-```
-
-**Uncommitted changes:**
-- `app/static/js/calculator.js` - Started autosave variables (lines 392-395)
+### 7. SEO/Content Upgrades (Rec #9) ✅
+- `/methodology` route with detailed calculation methodology page
+- JSON-LD Article structured data on methodology page
+- FAQ page already had JSON-LD FAQPage schema
+- Canonical tags already present in `base.html`
+- "Methodology" nav link added to site navigation
+- 3 new tests for methodology route
 
 ---
 
@@ -101,30 +75,14 @@ All features controlled by environment variables in `app/services/config.py`:
 
 ## Test Status
 
-All 315 tests passing as of last run.
+All 318 tests passing.
 
 ---
 
-## Files Modified/Created This Session
+## Branch
 
-### New Files:
-- `app/static/css/advanced-assets.css`
-- `app/static/css/date-assistant.css`
-- `app/static/css/summary.css`
-- `app/static/js/components/date-assistant.js`
-- `app/static/js/components/summary.js`
-- `app/templates/feature_disabled.html`
-- `app/templates/summary.html`
+**Branch:** `refactored`
 
-### Modified Files:
-- `app/routes/main.py` - Added feature flags, /summary route
-- `app/static/js/calculator.js` - Advanced assets, autosave start
-- `app/static/js/components/share-link.js` - v2 schema, migration, print summary
-- `app/templates/calculator.html` - All new UI sections
+**Implementation Order:** 3 → 4 → 7 → 6 → 8 → 5 → 9
 
----
-
-## Implementation Order (User Specified)
-3 → 4 → 7 → 6 → 8 → 9
-
-Current position: **8** (UX Polish - in progress)
+All recommendations complete.

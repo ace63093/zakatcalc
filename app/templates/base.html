@@ -212,6 +212,51 @@
             padding-bottom: 8px;
             border-bottom: 2px solid #e2e8f0;
         }
+        .section-note {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #667eea;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: help;
+            vertical-align: middle;
+            margin-left: 6px;
+            position: relative;
+        }
+        .section-note:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2d3748;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 400;
+            line-height: 1.4;
+            width: 280px;
+            white-space: normal;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            pointer-events: none;
+        }
+        .section-note:hover::before {
+            content: '';
+            position: absolute;
+            bottom: calc(100% + 2px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #2d3748;
+            z-index: 100;
+        }
         .section-title-debts {
             color: #9f7aea;
             border-bottom-color: #e9d8fd;
@@ -930,6 +975,7 @@
             <a href="{{ url_for('main.calculator') }}" {% if request.endpoint == 'main.calculator' %}class="active"{% endif %}>Calculator</a>
             <a href="{{ url_for('guides.index') }}" {% if request.endpoint and request.endpoint.startswith('guides.') %}class="active"{% endif %}>Guides</a>
             <a href="{{ url_for('main.about_zakat') }}" {% if request.endpoint == 'main.about_zakat' %}class="active"{% endif %}>About Zakat</a>
+            <a href="{{ url_for('main.methodology') }}" {% if request.endpoint == 'main.methodology' %}class="active"{% endif %}>Methodology</a>
             <a href="{{ url_for('main.faq') }}" {% if request.endpoint == 'main.faq' %}class="active"{% endif %}>FAQ</a>
             <a href="{{ url_for('main.contact') }}" {% if request.endpoint == 'main.contact' %}class="active"{% endif %}>Contact Us</a>
         </nav>

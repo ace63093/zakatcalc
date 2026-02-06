@@ -95,7 +95,9 @@
                 <button type="button" class="btn-add" onclick="addGoldRow()">+ Add Gold Item</button>
 
                 <!-- Other Precious Metals -->
-                <div class="section-title">Other Precious Metals</div>
+                <div class="section-title">Other Precious Metals
+                    <span class="section-note" title="Silver is unanimously zakatable. Platinum and palladium are not universally considered zakatable by all scholars; they are included here as trade goods for those who follow that opinion.">?</span>
+                </div>
                 <div id="metalItems">
                     <div class="asset-row" data-type="metal">
                         <div class="group-name">
@@ -588,6 +590,9 @@
 <script src="{{ url_for('static', filename='js/components/nisab-indicator.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/share-link.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/csv-export.js') }}"></script>
+{% if feature_flags.autosave_enabled %}
+<script src="{{ url_for('static', filename='js/components/autosave.js') }}"></script>
+{% endif %}
 {% if feature_flags.date_assistant_enabled %}
 <script src="{{ url_for('static', filename='js/components/date-assistant.js') }}"></script>
 {% endif %}
@@ -597,6 +602,9 @@
     document.addEventListener('DOMContentLoaded', function() {
         ShareLink.init();
         CsvExport.init();
+        {% if feature_flags.autosave_enabled %}
+        Autosave.init(true);
+        {% endif %}
         {% if feature_flags.date_assistant_enabled %}
         ZakatDateAssistant.init('dateAssistantContainer');
         {% endif %}

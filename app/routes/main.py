@@ -30,6 +30,12 @@ def faq():
     return render_template('faq.html')
 
 
+@main_bp.route('/methodology')
+def methodology():
+    """Render the Calculation Methodology page."""
+    return render_template('methodology.html')
+
+
 @main_bp.route('/contact')
 def contact():
     """Render the Contact Us page."""
