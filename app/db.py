@@ -160,6 +160,19 @@ CREATE TABLE IF NOT EXISTS visitors (
 );
 CREATE INDEX IF NOT EXISTS idx_visitors_country ON visitors(country_code);
 CREATE INDEX IF NOT EXISTS idx_visitors_last_seen ON visitors(last_seen);
+
+-- Visitor domains: per-domain visit tracking for each unique visitor
+CREATE TABLE IF NOT EXISTS visitor_domains (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_hash TEXT NOT NULL,
+    host TEXT NOT NULL,
+    first_seen TEXT NOT NULL DEFAULT (datetime('now')),
+    last_seen TEXT NOT NULL DEFAULT (datetime('now')),
+    visit_count INTEGER NOT NULL DEFAULT 1,
+    UNIQUE(ip_hash, host)
+);
+CREATE INDEX IF NOT EXISTS idx_visitor_domains_host ON visitor_domains(host);
+CREATE INDEX IF NOT EXISTS idx_visitor_domains_last_seen ON visitor_domains(last_seen);
 '''
 
 

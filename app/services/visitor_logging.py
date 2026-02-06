@@ -14,7 +14,27 @@ from .geolocation import hash_ip, get_geo_index
 logger = logging.getLogger('visitor_logging')
 
 
-def log_visitor(db, ip_address: str, user_agent: str = '') -> Optional[dict]:
+def _normalize_host(host: str) -> str:
+    """Normalize host header to lowercase hostname without port."""
+    if not host:
+        return ''
+
+    value = host.strip().lower()
+    if not value:
+        return ''
+
+    # IPv6 literal in brackets can include port after "]:".
+    if value.startswith('['):
+        end = value.find(']')
+        if end != -1:
+            return value[:end + 1]
+
+    if ':' in value:
+        return value.split(':', 1)[0]
+    return value
+
+
+def log_visitor(db, ip_address: str, user_agent: str = '', host: str = '') -> Optional[dict]:
     """Record a visitor, upserting by hashed IP.
 
     Returns dict with ip_hash and geo info, or None if logging disabled.
@@ -42,6 +62,8 @@ def log_visitor(db, ip_address: str, user_agent: str = '') -> Optional[dict]:
     if user_agent and len(user_agent) > 512:
         user_agent = user_agent[:512]
 
+    normalized_host = _normalize_host(host)
+
     db.execute('''
         INSERT INTO visitors (ip_hash, country_code, region_code, city, user_agent)
         VALUES (?, ?, ?, ?, ?)
@@ -53,6 +75,16 @@ def log_visitor(db, ip_address: str, user_agent: str = '') -> Optional[dict]:
             last_seen = datetime('now'),
             visit_count = visitors.visit_count + 1
     ''', (ip_hash, country_code, region_code, city, user_agent))
+
+    # Track per-domain activity for this visitor.
+    if normalized_host:
+        db.execute('''
+            INSERT INTO visitor_domains (ip_hash, host)
+            VALUES (?, ?)
+            ON CONFLICT(ip_hash, host) DO UPDATE SET
+                last_seen = datetime('now'),
+                visit_count = visitor_domains.visit_count + 1
+        ''', (ip_hash, normalized_host))
     db.commit()
 
     return {
@@ -60,6 +92,7 @@ def log_visitor(db, ip_address: str, user_agent: str = '') -> Optional[dict]:
         'country_code': country_code,
         'region_code': region_code,
         'city': city,
+        'host': normalized_host,
     }
 
 
@@ -71,15 +104,27 @@ def backup_visitors_to_r2(db, r2_client):
         'SELECT ip_hash, country_code, region_code, city, user_agent, '
         'first_seen, last_seen, visit_count FROM visitors'
     ).fetchall()
+    domain_rows = db.execute(
+        'SELECT ip_hash, host, first_seen, last_seen, visit_count FROM visitor_domains'
+    ).fetchall()
 
-    if not rows:
+    if not rows and not domain_rows:
         logger.info("No visitors to back up")
         return
 
-    data = [{
+    visitors_data = [{
         'h': r[0], 'cc': r[1], 'rc': r[2], 'ci': r[3],
         'ua': r[4], 'fs': r[5], 'ls': r[6], 'vc': r[7],
     } for r in rows]
+    domains_data = [{
+        'h': r[0], 'd': r[1], 'fs': r[2], 'ls': r[3], 'vc': r[4],
+    } for r in domain_rows]
+
+    data = {
+        'version': '2.0',
+        'visitors': visitors_data,
+        'domains': domains_data,
+    }
 
     json_bytes = json.dumps(data, separators=(',', ':')).encode('utf-8')
     compressed = gzip.compress(json_bytes)
@@ -96,17 +141,24 @@ def backup_visitors_to_r2(db, r2_client):
         ContentType='application/json',
         ContentEncoding='gzip',
     )
-    logger.info(f"Backed up {len(rows)} visitors to R2 ({len(compressed)} bytes)")
+    logger.info(
+        f"Backed up {len(rows)} visitors and {len(domain_rows)} domain rows "
+        f"to R2 ({len(compressed)} bytes)"
+    )
 
 
 def restore_visitors_from_r2(db, r2_client):
     """Restore visitors from R2 if SQLite visitors table is empty."""
     from .r2_config import get_r2_prefix
 
-    # Check if table already has data
-    count = db.execute('SELECT COUNT(*) FROM visitors').fetchone()[0]
-    if count > 0:
-        logger.debug(f"Visitors table has {count} rows, skipping R2 restore")
+    # Skip restore only when both tables already have data.
+    visitor_count = db.execute('SELECT COUNT(*) FROM visitors').fetchone()[0]
+    domain_count = db.execute('SELECT COUNT(*) FROM visitor_domains').fetchone()[0]
+    if visitor_count > 0 and domain_count > 0:
+        logger.debug(
+            f"Visitors tables already populated (visitors={visitor_count}, domains={domain_count}), "
+            "skipping R2 restore"
+        )
         return
 
     prefix = get_r2_prefix()
@@ -125,17 +177,36 @@ def restore_visitors_from_r2(db, r2_client):
         except OSError:
             json_bytes = body
 
-        data = json.loads(json_bytes.decode('utf-8'))
+        payload = json.loads(json_bytes.decode('utf-8'))
 
-        for d in data:
+        # Backward compatibility:
+        # - v1 snapshot: list of visitor rows
+        # - v2 snapshot: {"version":"2.0","visitors":[...],"domains":[...]}
+        if isinstance(payload, list):
+            visitors_data = payload
+            domains_data = []
+        else:
+            visitors_data = payload.get('visitors', [])
+            domains_data = payload.get('domains', [])
+
+        for d in visitors_data:
             db.execute('''
                 INSERT OR IGNORE INTO visitors
                     (ip_hash, country_code, region_code, city, user_agent, first_seen, last_seen, visit_count)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (d['h'], d.get('cc'), d.get('rc'), d.get('ci'),
                   d.get('ua'), d['fs'], d['ls'], d['vc']))
+
+        for d in domains_data:
+            db.execute('''
+                INSERT OR IGNORE INTO visitor_domains
+                    (ip_hash, host, first_seen, last_seen, visit_count)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (d['h'], d['d'], d['fs'], d['ls'], d['vc']))
         db.commit()
-        logger.info(f"Restored {len(data)} visitors from R2")
+        logger.info(
+            f"Restored {len(visitors_data)} visitors and {len(domains_data)} domain rows from R2"
+        )
 
     except Exception as e:
         if hasattr(e, 'response'):
