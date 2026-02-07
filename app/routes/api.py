@@ -763,13 +763,18 @@ def pricing_sync_status():
     }
     """
     sync_service = get_sync_service()
+    daemon_state = sync_service.get_daemon_state()
+    last_changes_reported = 0
+    if daemon_state and isinstance(daemon_state.get('snapshots_synced'), int):
+        last_changes_reported = daemon_state['snapshots_synced']
 
     return jsonify({
         'sync_enabled': is_sync_enabled(),
         'auto_sync_enabled': is_auto_sync_enabled(),
         'r2_enabled': is_r2_enabled(),
+        'last_changes_reported': last_changes_reported,
         'providers': get_provider_status(),
         'data_coverage': sync_service.get_data_coverage(),
         'cadence': get_cadence_boundaries(),
-        'daemon': sync_service.get_daemon_state(),
+        'daemon': daemon_state,
     })

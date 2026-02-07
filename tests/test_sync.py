@@ -14,6 +14,7 @@ class TestSyncStatusEndpoint:
         data = response.get_json()
         assert 'sync_enabled' in data
         assert 'auto_sync_enabled' in data
+        assert 'last_changes_reported' in data
         assert 'providers' in data
         assert 'data_coverage' in data
         assert 'daemon' in data  # Can be None if daemon hasn't run yet
@@ -50,6 +51,35 @@ class TestSyncStatusEndpoint:
 
         assert 'r2_enabled' in data
         assert isinstance(data['r2_enabled'], bool)
+
+    def test_last_changes_reported_defaults_to_zero(self, db_client):
+        """Sync status returns zero when daemon state is missing."""
+        response = db_client.get('/api/v1/pricing/sync-status')
+        data = response.get_json()
+
+        assert 'last_changes_reported' in data
+        assert isinstance(data['last_changes_reported'], int)
+        assert data['last_changes_reported'] >= 0
+
+    @patch('app.routes.api.get_sync_service')
+    def test_last_changes_reported_uses_daemon_snapshots_synced(self, mock_get_sync, db_client):
+        """Sync status should expose daemon snapshots_synced as last_changes_reported."""
+        mock_service = MagicMock()
+        mock_service.get_data_coverage.return_value = {'fx': {}, 'metals': {}, 'crypto': {}}
+        mock_service.get_daemon_state.return_value = {
+            'last_sync_at': '2026-02-07T22:03:24+00:00',
+            'last_sync_result': 'success',
+            'last_error': None,
+            'next_sync_at': '2026-02-07T23:03:24+00:00',
+            'snapshots_synced': 7,
+            'updated_at': '2026-02-07T22:03:24+00:00',
+        }
+        mock_get_sync.return_value = mock_service
+
+        response = db_client.get('/api/v1/pricing/sync-status')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['last_changes_reported'] == 7
 
 
 class TestSyncDateEndpoint:

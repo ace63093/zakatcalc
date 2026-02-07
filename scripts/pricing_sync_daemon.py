@@ -7,7 +7,7 @@ Background service that maintains pricing snapshots using 3-tier cadence:
 - WEEKLY snapshots (Mondays) for days 30-89
 - MONTHLY snapshots (1st of month) from 2000-01-01 to day 90+
 
-Runs on a configurable interval (default: 6 hours).
+Runs on a configurable interval (default: 1 hour).
 
 Usage:
     python scripts/pricing_sync_daemon.py
@@ -15,7 +15,7 @@ Usage:
 Environment Variables:
     DATA_DIR: Path to data directory (default: /app/data)
     PRICING_ALLOW_NETWORK: Must be '1' to enable sync (default: 1)
-    PRICING_SYNC_INTERVAL_SECONDS: Sleep between cycles (default: 21600 = 6 hours)
+    PRICING_SYNC_INTERVAL_SECONDS: Sleep between cycles (default: 3600 = 1 hour)
     PRICING_MONTHLY_LIMIT: Max months of historical monthly snapshots (default: None = all)
 """
 
@@ -36,7 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger('pricing_daemon')
 
-DAEMON_VERSION = '2.1.0'  # 3-tier cadence + R2 backfill
+DAEMON_VERSION = '2.2.0'  # app-context sync + hourly cadence + no-change reporting
 
 
 class PricingSyncDaemon:
@@ -45,12 +45,17 @@ class PricingSyncDaemon:
     def __init__(self):
         self.data_dir = os.environ.get('DATA_DIR', '/app/data')
         self.db_path = os.path.join(self.data_dir, 'pricing.sqlite')
-        self.sleep_seconds = int(os.environ.get('PRICING_SYNC_INTERVAL_SECONDS', '21600'))
-        monthly_limit_str = os.environ.get('PRICING_MONTHLY_LIMIT', '')
+        self.sleep_seconds = int(os.environ.get('PRICING_SYNC_INTERVAL_SECONDS', '3600'))
+        monthly_limit_str = (
+            os.environ.get('PRICING_MONTHLY_LIMIT')
+            or os.environ.get('PRICING_LOOKBACK_MONTHS', '')
+        )
         self.monthly_limit = int(monthly_limit_str) if monthly_limit_str else None
+        self._app = None
 
     def run(self):
         """Main daemon loop."""
+        from app import create_app
         from app.services.cadence import DAILY_WINDOW_DAYS, WEEKLY_WINDOW_DAYS, MONTHLY_START
 
         logger.info(f"Starting pricing sync daemon v{DAEMON_VERSION}")
@@ -61,12 +66,17 @@ class PricingSyncDaemon:
         if self.monthly_limit:
             logger.info(f"  Monthly limit: {self.monthly_limit} months")
 
+        # Repository + SyncService depend on Flask application context.
+        # Keep daemon context-only without starting background threads.
+        self._app = create_app({'TESTING': True})
+
         # Ensure database exists
         self.ensure_database()
 
         while True:
             try:
-                self.sync_cycle()
+                with self._app.app_context():
+                    self.sync_cycle()
             except Exception as e:
                 logger.exception(f"Sync cycle failed: {e}")
                 self.update_state('failed', str(e), 0)
@@ -123,8 +133,13 @@ class PricingSyncDaemon:
                     f"monthly={missing_counts['monthly']})")
 
         if not missing:
-            logger.info("All snapshots present, nothing to sync")
-            self.update_state('success', None, 0)
+            backfilled = self.backfill_r2()
+            logger.info("All snapshots present in SQLite")
+            if backfilled > 0:
+                logger.info(f"Changes to report: backfilled {backfilled} snapshots to R2")
+            else:
+                logger.info("No changes to report this cycle")
+            self.update_state('success', None, backfilled)
             return
 
         # Create repository with upstream fetch capability
@@ -171,14 +186,19 @@ class PricingSyncDaemon:
             status = 'failed'
 
         error_summary = '; '.join(errors[:5]) if errors else None
-        self.update_state(status, error_summary, synced)
-
-        logger.info(f"Sync cycle complete: {synced} synced, {len(errors)} errors")
-
         # Run R2 backfill to ensure R2 has all SQLite data
-        self.backfill_r2()
+        backfilled = self.backfill_r2()
+        changes_total = synced + backfilled
 
-    def backfill_r2(self):
+        self.update_state(status, error_summary, changes_total)
+
+        logger.info(f"Sync cycle complete: {synced} synced, {len(errors)} errors, {backfilled} backfilled")
+        if changes_total > 0:
+            logger.info(f"Changes to report: {changes_total} total snapshot updates")
+        else:
+            logger.info("No changes to report this cycle")
+
+    def backfill_r2(self) -> int:
         """Backfill R2 with snapshots that exist in SQLite but not in R2.
 
         This ensures R2 stays in sync even when data came from sources
@@ -189,12 +209,12 @@ class PricingSyncDaemon:
 
         if not is_r2_enabled():
             logger.debug("R2 not enabled, skipping backfill")
-            return
+            return 0
 
         r2 = get_r2_client()
         if not r2:
             logger.debug("R2 client unavailable, skipping backfill")
-            return
+            return 0
 
         logger.info("Starting R2 backfill...")
 
@@ -278,6 +298,7 @@ class PricingSyncDaemon:
 
         conn.close()
         logger.info(f"R2 backfill complete: {backfilled} snapshots uploaded")
+        return backfilled
 
     def calculate_required_snapshots(self) -> list[tuple[date, str]]:
         """Calculate all required snapshot dates using 3-tier cadence.

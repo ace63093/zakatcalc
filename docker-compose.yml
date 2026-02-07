@@ -11,6 +11,7 @@ services:
       # Auto-sync is ON by default
       - PRICING_ALLOW_NETWORK=${PRICING_ALLOW_NETWORK:-1}
       - PRICING_AUTO_SYNC=${PRICING_AUTO_SYNC:-1}
+      - PRICING_SYNC_INTERVAL_SECONDS=${PRICING_SYNC_INTERVAL_SECONDS:-3600}
       - PRICING_RECENT_DAYS=${PRICING_RECENT_DAYS:-31}
       - METALPRICEAPI_KEY=${METALPRICEAPI_KEY:-}
       # R2 remote cache (optional)
@@ -50,8 +51,9 @@ services:
       - DATA_DIR=/app/data
       - PRICING_ALLOW_NETWORK=1
       - PRICING_RECENT_DAYS=${PRICING_RECENT_DAYS:-31}
-      - PRICING_SYNC_INTERVAL_SECONDS=${PRICING_SYNC_INTERVAL_SECONDS:-21600}
+      - PRICING_SYNC_INTERVAL_SECONDS=3600
       - PRICING_LOOKBACK_MONTHS=${PRICING_LOOKBACK_MONTHS:-12}
+      - PRICING_MONTHLY_LIMIT=${PRICING_MONTHLY_LIMIT:-12}
       - METALPRICEAPI_KEY=${METALPRICEAPI_KEY:-}
       # R2 remote cache (optional)
       - R2_ENABLED=${R2_ENABLED:-1}
@@ -69,6 +71,8 @@ services:
     volumes:
       - pricing-data:/app/data
     restart: unless-stopped
+    healthcheck:
+      disable: true
 
 volumes:
   pricing-data:

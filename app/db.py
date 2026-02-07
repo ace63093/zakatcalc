@@ -145,7 +145,8 @@ CREATE TABLE IF NOT EXISTS ip_geolocation (
 );
 CREATE INDEX IF NOT EXISTS idx_ip_geo_v4_range ON ip_geolocation(ip_version, ip_start, ip_end);
 
--- Visitors: unique visitor log, deduped by hashed IP
+-- Visitors: unique visitor log, keyed by IP string.
+-- Note: column name ip_hash is legacy and now stores plain IP values.
 CREATE TABLE IF NOT EXISTS visitors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ip_hash TEXT NOT NULL,
@@ -161,7 +162,7 @@ CREATE TABLE IF NOT EXISTS visitors (
 CREATE INDEX IF NOT EXISTS idx_visitors_country ON visitors(country_code);
 CREATE INDEX IF NOT EXISTS idx_visitors_last_seen ON visitors(last_seen);
 
--- Visitor domains: per-domain visit tracking for each unique visitor
+-- Visitor domains: per-domain visit tracking per visitor IP key.
 CREATE TABLE IF NOT EXISTS visitor_domains (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ip_hash TEXT NOT NULL,

@@ -1,6 +1,6 @@
 """Visitor logging with IP geolocation.
 
-Records unique visitors (deduped by hashed IP) with optional geo data.
+Records unique visitors (deduped by IP string) with optional geo data.
 Backs up visitor logs to R2 periodically; restores from R2 on startup if empty.
 """
 import gzip
@@ -35,14 +35,45 @@ def _normalize_host(host: str) -> str:
 
 
 def log_visitor(db, ip_address: str, user_agent: str = '', host: str = '') -> Optional[dict]:
-    """Record a visitor, upserting by hashed IP.
+    """Record a visitor, upserting by IP string.
 
-    Returns dict with ip_hash and geo info, or None if logging disabled.
+    Returns dict with ip_hash (legacy key storing plain IP) and geo info, or None.
     """
     if not is_visitor_logging_enabled():
         return None
 
-    ip_hash = hash_ip(ip_address)
+    ip_identity = (ip_address or '').strip()
+    if not ip_identity:
+        return None
+
+    # Best-effort migration for legacy hashed rows: if a row still uses the old hash
+    # for this IP and no plain-IP row exists yet, rewrite the key to plain IP.
+    legacy_hash = hash_ip(ip_identity)
+    if legacy_hash != ip_identity:
+        db.execute(
+            '''
+            UPDATE visitors
+            SET ip_hash = ?
+            WHERE ip_hash = ?
+              AND NOT EXISTS (
+                  SELECT 1 FROM visitors existing WHERE existing.ip_hash = ?
+              )
+            ''',
+            (ip_identity, legacy_hash, ip_identity),
+        )
+        try:
+            db.execute(
+                '''
+                UPDATE visitor_domains
+                SET ip_hash = ?
+                WHERE ip_hash = ?
+                ''',
+                (ip_identity, legacy_hash),
+            )
+        except Exception:
+            # If mixed legacy/plain rows would violate UNIQUE(ip_hash, host),
+            # keep legacy domain rows and continue logging.
+            pass
 
     # Geo lookup
     country_code = None
@@ -74,7 +105,7 @@ def log_visitor(db, ip_address: str, user_agent: str = '', host: str = '') -> Op
             user_agent = excluded.user_agent,
             last_seen = datetime('now'),
             visit_count = visitors.visit_count + 1
-    ''', (ip_hash, country_code, region_code, city, user_agent))
+    ''', (ip_identity, country_code, region_code, city, user_agent))
 
     # Track per-domain activity for this visitor.
     if normalized_host:
@@ -84,11 +115,11 @@ def log_visitor(db, ip_address: str, user_agent: str = '', host: str = '') -> Op
             ON CONFLICT(ip_hash, host) DO UPDATE SET
                 last_seen = datetime('now'),
                 visit_count = visitor_domains.visit_count + 1
-        ''', (ip_hash, normalized_host))
+        ''', (ip_identity, normalized_host))
     db.commit()
 
     return {
-        'ip_hash': ip_hash,
+        'ip_hash': ip_identity,
         'country_code': country_code,
         'region_code': region_code,
         'city': city,
@@ -113,11 +144,11 @@ def backup_visitors_to_r2(db, r2_client):
         return
 
     visitors_data = [{
-        'h': r[0], 'cc': r[1], 'rc': r[2], 'ci': r[3],
+        'h': r[0], 'ip': r[0], 'cc': r[1], 'rc': r[2], 'ci': r[3],
         'ua': r[4], 'fs': r[5], 'ls': r[6], 'vc': r[7],
     } for r in rows]
     domains_data = [{
-        'h': r[0], 'd': r[1], 'fs': r[2], 'ls': r[3], 'vc': r[4],
+        'h': r[0], 'ip': r[0], 'd': r[1], 'fs': r[2], 'ls': r[3], 'vc': r[4],
     } for r in domain_rows]
 
     data = {
@@ -190,19 +221,25 @@ def restore_visitors_from_r2(db, r2_client):
             domains_data = payload.get('domains', [])
 
         for d in visitors_data:
+            ip_value = d.get('ip') or d.get('h')
+            if not ip_value:
+                continue
             db.execute('''
                 INSERT OR IGNORE INTO visitors
                     (ip_hash, country_code, region_code, city, user_agent, first_seen, last_seen, visit_count)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (d['h'], d.get('cc'), d.get('rc'), d.get('ci'),
+            ''', (ip_value, d.get('cc'), d.get('rc'), d.get('ci'),
                   d.get('ua'), d['fs'], d['ls'], d['vc']))
 
         for d in domains_data:
+            ip_value = d.get('ip') or d.get('h')
+            if not ip_value:
+                continue
             db.execute('''
                 INSERT OR IGNORE INTO visitor_domains
                     (ip_hash, host, first_seen, last_seen, visit_count)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (d['h'], d['d'], d['fs'], d['ls'], d['vc']))
+            ''', (ip_value, d['d'], d['fs'], d['ls'], d['vc']))
         db.commit()
         logger.info(
             f"Restored {len(visitors_data)} visitors and {len(domains_data)} domain rows from R2"

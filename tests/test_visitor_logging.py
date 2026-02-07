@@ -35,8 +35,9 @@ class TestLogVisitor:
     def test_first_visit_creates_row(self, visitor_db):
         result = log_visitor(visitor_db, '192.168.1.1', 'TestBrowser/1.0')
         assert result is not None
-        assert result['ip_hash']
+        assert result['ip_hash'] == '192.168.1.1'
         row = visitor_db.execute('SELECT * FROM visitors').fetchone()
+        assert row['ip_hash'] == '192.168.1.1'
         assert row['visit_count'] == 1
         assert row['user_agent'] == 'TestBrowser/1.0'
 
@@ -160,3 +161,47 @@ class TestR2BackupRestore:
         domains_count = visitor_db.execute('SELECT COUNT(*) FROM visitor_domains').fetchone()[0]
         assert visitors_count == 1
         assert domains_count == 0
+
+    def test_restore_prefers_plain_ip_field_when_present(self, visitor_db, r2_client_fixture):
+        payload = {
+            'version': '2.0',
+            'visitors': [
+                {
+                    'h': 'legacy-hash-value',
+                    'ip': '203.0.113.5',
+                    'cc': 'US',
+                    'rc': 'NY',
+                    'ci': 'New York',
+                    'ua': 'UA',
+                    'fs': '2026-01-01 00:00:00',
+                    'ls': '2026-01-01 01:00:00',
+                    'vc': 2,
+                }
+            ],
+            'domains': [
+                {
+                    'h': 'legacy-hash-value',
+                    'ip': '203.0.113.5',
+                    'd': 'whatismyzakat.com',
+                    'fs': '2026-01-01 00:00:00',
+                    'ls': '2026-01-01 01:00:00',
+                    'vc': 2,
+                }
+            ],
+        }
+
+        import gzip
+        import json
+        r2_client_fixture._client.put_object(
+            Bucket='test-bucket',
+            Key='visitors/snapshot.json.gz',
+            Body=gzip.compress(json.dumps(payload).encode('utf-8')),
+            ContentType='application/json',
+            ContentEncoding='gzip',
+        )
+
+        restore_visitors_from_r2(visitor_db, r2_client_fixture)
+        row = visitor_db.execute('SELECT ip_hash FROM visitors').fetchone()
+        domain_row = visitor_db.execute('SELECT ip_hash FROM visitor_domains').fetchone()
+        assert row['ip_hash'] == '203.0.113.5'
+        assert domain_row['ip_hash'] == '203.0.113.5'

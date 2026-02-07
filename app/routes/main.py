@@ -1,5 +1,5 @@
 """Main routes for the Zakat Calculator UI."""
-from flask import Blueprint, render_template, redirect
+from flask import Blueprint, render_template, redirect, send_from_directory, current_app
 
 from app.services.config import get_feature_flags
 
@@ -10,6 +10,12 @@ main_bp = Blueprint('main', __name__)
 def ads_txt():
     """Redirect to Ezoic's managed ads.txt file."""
     return redirect('https://srv.adstxtmanager.com/19390/whatismyzakat.com', code=301)
+
+
+@main_bp.route('/favicon.ico')
+def favicon():
+    """Serve favicon from static assets for browser/crawler compatibility."""
+    return send_from_directory(current_app.static_folder, 'favicon.ico', mimetype='image/x-icon')
 
 
 @main_bp.route('/')

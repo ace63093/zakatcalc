@@ -19,6 +19,45 @@ def test_calculator_contains_zakat_title(client):
     assert b'Zakat Calculator' in response.data
 
 
+def test_calculator_includes_favicon_links(client):
+    """GET / should include favicon and manifest links in head."""
+    response = client.get('/')
+    assert b'favicon-16x16.png' in response.data
+    assert b'favicon-32x32.png' in response.data
+    assert b'apple-touch-icon.png' in response.data
+    assert b'site.webmanifest' in response.data
+
+
+def test_infolinks_script_included_on_all_main_pages(client):
+    """Main UI pages should include Infolinks script via base template."""
+    paths = (
+        '/',
+        '/about-zakat',
+        '/faq',
+        '/contact',
+        '/privacy-policy',
+        '/methodology',
+        '/cad-to-bdt',
+    )
+    for path in paths:
+        response = client.get(path)
+        assert response.status_code == 200
+        assert b'infolinks_main.js' in response.data
+
+
+def test_favicon_route_returns_icon(client):
+    """GET /favicon.ico should return icon content."""
+    response = client.get('/favicon.ico')
+    assert response.status_code == 200
+    assert response.content_type in ('image/x-icon', 'image/vnd.microsoft.icon')
+
+
+def test_calculator_does_not_render_in_page_logo(client):
+    """GET / should not render the in-page header logo block."""
+    response = client.get('/')
+    assert b'class="site-brand"' not in response.data
+
+
 def test_calculator_crypto_section_scoped_to_advanced_mode_when_enabled(client):
     """When advanced mode toggle exists, crypto section should live inside advanced container."""
     response = client.get('/')
