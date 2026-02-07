@@ -107,7 +107,7 @@ def create_app(config: dict | None = None) -> Flask:
     # Only starts if PRICING_AUTO_SYNC=1 (checked inside start_background_sync)
     if os.environ.get('PRICING_BACKGROUND_SYNC', '0').lower() in ('1', 'true', 'yes'):
         from app.services.background_sync import start_background_sync
-        start_background_sync()
+        start_background_sync(app)
 
     # Start geodb refresh thread
     if is_geolocation_enabled() and not app.config.get('TESTING'):

@@ -17,22 +17,23 @@ import sqlite3
 import logging
 import threading
 from datetime import date, datetime, timedelta, timezone
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Any
 
 logger = logging.getLogger('background_sync')
 
 # Global to track if sync thread is running
 _sync_thread: Optional[threading.Thread] = None
 _stop_event = threading.Event()
+_app: Optional[Any] = None
 
 
-def start_background_sync():
+def start_background_sync(app=None):
     """Start the background sync thread if not already running.
 
     Should be called once when the Flask app starts.
     Only runs if PRICING_AUTO_SYNC=1 (default).
     """
-    global _sync_thread
+    global _sync_thread, _app
 
     auto_sync = os.environ.get('PRICING_AUTO_SYNC', '1')
     if auto_sync.lower() not in ('1', 'true', 'yes'):
@@ -43,6 +44,7 @@ def start_background_sync():
         logger.info("Background sync thread already running")
         return
 
+    _app = app
     _stop_event.clear()
     _sync_thread = threading.Thread(target=_sync_loop, daemon=True, name='pricing-sync')
     _sync_thread.start()
@@ -51,7 +53,7 @@ def start_background_sync():
 
 def stop_background_sync():
     """Stop the background sync thread gracefully."""
-    global _sync_thread
+    global _sync_thread, _app
 
     if _sync_thread is None:
         return
@@ -60,6 +62,7 @@ def stop_background_sync():
     _stop_event.set()
     _sync_thread.join(timeout=5)
     _sync_thread = None
+    _app = None
     logger.info("Background sync thread stopped")
 
 
@@ -79,7 +82,13 @@ def _sync_loop():
 
     while not _stop_event.is_set():
         try:
-            _run_sync_cycle(db_path)
+            # Background thread is outside request context; push app context
+            # when available so context-bound helpers continue to work.
+            if _app is not None:
+                with _app.app_context():
+                    _run_sync_cycle(db_path)
+            else:
+                _run_sync_cycle(db_path)
         except Exception as e:
             logger.exception(f"Sync cycle failed: {e}")
 
@@ -104,7 +113,10 @@ def _run_sync_cycle(db_path: str):
     logger.info("Starting background sync cycle")
 
     today = get_today()
-    monthly_limit_str = os.environ.get('PRICING_MONTHLY_LIMIT', '')
+    monthly_limit_str = (
+        os.environ.get('PRICING_MONTHLY_LIMIT')
+        or os.environ.get('PRICING_LOOKBACK_MONTHS', '')
+    )
     monthly_limit = int(monthly_limit_str) if monthly_limit_str else None
 
     required_snapshots = get_all_required_snapshots(
