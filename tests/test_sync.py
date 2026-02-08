@@ -2,6 +2,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
+from app.db import get_db
+
 
 class TestSyncStatusEndpoint:
     """Tests for GET /api/v1/pricing/sync-status."""
@@ -223,3 +225,69 @@ class TestPricingEndpointAutoSync:
         data = response.get_json()
 
         assert data['auto_sync']['enabled'] is True
+
+
+class TestVisitorSyncNowEndpoint:
+    """Tests for POST /api/v1/visitors/sync-now."""
+
+    @patch('app.routes.api.is_visitor_logging_enabled', return_value=False)
+    def test_visitor_logging_disabled_returns_403(self, mock_enabled, db_client):
+        response = db_client.post('/api/v1/visitors/sync-now')
+        assert response.status_code == 403
+
+        data = response.get_json()
+        assert 'error' in data
+        assert 'Visitor logging disabled' in data['error']
+
+    @patch('app.routes.api.is_visitor_logging_enabled', return_value=True)
+    @patch('app.routes.api.get_r2_client', return_value=None)
+    def test_r2_unavailable_returns_503(self, mock_get_r2, mock_enabled, db_client):
+        response = db_client.post('/api/v1/visitors/sync-now')
+        assert response.status_code == 503
+
+        data = response.get_json()
+        assert 'error' in data
+        assert 'R2 unavailable' in data['error']
+
+    @patch('app.routes.api.is_visitor_logging_enabled', return_value=True)
+    @patch('app.routes.api.backup_visitors_to_r2')
+    @patch('app.routes.api.get_r2_client')
+    def test_sync_now_reports_com_and_ca_rollups(
+        self, mock_get_r2, mock_backup, mock_enabled, db_client
+    ):
+        mock_get_r2.return_value = MagicMock()
+
+        with db_client.application.app_context():
+            db = get_db()
+            db.executemany(
+                'INSERT INTO visitors (ip_hash, user_agent) VALUES (?, ?)',
+                [
+                    ('ip-1', 'ua'),
+                    ('ip-2', 'ua'),
+                    ('ip-3', 'ua'),
+                ],
+            )
+            db.executemany(
+                'INSERT INTO visitor_domains (ip_hash, host, visit_count) VALUES (?, ?, ?)',
+                [
+                    ('ip-1', 'whatismyzakat.com', 2),
+                    ('ip-2', 'www.whatismyzakat.com', 1),
+                    ('ip-1', 'whatismyzakat.ca', 3),
+                    ('ip-3', 'www.whatismyzakat.ca', 1),
+                    ('ip-3', 'example.net', 5),
+                ],
+            )
+            db.commit()
+
+        response = db_client.post('/api/v1/visitors/sync-now')
+        assert response.status_code == 200
+
+        data = response.get_json()
+        assert data['success'] is True
+        assert data['totals']['unique_ips'] == 3
+        assert data['totals']['domain_rows'] == 5
+        assert data['domains']['whatismyzakat.com']['unique_ips'] == 2
+        assert data['domains']['whatismyzakat.com']['visits'] == 3
+        assert data['domains']['whatismyzakat.ca']['unique_ips'] == 2
+        assert data['domains']['whatismyzakat.ca']['visits'] == 4
+        mock_backup.assert_called_once()

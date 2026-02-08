@@ -2,11 +2,12 @@
 from datetime import date, datetime, timezone
 from flask import Blueprint, jsonify, request, current_app
 
+from app.db import get_db
 from app.services.pricing import get_pricing, format_pricing_response
 from app.services.calc import calculate_zakat, calculate_zakat_v2
 from app.services.advanced_calc import calculate_zakat_v3
 from app.services.fx import SUPPORTED_CURRENCIES
-from app.services.config import get_feature_flags
+from app.services.config import get_feature_flags, is_visitor_logging_enabled
 from app.data.metals import is_valid_metal
 from app.data.crypto import is_valid_crypto
 from app.services.db_pricing import (
@@ -27,6 +28,8 @@ from app.services.providers.registry import get_provider_status
 from app.services.cadence import get_effective_snapshot_date, get_cadence_boundaries
 from app.services.time_provider import get_today
 from app.services.r2_config import is_r2_enabled
+from app.services.r2_client import get_r2_client
+from app.services.visitor_logging import backup_visitors_to_r2
 from app.constants import (
     NISAB_GOLD_GRAMS,
     NISAB_SILVER_GRAMS,
@@ -42,6 +45,28 @@ from app.constants import (
 )
 
 api_bp = Blueprint('api', __name__)
+
+TRACKED_DOMAINS = ('whatismyzakat.com', 'whatismyzakat.ca')
+
+
+def _domain_rollup(db, domain: str) -> dict:
+    """Get unique IP and visit totals for a domain and subdomains."""
+    row = db.execute(
+        '''
+        SELECT
+            COUNT(DISTINCT ip_hash) AS unique_ips,
+            COALESCE(SUM(visit_count), 0) AS visits,
+            MAX(last_seen) AS last_seen
+        FROM visitor_domains
+        WHERE host = ? OR host LIKE ?
+        ''',
+        (domain, f'%.{domain}')
+    ).fetchone()
+    return {
+        'unique_ips': int(row['unique_ips'] or 0),
+        'visits': int(row['visits'] or 0),
+        'last_seen': row['last_seen'],
+    }
 
 
 @api_bp.route('/currencies')
@@ -777,4 +802,39 @@ def pricing_sync_status():
         'data_coverage': sync_service.get_data_coverage(),
         'cadence': get_cadence_boundaries(),
         'daemon': daemon_state,
+    })
+
+
+@api_bp.route('/visitors/sync-now', methods=['POST'])
+def visitors_sync_now():
+    """Run ad-hoc visitor backup to R2 and return .com/.ca domain stats."""
+    if not is_visitor_logging_enabled():
+        return jsonify({
+            'error': 'Visitor logging disabled',
+            'message': 'Set ENABLE_VISITOR_LOGGING=1 to enable visitor logging'
+        }), 403
+
+    r2 = get_r2_client()
+    if not r2:
+        return jsonify({
+            'error': 'R2 unavailable',
+            'message': 'Set R2_ENABLED=1 with valid R2_* configuration'
+        }), 503
+
+    db = get_db()
+    backup_visitors_to_r2(db, r2)
+
+    visitors_total = db.execute('SELECT COUNT(*) AS n FROM visitors').fetchone()['n']
+    domain_rows_total = db.execute('SELECT COUNT(*) AS n FROM visitor_domains').fetchone()['n']
+
+    domains = {domain: _domain_rollup(db, domain) for domain in TRACKED_DOMAINS}
+
+    return jsonify({
+        'success': True,
+        'synced_at': datetime.now(timezone.utc).isoformat(),
+        'totals': {
+            'unique_ips': int(visitors_total or 0),
+            'domain_rows': int(domain_rows_total or 0),
+        },
+        'domains': domains,
     })
