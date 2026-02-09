@@ -28,8 +28,8 @@ def test_calculator_includes_favicon_links(client):
     assert b'site.webmanifest' in response.data
 
 
-def test_monetag_meta_included_on_all_main_pages(client):
-    """Main UI pages should include Monetag meta via base template."""
+def test_no_ad_network_snippets_on_all_main_pages(client):
+    """Main UI pages should not include disabled ad network snippets."""
     paths = (
         '/',
         '/about-zakat',
@@ -42,7 +42,7 @@ def test_monetag_meta_included_on_all_main_pages(client):
     for path in paths:
         response = client.get(path)
         assert response.status_code == 200
-        assert b'<meta name="monetag" content="b042b35537e285368795444ecf8e77f8">' in response.data
+        assert b'<meta name="monetag"' not in response.data
         assert b'infolinks_main.js' not in response.data
         assert b'ezojs.com/ezoic/sa.min.js' not in response.data
 
