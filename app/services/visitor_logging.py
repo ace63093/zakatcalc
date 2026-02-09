@@ -6,6 +6,7 @@ Backs up visitor logs to R2 periodically; restores from R2 on startup if empty.
 import gzip
 import json
 import logging
+import ipaddress
 from typing import Optional
 
 from .config import is_visitor_logging_enabled, is_geolocation_enabled
@@ -125,6 +126,81 @@ def log_visitor(db, ip_address: str, user_agent: str = '', host: str = '') -> Op
         'city': city,
         'host': normalized_host,
     }
+
+
+def backfill_visitor_geolocation(db) -> dict:
+    """Backfill missing geo fields for existing visitor rows with plain public IPs."""
+    stats = {
+        'status': 'ok',
+        'scanned': 0,
+        'updated': 0,
+        'skipped_non_ip': 0,
+        'skipped_non_public_ip': 0,
+        'no_match': 0,
+    }
+
+    if not is_geolocation_enabled():
+        stats['status'] = 'skipped'
+        stats['reason'] = 'geolocation_disabled'
+        return stats
+
+    geo_index = get_geo_index()
+    if not geo_index:
+        stats['status'] = 'skipped'
+        stats['reason'] = 'geo_index_unavailable'
+        return stats
+
+    rows = db.execute(
+        '''
+        SELECT id, ip_hash
+        FROM visitors
+        WHERE country_code IS NULL OR country_code = ''
+        '''
+    ).fetchall()
+
+    for row in rows:
+        stats['scanned'] += 1
+        ip_value = (row['ip_hash'] or '').strip()
+        if not ip_value:
+            stats['skipped_non_ip'] += 1
+            continue
+
+        try:
+            ip_obj = ipaddress.ip_address(ip_value)
+        except ValueError:
+            stats['skipped_non_ip'] += 1
+            continue
+
+        if (
+            ip_obj.is_private
+            or ip_obj.is_loopback
+            or ip_obj.is_link_local
+            or ip_obj.is_multicast
+            or ip_obj.is_reserved
+            or ip_obj.is_unspecified
+        ):
+            stats['skipped_non_public_ip'] += 1
+            continue
+
+        geo = geo_index.lookup(ip_value)
+        if not geo:
+            stats['no_match'] += 1
+            continue
+
+        db.execute(
+            '''
+            UPDATE visitors
+            SET country_code = ?, region_code = ?, city = ?
+            WHERE id = ?
+            ''',
+            (geo.country_code, geo.region_code, geo.city, row['id']),
+        )
+        stats['updated'] += 1
+
+    if stats['updated'] > 0:
+        db.commit()
+
+    return stats
 
 
 def backup_visitors_to_r2(db, r2_client):

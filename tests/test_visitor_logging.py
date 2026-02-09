@@ -9,6 +9,7 @@ from app.services.visitor_logging import (
     log_visitor,
     backup_visitors_to_r2,
     restore_visitors_from_r2,
+    backfill_visitor_geolocation,
 )
 from app.services.geolocation import GeoIndex, _parse_cidr, set_geo_index
 
@@ -205,3 +206,51 @@ class TestR2BackupRestore:
         domain_row = visitor_db.execute('SELECT ip_hash FROM visitor_domains').fetchone()
         assert row['ip_hash'] == '203.0.113.5'
         assert domain_row['ip_hash'] == '203.0.113.5'
+
+
+class TestGeoBackfill:
+    def test_backfills_public_plain_ip_rows(self, visitor_db):
+        cidr = '8.8.8.0/24'
+        s, e, v = _parse_cidr(cidr)
+        idx = GeoIndex()
+        idx.load_from_rows([(s, e, cidr, 'US', 'CA', 'Mountain View', v)])
+        set_geo_index(idx)
+
+        try:
+            visitor_db.executemany(
+                'INSERT INTO visitors (ip_hash, user_agent) VALUES (?, ?)',
+                [
+                    ('8.8.8.8', 'ua'),
+                    ('127.0.0.1', 'ua'),
+                    ('legacy-hash-value', 'ua'),
+                ],
+            )
+            visitor_db.commit()
+
+            stats = backfill_visitor_geolocation(visitor_db)
+            assert stats['status'] == 'ok'
+            assert stats['scanned'] == 3
+            assert stats['updated'] == 1
+            assert stats['skipped_non_public_ip'] == 1
+            assert stats['skipped_non_ip'] == 1
+
+            row = visitor_db.execute(
+                "SELECT country_code, region_code, city FROM visitors WHERE ip_hash = '8.8.8.8'"
+            ).fetchone()
+            assert row['country_code'] == 'US'
+            assert row['region_code'] == 'CA'
+            assert row['city'] == 'Mountain View'
+        finally:
+            set_geo_index(None)
+
+    def test_backfill_skips_when_geo_index_unavailable(self, visitor_db):
+        set_geo_index(None)
+        stats = backfill_visitor_geolocation(visitor_db)
+        assert stats['status'] == 'skipped'
+        assert stats['reason'] == 'geo_index_unavailable'
+
+    def test_backfill_skips_when_geolocation_disabled(self, visitor_db, monkeypatch):
+        monkeypatch.setenv('ENABLE_GEOLOCATION', '0')
+        stats = backfill_visitor_geolocation(visitor_db)
+        assert stats['status'] == 'skipped'
+        assert stats['reason'] == 'geolocation_disabled'

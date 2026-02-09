@@ -250,10 +250,11 @@ class TestVisitorSyncNowEndpoint:
         assert 'R2 unavailable' in data['error']
 
     @patch('app.routes.api.is_visitor_logging_enabled', return_value=True)
+    @patch('app.routes.api.backfill_visitor_geolocation', return_value={'status': 'ok', 'updated': 0})
     @patch('app.routes.api.backup_visitors_to_r2')
     @patch('app.routes.api.get_r2_client')
     def test_sync_now_reports_com_and_ca_rollups(
-        self, mock_get_r2, mock_backup, mock_enabled, db_client
+        self, mock_get_r2, mock_backup, mock_geo_backfill, mock_enabled, db_client
     ):
         mock_get_r2.return_value = MagicMock()
 
@@ -290,4 +291,6 @@ class TestVisitorSyncNowEndpoint:
         assert data['domains']['whatismyzakat.com']['visits'] == 3
         assert data['domains']['whatismyzakat.ca']['unique_ips'] == 2
         assert data['domains']['whatismyzakat.ca']['visits'] == 4
+        assert data['geo_backfill']['status'] == 'ok'
         mock_backup.assert_called_once()
+        mock_geo_backfill.assert_called_once()

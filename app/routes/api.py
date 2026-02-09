@@ -29,7 +29,7 @@ from app.services.cadence import get_effective_snapshot_date, get_cadence_bounda
 from app.services.time_provider import get_today
 from app.services.r2_config import is_r2_enabled
 from app.services.r2_client import get_r2_client
-from app.services.visitor_logging import backup_visitors_to_r2
+from app.services.visitor_logging import backup_visitors_to_r2, backfill_visitor_geolocation
 from app.constants import (
     NISAB_GOLD_GRAMS,
     NISAB_SILVER_GRAMS,
@@ -822,6 +822,7 @@ def visitors_sync_now():
         }), 503
 
     db = get_db()
+    geo_backfill = backfill_visitor_geolocation(db)
     backup_visitors_to_r2(db, r2)
 
     visitors_total = db.execute('SELECT COUNT(*) AS n FROM visitors').fetchone()['n']
@@ -832,6 +833,7 @@ def visitors_sync_now():
     return jsonify({
         'success': True,
         'synced_at': datetime.now(timezone.utc).isoformat(),
+        'geo_backfill': geo_backfill,
         'totals': {
             'unique_ips': int(visitors_total or 0),
             'domain_rows': int(domain_rows_total or 0),

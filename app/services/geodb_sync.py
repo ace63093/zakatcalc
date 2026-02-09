@@ -94,7 +94,7 @@ def _run_refresh(db_path: str):
         GeoIndex,
         set_geo_index,
     )
-    from .visitor_logging import backup_visitors_to_r2
+    from .visitor_logging import backup_visitors_to_r2, backfill_visitor_geolocation
     from .r2_client import get_r2_client
     from .r2_config import is_r2_enabled
     from .config import get_geodb_refresh_interval_seconds
@@ -153,7 +153,18 @@ def _run_refresh(db_path: str):
     set_geo_index(index)
     logger.info(f"Geodb refresh complete: {index.size} entries loaded")
 
-    # 5. Backup visitor logs to R2
+    # 5. Backfill visitor geo now that index is refreshed, then backup to R2
+    try:
+        geo_stats = backfill_visitor_geolocation(conn)
+        logger.info(
+            "Visitor geo backfill: "
+            f"status={geo_stats.get('status')} "
+            f"scanned={geo_stats.get('scanned', 0)} "
+            f"updated={geo_stats.get('updated', 0)}"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to backfill visitor geolocation: {e}")
+
     if r2:
         try:
             backup_visitors_to_r2(conn, r2)
