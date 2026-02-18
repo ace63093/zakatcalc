@@ -92,9 +92,12 @@ def create_app(config: dict | None = None) -> Flask:
         try:
             from app.db import get_db
             from app.services.visitor_logging import log_visitor
+            # Prefer CF-Connecting-IP (real client IP from Cloudflare)
+            # over remote_addr which may be a proxy/load-balancer IP
+            client_ip = request.headers.get('CF-Connecting-IP') or request.remote_addr
             result = log_visitor(
                 get_db(),
-                request.remote_addr,
+                client_ip,
                 request.user_agent.string,
                 request.host,
             )

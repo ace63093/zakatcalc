@@ -154,3 +154,19 @@ def test_cad_to_bdt_contains_heading(client):
     """GET /cad-to-bdt should contain CAD to BDT heading."""
     response = client.get('/cad-to-bdt')
     assert b'CAD to BDT' in response.data
+
+
+def test_visitor_logging_uses_cf_connecting_ip(app, monkeypatch):
+    """Visitor logging should prefer CF-Connecting-IP over remote_addr."""
+    monkeypatch.setenv('ENABLE_VISITOR_LOGGING', '1')
+
+    with app.test_client() as c:
+        c.get('/', headers={'CF-Connecting-IP': '203.0.113.42'})
+
+    with app.app_context():
+        from app.db import get_db
+        db = get_db()
+        row = db.execute(
+            "SELECT ip_hash FROM visitors WHERE ip_hash = '203.0.113.42'"
+        ).fetchone()
+        assert row is not None
