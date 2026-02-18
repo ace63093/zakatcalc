@@ -6,7 +6,7 @@ Guidelines for AI coding agents (Codex, Copilot, etc.) working on this repositor
 
 ## Project
 
-Zakat Calculator - Flask web app for Islamic wealth tax calculation (2.5% on wealth exceeding Nisab threshold: 85g gold or 595g silver).
+Zakat Calculator - Flask web app for Islamic wealth tax calculation (2.5% on wealth exceeding Nisab threshold: 85g gold or 595g silver). Served on multiple domains (.com, .ca, .net, .org) with canonical tags pointing to `.com`.
 
 ## Commands
 
@@ -28,7 +28,7 @@ docker compose run --rm web flask refresh-geodb
 
 ```
 app/
-├── __init__.py              # create_app() + ProxyFix + visitor logging hook
+├── __init__.py              # create_app() + CF-Connecting-IP + visitor logging hook
 ├── routes/                  # main.py (UI), api.py (REST), health.py
 ├── services/
 │   ├── calc.py / advanced_calc.py  # Zakat calculation (v1/v2/v3)
@@ -48,6 +48,7 @@ tests/
 ├── test_geolocation.py      # 24 tests
 ├── test_visitor_logging.py  # 7 tests
 ├── test_selenium_local.py   # 33 Selenium tests (--noconftest)
+├── test_selenium_multihost.py # 32 multi-domain tests (.com/.ca/.net/.org)
 └── test_services/           # calc, pricing, R2, sync tests
 ```
 
@@ -67,6 +68,7 @@ NISAB_SILVER_GRAMS = 595     # Silver threshold
 4. Unit tests: `docker compose run --rm web pytest` (349 tests)
 5. Selenium local: `python3 -m pytest tests/test_selenium_local.py -v --noconftest`
 6. Selenium live: `pytest tests/test_selenium_live.py -v`
+7. Selenium multi-domain: `python3 -m pytest tests/test_selenium_multihost.py -v --noconftest`
 
 ## Git Branches
 

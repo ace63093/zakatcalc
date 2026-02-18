@@ -29,6 +29,9 @@ pip install -r requirements-selenium.txt
 pytest tests/test_selenium_live.py -v
 HEADLESS=0 pytest tests/test_selenium_live.py -v  # See the browser
 
+# Run Selenium multi-domain tests (all 4 domains: .com, .ca, .net, .org)
+python3 -m pytest tests/test_selenium_multihost.py -v --noconftest
+
 # Run specific test file
 docker compose run --rm web pytest tests/test_main.py -v
 
@@ -62,7 +65,8 @@ docker compose run --rm web flask refresh-geodb
 
 ### Flask App Factory Pattern
 - `app/__init__.py`: `create_app()` factory configures Flask, registers blueprints, initializes DB
-- ProxyFix middleware for `X-Forwarded-For` (real client IP behind reverse proxy)
+- ProxyFix middleware for `X-Forwarded-For` (fallback IP behind reverse proxy)
+- `CF-Connecting-IP` header preferred for real client IP (Cloudflare sets this to true client IP)
 - Blueprints: `main_bp` (UI), `health_bp` (/healthz), `api_bp` (/api/v1/*)
 
 ### Pricing Data Flow (3-Tier Fallback)
@@ -99,6 +103,7 @@ Key components:
 - `app/services/visitor_logging.py`: Visitor upsert (deduped by hashed IP), geo enrichment, R2 backup/restore
 - `app/services/geodb_sync.py`: Background refresh thread (weekly by default), also backs up visitors to R2
 - `before_request` hook in `app/__init__.py`: skips `/static/`, `/api/`, `/healthz`; stores geo on `g.visitor_geo`
+- Client IP resolution: `CF-Connecting-IP` header (Cloudflare) → `request.remote_addr` (ProxyFix) fallback
 - IPs hashed with SHA-256 + configurable salt (`VISITOR_HASH_SALT`), raw IPs never persisted
 - R2 keys: `{prefix}geolocation/apple_geodb.json.gz`, `{prefix}visitors/snapshot.json.gz`
 - CLI: `flask refresh-geodb` for manual download + R2 store + SQLite mirror + memory reload
@@ -180,9 +185,13 @@ Response includes `assets_total`, `debts_total`, `net_total`, and `subtotals.deb
 - Contribute button (global nav): https://buymeacoffee.com/zakatcalculator
 - Contact email (only): info@whatismyzakat.com
 
+### Multi-Domain Hosting
+The app is served on multiple domains (`.com`, `.ca`, `.net`, `.org`) — all serve content directly without redirects. SEO is handled by canonical tags pointing to `.com`.
+
 ### SEO Configuration
 - `CANONICAL_HOST` env var sets the canonical domain (default: `whatismyzakat.com`)
 - `base.html` injects `<link rel="canonical">` and `<meta property="og:url">` using `request.path`
+- All domains serve identical content; canonical tags always reference `.com` regardless of request host
 - Query strings are stripped from canonical URLs to avoid duplicate content issues
 
 ### Conversion Rates Display
@@ -337,6 +346,9 @@ Used by both purple value pills (`.base-value-pill`) and grams pills (`.weight-g
   - Defaults to `http://localhost:8080`, override with `LIVE_TEST_URL` env var
   - Set `HEADLESS=0` to see the browser
   - 33 tests covering: date assistant, autosave, metals tooltip, methodology, print summary, advanced assets, share link, navigation, regression
+- **Selenium multi-domain tests** (live): `python3 -m pytest tests/test_selenium_multihost.py -v --noconftest`
+  - 32 tests across all 4 domains (.com, .ca, .net, .org)
+  - Verifies: no redirects, canonical tags point to .com, calculator works, API responds, healthz OK
 
 ## Git Workflow
 
