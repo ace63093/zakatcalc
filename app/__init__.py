@@ -1,7 +1,7 @@
 """Flask application factory for Zakat Calculator."""
 import logging
 import os
-from flask import Flask, request, g, redirect
+from flask import Flask, request, g
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 
@@ -77,20 +77,6 @@ def create_app(config: dict | None = None) -> Flask:
     app.register_blueprint(health_bp)
     app.register_blueprint(api_bp, url_prefix='/api/v1')
     app.register_blueprint(guides_bp)
-
-    # Redirect non-canonical domains (e.g. .net, .org) to canonical host
-    @app.before_request
-    def _redirect_to_canonical():
-        canonical = app.config['CANONICAL_HOST']
-        host = request.host.split(':')[0]  # strip port
-        if host != canonical and host != 'localhost' and host != '127.0.0.1':
-            # Skip health checks so DigitalOcean probes still work
-            if request.path == '/healthz':
-                return
-            return redirect(
-                f"https://{canonical}{request.full_path}" if request.query_string else f"https://{canonical}{request.path}",
-                code=301,
-            )
 
     # Visitor logging before_request hook
     @app.before_request
