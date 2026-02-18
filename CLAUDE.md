@@ -59,6 +59,14 @@ docker compose run --rm web flask sync-prices --types fx,metals            # Syn
 
 # Refresh IP geolocation database (downloads Apple CSV → R2 → SQLite → memory)
 docker compose run --rm web flask refresh-geodb
+
+# Mirror existing SQLite pricing data to R2
+docker compose run --rm web flask mirror-to-r2
+docker compose run --rm web flask mirror-to-r2 --cadence daily --limit 30
+
+# Backfill R2 with SQLite data using proper 3-tier cadence
+docker compose run --rm web flask backfill-r2
+docker compose run --rm web flask backfill-r2 --dry-run --monthly-limit 6
 ```
 
 ## Architecture
@@ -67,7 +75,7 @@ docker compose run --rm web flask refresh-geodb
 - `app/__init__.py`: `create_app()` factory configures Flask, registers blueprints, initializes DB
 - ProxyFix middleware for `X-Forwarded-For` (fallback IP behind reverse proxy)
 - `CF-Connecting-IP` header preferred for real client IP (Cloudflare sets this to true client IP)
-- Blueprints: `main_bp` (UI), `health_bp` (/healthz), `api_bp` (/api/v1/*)
+- Blueprints: `main_bp` (UI), `health_bp` (/healthz), `api_bp` (/api/v1/*), `guides_bp` (SEO guides)
 
 ### Pricing Data Flow (3-Tier Fallback)
 The `SnapshotRepository` (`app/services/snapshot_repository.py`) implements read-through caching:
@@ -76,9 +84,13 @@ The `SnapshotRepository` (`app/services/snapshot_repository.py`) implements read
 Each successful fetch populates lower-tier caches. R2 is optional and best-effort.
 
 ### Pricing Sync Configuration
+- `DATA_DIR` (default: `data/` relative to app) - Path to SQLite database and seed data
 - `PRICING_ALLOW_NETWORK` gates network sync (app default: 0; docker compose default: 1)
 - `PRICING_AUTO_SYNC` controls auto-sync; in-app thread requires `PRICING_BACKGROUND_SYNC=1`
+- `PRICING_BACKGROUND_SYNC` (default: 0) - Start in-app background sync thread (separate from daemon)
+- `PRICING_AUTO_FETCH_MISSING` (default: 0) - Auto-fetch missing pricing data on request
 - `PRICING_SYNC_INTERVAL_SECONDS` controls auto-sync cadence (default 21600 = 6h; 86400 = daily)
+- Daemon script: `scripts/pricing_sync_daemon.py` (run via `docker compose up pricing-sync`)
 - Daemon settings: `PRICING_SYNC_INTERVAL_SECONDS`, `PRICING_LOOKBACK_MONTHS`, `PRICING_RECENT_DAYS`, `PRICING_MONTHLY_LIMIT`
 - Optional provider keys: `OPENEXCHANGERATES_APP_ID`, `GOLDAPI_KEY`, `METALPRICEAPI_KEY`, `METALS_DEV_API_KEY`, `COINMARKETCAP_API_KEY`
 - R2 cache config uses `R2_*` env vars (`R2_ENABLED`, `R2_BUCKET`, `R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PREFIX`)
@@ -146,8 +158,14 @@ Debts reduce the zakat-eligible total. The calculation uses:
 
 ### Key API Endpoints
 - `GET /api/v1/pricing?date=YYYY-MM-DD&base=CAD` - Pricing snapshot with FX, metals, crypto
-- `POST /api/v1/calculate` - Calculate zakat from asset list (supports v2 with debts)
+- `GET /api/v1/pricing/legacy` - Legacy pricing endpoint (backward compatibility)
+- `GET /api/v1/pricing/sync-status` - Sync config, provider status, data coverage, daemon state
+- `POST /api/v1/pricing/sync` - Sync pricing for a date range (requires `PRICING_ALLOW_NETWORK=1`)
+- `POST /api/v1/pricing/sync-date` - Sync pricing for a single date (used by UI)
+- `POST /api/v1/pricing/refresh` - Force refresh pricing, bypassing cache (legacy)
+- `POST /api/v1/calculate` - Calculate zakat from asset list (auto-detects v1/v2/v3 format)
 - `GET /api/v1/currencies` - Currency list (CAD first, then high-volume, then alphabetical)
+- `POST /api/v1/visitors/sync-now` - Ad-hoc visitor R2 backup; returns .com/.ca domain stats
 
 #### POST /api/v1/calculate (v2 format)
 ```json
@@ -180,6 +198,16 @@ Response includes `assets_total`, `debts_total`, `net_total`, and `subtotals.deb
 - `/contact` - Contact page
 - `/summary` - Printable summary (data in URL fragment, client-side render)
 - `/privacy-policy` - Privacy policy page
+- `/favicon.ico` - Serves favicon from static assets
+- `/ads.txt` - 301 redirect to Ezoic managed ads.txt
+
+#### SEO Guides (`app/routes/guides.py`)
+- `/guides` - Guides index page
+- `/<slug>` - 12 individual guide pages (e.g. `/zakat-on-gold-jewelry`, `/nisab-gold-vs-silver`, `/zakat-in-canada`)
+- `/sitemap.xml` - Dynamic XML sitemap (core pages + all guide slugs)
+- `/robots.txt` - Dynamic robots.txt pointing to sitemap
+- Guide content defined in `app/content/guides.py` (GUIDES dict)
+- SEO schema helpers in `app/services/seo.py` (`build_article_schema`, `build_breadcrumb_schema`, `build_faq_schema`)
 
 #### Content Links
 - Contribute button (global nav): https://buymeacoffee.com/zakatcalculator
@@ -212,7 +240,9 @@ Rates only appear for assets the user has actually entered. Collapsed by default
 ### Frontend
 Single-page calculator at `/` using vanilla JS. Key components in `app/static/js/`:
 - `calculator.js`: Main calculation logic with live updates, state management (`getState()`/`setState()`)
+- `cad_to_bdt.js`: CAD→BDT converter page logic
 - `utils/shared.js`: Shared constants and utilities (NISAB, ZAKAT_RATE, WEIGHT_UNITS, LOAN_FREQUENCY_MULTIPLIERS)
+- `vendor/lz-string.min.js`: LZ-string compression library (used by share-link)
 - `components/currency-autocomplete.js`: 179 ISO 4217 currencies with compact mode
 - `components/crypto-autocomplete.js`: Top 100 cryptocurrencies
 - `components/nisab-indicator.js`: Visual nisab threshold indicator with expandable conversion rates
@@ -230,6 +260,10 @@ Templates in `app/templates/`:
 - `faq.html`
 - `contact.html`
 - `summary.html`
+- `privacy_policy.html`
+- `cad_to_bdt.html`
+- `guide.html`: Individual guide page template (used by guides blueprint)
+- `guides_index.html`: Guides hub index page
 - `feature_disabled.html`
 
 #### Currency Autocomplete Modes
@@ -270,6 +304,7 @@ The "Debts (Deductible)" section appears below Cryptocurrency and above Tools:
 The "Other Precious Metals" section title has a `?` tooltip (`.section-note` CSS class) explaining that platinum and palladium are not universally considered zakatable by all scholars. Pure CSS hover tooltip.
 
 ### CSS Structure
+- `app/static/css/variables.css`: CSS custom properties (colors, spacing, shared design tokens)
 - `app/static/css/autocomplete.css`: Currency/crypto autocomplete styling, compact mode
 - `app/static/css/nisab-indicator.css`: Nisab threshold indicator card
 - `app/static/css/tools.css`: Share link, export buttons, autosave notice toast
@@ -277,6 +312,7 @@ The "Other Precious Metals" section title has a `?` tooltip (`.section-note` CSS
 - `app/static/css/date-assistant.css`: Zakat date assistant component
 - `app/static/css/summary.css`: Print-optimized summary page styles
 - `app/static/css/content-pages.css`: Shared styles for about, FAQ, methodology, contact, privacy pages
+- `app/static/css/cad_to_bdt.css`: CAD→BDT converter page styles
 - `app/templates/base.html`: Main styles embedded (gradients, layout, responsive breakpoints)
 
 ### Feature Flags

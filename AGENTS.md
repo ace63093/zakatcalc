@@ -20,6 +20,10 @@ docker compose run --rm web pytest tests/test_main.py -v  # Single file
 docker compose run --rm web flask init-db
 docker compose run --rm web flask seed-all
 
+# R2 data management
+docker compose run --rm web flask mirror-to-r2      # Mirror SQLite pricing to R2
+docker compose run --rm web flask backfill-r2        # Backfill R2 with cadence-aware data
+
 # Geolocation
 docker compose run --rm web flask refresh-geodb
 ```
@@ -29,26 +33,50 @@ docker compose run --rm web flask refresh-geodb
 ```
 app/
 ├── __init__.py              # create_app() + CF-Connecting-IP + visitor logging hook
-├── routes/                  # main.py (UI), api.py (REST), health.py
+├── routes/
+│   ├── main.py              # UI routes (/, /about-zakat, /faq, /contact, etc.)
+│   ├── api.py               # REST API (/api/v1/pricing, /calculate, /visitors)
+│   ├── health.py            # /healthz
+│   └── guides.py            # SEO guides (/guides, /<slug>, /sitemap.xml, /robots.txt)
+├── content/
+│   └── guides.py            # GUIDES dict (12 guide slugs + content)
 ├── services/
 │   ├── calc.py / advanced_calc.py  # Zakat calculation (v1/v2/v3)
 │   ├── config.py            # Env-based config + feature flags
+│   ├── seo.py               # JSON-LD schema builders (article, breadcrumb, FAQ)
 │   ├── geolocation.py       # IP geolocation (GeoIndex, Apple CSV, R2/SQLite)
 │   ├── geodb_sync.py        # Background geodb refresh + visitor R2 backup
-│   ├── visitor_logging.py   # Visitor upsert (hashed IP), R2 backup/restore
+│   ├── visitor_logging.py   # Visitor upsert (plain IP), R2 backup/restore
 │   ├── snapshot_repository.py  # 3-tier pricing cache (SQLite → R2 → upstream)
 │   └── r2_client.py         # Cloudflare R2 client
 ├── static/js/
 │   ├── calculator.js        # Main frontend (getState/setState)
+│   ├── cad_to_bdt.js        # CAD→BDT converter logic
+│   ├── utils/shared.js      # Shared constants (NISAB, ZAKAT_RATE, WEIGHT_UNITS)
+│   ├── vendor/lz-string.min.js  # LZ-string compression library
 │   └── components/          # autosave, share-link, date-assistant, etc.
+├── static/css/
+│   ├── variables.css        # CSS custom properties
+│   ├── autocomplete.css     # Currency/crypto autocomplete
+│   ├── cad_to_bdt.css       # CAD→BDT converter styles
+│   └── ...                  # nisab-indicator, tools, advanced-assets, etc.
 └── templates/               # Jinja2 templates (feature-flagged sections)
+    ├── guide.html / guides_index.html  # SEO guides templates
+    └── ...                  # calculator, about, faq, contact, summary, etc.
+
+scripts/
+└── pricing_sync_daemon.py   # Standalone pricing sync daemon (docker compose up pricing-sync)
 
 tests/
 ├── conftest.py              # Fixtures (client, db_client, frozen_time, fake_r2)
+├── fakes/fake_r2.py         # In-memory R2 mock
 ├── test_geolocation.py      # 24 tests
-├── test_visitor_logging.py  # 7 tests
+├── test_visitor_logging.py  # Visitor logging + R2 backup/restore tests
+├── test_guides_pages.py     # Guides blueprint tests
+├── test_sitemap_and_robots.py  # Sitemap/robots.txt tests
 ├── test_selenium_local.py   # 33 Selenium tests (--noconftest)
 ├── test_selenium_multihost.py # 32 multi-domain tests (.com/.ca/.net/.org)
+├── test_selenium_live.py    # Production live tests
 └── test_services/           # calc, pricing, R2, sync tests
 ```
 
