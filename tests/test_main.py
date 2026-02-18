@@ -154,3 +154,51 @@ def test_cad_to_bdt_contains_heading(client):
     """GET /cad-to-bdt should contain CAD to BDT heading."""
     response = client.get('/cad-to-bdt')
     assert b'CAD to BDT' in response.data
+
+
+def test_non_canonical_host_redirects_301(app):
+    """Requests to non-canonical hosts should 301 redirect to canonical."""
+    app.config['CANONICAL_HOST'] = 'whatismyzakat.com'
+    with app.test_client() as c:
+        response = c.get('/', headers={'Host': 'whatismyzakat.net'})
+        assert response.status_code == 301
+        assert response.headers['Location'] == 'https://whatismyzakat.com/'
+
+
+def test_non_canonical_host_preserves_path(app):
+    """Redirect should preserve the request path."""
+    app.config['CANONICAL_HOST'] = 'whatismyzakat.com'
+    with app.test_client() as c:
+        response = c.get('/about-zakat', headers={'Host': 'whatismyzakat.org'})
+        assert response.status_code == 301
+        assert response.headers['Location'] == 'https://whatismyzakat.com/about-zakat'
+
+
+def test_non_canonical_host_preserves_query_string(app):
+    """Redirect should preserve query string parameters."""
+    app.config['CANONICAL_HOST'] = 'whatismyzakat.com'
+    with app.test_client() as c:
+        response = c.get('/api/v1/pricing?date=2026-01-15&base=CAD',
+                         headers={'Host': 'whatismyzakat.net'})
+        assert response.status_code == 301
+        assert 'date=2026-01-15' in response.headers['Location']
+
+
+def test_canonical_host_no_redirect(client):
+    """Requests to canonical host should not redirect."""
+    response = client.get('/', headers={'Host': 'whatismyzakat.com'})
+    assert response.status_code == 200
+
+
+def test_localhost_no_redirect(client):
+    """Requests to localhost should not redirect."""
+    response = client.get('/', headers={'Host': 'localhost'})
+    assert response.status_code == 200
+
+
+def test_healthz_no_redirect_on_non_canonical(app):
+    """Health checks should not redirect even on non-canonical hosts."""
+    app.config['CANONICAL_HOST'] = 'whatismyzakat.com'
+    with app.test_client() as c:
+        response = c.get('/healthz', headers={'Host': 'whatismyzakat.net'})
+        assert response.status_code == 200
