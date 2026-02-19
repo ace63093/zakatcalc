@@ -52,16 +52,22 @@ def stop_geodb_refresh():
 
 
 def _refresh_loop():
-    """Main refresh loop running in background thread."""
-    from .config import get_geodb_refresh_interval_seconds
+    """Main refresh loop running in background thread.
+
+    Wakes every VISITOR_BACKUP_INTERVAL_SECONDS (default 6h) to back up visitor
+    logs to R2. Also refreshes the geodb when it becomes stale (default 1 week).
+    """
+    from .config import get_geodb_refresh_interval_seconds, get_visitor_backup_interval_seconds
 
     data_dir = os.environ.get('DATA_DIR', '/app/data')
     db_path = os.path.join(data_dir, 'pricing.sqlite')
-    sleep_seconds = get_geodb_refresh_interval_seconds()
+    sleep_seconds = get_visitor_backup_interval_seconds()
+    geodb_interval = get_geodb_refresh_interval_seconds()
 
-    logger.info(f"Geodb refresh loop started")
+    logger.info("Geodb/visitor sync loop started")
     logger.info(f"  DB path: {db_path}")
-    logger.info(f"  Refresh interval: {sleep_seconds}s ({sleep_seconds // 3600}h)")
+    logger.info(f"  Visitor backup interval: {sleep_seconds}s ({sleep_seconds // 3600}h)")
+    logger.info(f"  Geodb refresh interval: {geodb_interval}s ({geodb_interval // 3600}h)")
 
     # Initial delay to let app fully start
     if _stop_event.wait(timeout=15):
@@ -71,10 +77,10 @@ def _refresh_loop():
         try:
             _run_refresh(db_path)
         except Exception as e:
-            logger.exception(f"Geodb refresh failed: {e}")
+            logger.exception(f"Geodb/visitor sync failed: {e}")
 
-        next_refresh = datetime.now(timezone.utc) + timedelta(seconds=sleep_seconds)
-        logger.info(f"Next geodb refresh at {next_refresh.isoformat()}")
+        next_run = datetime.now(timezone.utc) + timedelta(seconds=sleep_seconds)
+        logger.info(f"Next visitor backup at {next_run.isoformat()}")
 
         # Check stop event every 30 seconds during sleep
         elapsed = 0
@@ -84,12 +90,11 @@ def _refresh_loop():
 
 
 def _run_refresh(db_path: str):
-    """Execute one geodb refresh cycle."""
+    """Execute one sync cycle: always back up visitors; refresh geodb when stale."""
     from .geolocation import (
         download_and_parse_apple_geodb,
         store_geodb_to_sqlite,
         store_geodb_to_r2,
-        load_geodb_from_sqlite,
         get_geodb_last_updated,
         GeoIndex,
         set_geo_index,
@@ -101,74 +106,70 @@ def _run_refresh(db_path: str):
 
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
+    r2 = get_r2_client() if is_r2_enabled() else None
 
-    # Check if refresh is needed
+    # --- Geodb refresh (only when stale) ---
+    geodb_refreshed = False
     last_updated = get_geodb_last_updated(conn)
+    geodb_stale = True
     if last_updated:
         try:
             last_dt = datetime.fromisoformat(last_updated)
             age_seconds = (datetime.now() - last_dt).total_seconds()
             interval = get_geodb_refresh_interval_seconds()
             if age_seconds < interval:
-                logger.info(f"Geodb still fresh (age: {age_seconds:.0f}s < {interval}s), skipping")
-                conn.close()
-                return
+                logger.info(f"Geodb still fresh (age: {age_seconds:.0f}s < {interval}s), skipping download")
+                geodb_stale = False
         except (ValueError, TypeError):
             pass  # Can't parse timestamp, proceed with refresh
 
-    logger.info("Starting geodb refresh...")
-
-    # 1. Download from Apple
-    try:
-        rows = download_and_parse_apple_geodb()
-    except Exception as e:
-        logger.error(f"Failed to download Apple geodb: {e}")
-        conn.close()
-        return
-
-    if not rows:
-        logger.warning("Downloaded geodb is empty, skipping update")
-        conn.close()
-        return
-
-    # 2. Store to R2 (primary)
-    r2 = get_r2_client() if is_r2_enabled() else None
-    if r2:
+    if geodb_stale:
+        logger.info("Starting geodb refresh...")
         try:
-            store_geodb_to_r2(r2, rows)
+            rows = download_and_parse_apple_geodb()
         except Exception as e:
-            logger.warning(f"Failed to store geodb to R2: {e}")
+            logger.error(f"Failed to download Apple geodb: {e}")
+            rows = None
 
-    # 3. Mirror to SQLite
-    try:
-        store_geodb_to_sqlite(conn, rows)
-    except Exception as e:
-        logger.error(f"Failed to store geodb to SQLite: {e}")
-        conn.close()
-        return
+        if rows:
+            if r2:
+                try:
+                    store_geodb_to_r2(r2, rows)
+                except Exception as e:
+                    logger.warning(f"Failed to store geodb to R2: {e}")
+            try:
+                store_geodb_to_sqlite(conn, rows)
+                index = GeoIndex()
+                index.load_from_rows(rows)
+                set_geo_index(index)
+                logger.info(f"Geodb refresh complete: {index.size} entries loaded")
+                geodb_refreshed = True
+            except Exception as e:
+                logger.error(f"Failed to store/reload geodb: {e}")
+        else:
+            logger.warning("Downloaded geodb is empty or failed, skipping update")
 
-    # 4. Reload in-memory index
-    index = GeoIndex()
-    index.load_from_rows(rows)
-    set_geo_index(index)
-    logger.info(f"Geodb refresh complete: {index.size} entries loaded")
+    # Backfill visitor geo if geodb was just refreshed
+    if geodb_refreshed:
+        try:
+            geo_stats = backfill_visitor_geolocation(conn)
+            logger.info(
+                "Visitor geo backfill: "
+                f"status={geo_stats.get('status')} "
+                f"scanned={geo_stats.get('scanned', 0)} "
+                f"updated={geo_stats.get('updated', 0)}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to backfill visitor geolocation: {e}")
 
-    # 5. Backfill visitor geo now that index is refreshed, then backup to R2
-    try:
-        geo_stats = backfill_visitor_geolocation(conn)
-        logger.info(
-            "Visitor geo backfill: "
-            f"status={geo_stats.get('status')} "
-            f"scanned={geo_stats.get('scanned', 0)} "
-            f"updated={geo_stats.get('updated', 0)}"
-        )
-    except Exception as e:
-        logger.warning(f"Failed to backfill visitor geolocation: {e}")
-
+    # --- Visitor backup to R2 (always) ---
     if r2:
         try:
             backup_visitors_to_r2(conn, r2)
+            logger.info("Visitor backup to R2 complete")
         except Exception as e:
             logger.warning(f"Failed to backup visitors to R2: {e}")
+    else:
+        logger.debug("R2 not configured, skipping visitor backup")
 
     conn.close()

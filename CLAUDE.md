@@ -325,7 +325,8 @@ Controlled by environment variables in `app/services/config.py` via `get_feature
 - `ENABLE_GEOLOCATION` (default: 1) - IP geolocation via Apple CSV geodb
 
 Additional visitor/geo config (not in `get_feature_flags()`):
-- `GEODB_REFRESH_INTERVAL_SECONDS` (default: 604800 = 1 week) - Background refresh cadence
+- `GEODB_REFRESH_INTERVAL_SECONDS` (default: 604800 = 1 week) - How often to re-download Apple geodb
+- `VISITOR_BACKUP_INTERVAL_SECONDS` (default: 21600 = 6h) - How often to back up visitor logs to R2 (loop cadence)
 - `VISITOR_HASH_SALT` (default: `zakat-visitor-salt-change-me`) - Salt for IP hashing
 
 Feature flags are passed to templates as `feature_flags` dict. Frontend uses `{% if feature_flags.X %}` conditionally.

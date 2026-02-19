@@ -186,6 +186,14 @@ def get_geodb_refresh_interval_seconds() -> int:
     return int(os.environ.get('GEODB_REFRESH_INTERVAL_SECONDS', '604800'))
 
 
+def get_visitor_backup_interval_seconds() -> int:
+    """Get the visitor R2 backup interval in seconds.
+
+    Controlled by VISITOR_BACKUP_INTERVAL_SECONDS env var (default: 21600 = 6h).
+    """
+    return int(os.environ.get('VISITOR_BACKUP_INTERVAL_SECONDS', '21600'))
+
+
 def get_visitor_hash_salt() -> str:
     """Get the salt for hashing visitor IPs.
 
