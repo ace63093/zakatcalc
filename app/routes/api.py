@@ -7,7 +7,7 @@ from app.services.pricing import get_pricing, format_pricing_response
 from app.services.calc import calculate_zakat, calculate_zakat_v2
 from app.services.advanced_calc import calculate_zakat_v3
 from app.services.fx import SUPPORTED_CURRENCIES
-from app.services.config import get_feature_flags, is_visitor_logging_enabled
+from app.services.config import get_feature_flags, is_visitor_logging_enabled, get_admin_secret
 from app.data.metals import is_valid_metal
 from app.data.crypto import is_valid_crypto
 from app.services.db_pricing import (
@@ -47,6 +47,22 @@ from app.constants import (
 api_bp = Blueprint('api', __name__)
 
 TRACKED_DOMAINS = ('whatismyzakat.com', 'whatismyzakat.ca')
+
+
+def _check_admin_secret():
+    """Return a 401 error response if the request is missing a valid admin secret.
+
+    Checks the X-Admin-Secret header. If ADMIN_SECRET env var is not set,
+    all admin endpoints are locked out regardless of what is provided.
+    Returns None if auth passes, or a (response, status) tuple to return immediately.
+    """
+    secret = get_admin_secret()
+    if not secret:
+        return jsonify({'error': 'Admin endpoints are disabled (ADMIN_SECRET not configured)'}), 403
+    provided = request.headers.get('X-Admin-Secret', '')
+    if not provided or provided != secret:
+        return jsonify({'error': 'Unauthorized'}), 401
+    return None
 
 
 def _domain_rollup(db, domain: str) -> dict:
@@ -217,6 +233,9 @@ def pricing_legacy():
 @api_bp.route('/pricing/refresh', methods=['POST'])
 def pricing_refresh():
     """Force refresh pricing data, bypassing cache (legacy)."""
+    auth_error = _check_admin_secret()
+    if auth_error:
+        return auth_error
     data, status = get_pricing(force_refresh=True)
     return jsonify(format_pricing_response(data, status))
 
@@ -688,6 +707,8 @@ def _calculate_v3(body: dict):
 def pricing_sync():
     """Sync pricing data for a date range.
 
+    Requires X-Admin-Secret header.
+
     Request body:
     {
         "start_date": "2026-01-01",
@@ -697,6 +718,9 @@ def pricing_sync():
 
     Returns summary of sync results or 403 if sync is disabled.
     """
+    auth_error = _check_admin_secret()
+    if auth_error:
+        return auth_error
     if not is_sync_enabled():
         return jsonify({
             'error': 'Network sync disabled',
@@ -744,6 +768,9 @@ def pricing_sync_date():
 
     Used by UI "Download pricing for this date" button.
     """
+    auth_error = _check_admin_secret()
+    if auth_error:
+        return auth_error
     if not is_sync_enabled():
         return jsonify({
             'error': 'Network sync disabled',
@@ -808,6 +835,9 @@ def pricing_sync_status():
 @api_bp.route('/visitors/refresh-geodb', methods=['POST'])
 def visitors_refresh_geodb():
     """Download Apple geodb, enrich visitor geo, backup to R2. One-shot full refresh."""
+    auth_error = _check_admin_secret()
+    if auth_error:
+        return auth_error
     from app.services.geolocation import (
         download_and_parse_apple_geodb,
         store_geodb_to_sqlite,
@@ -873,6 +903,9 @@ def visitors_refresh_geodb():
 @api_bp.route('/visitors/sync-now', methods=['POST'])
 def visitors_sync_now():
     """Run ad-hoc visitor backup to R2 and return .com/.ca domain stats."""
+    auth_error = _check_admin_secret()
+    if auth_error:
+        return auth_error
     if not is_visitor_logging_enabled():
         return jsonify({
             'error': 'Visitor logging disabled',

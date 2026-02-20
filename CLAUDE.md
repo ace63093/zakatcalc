@@ -160,12 +160,15 @@ Debts reduce the zakat-eligible total. The calculation uses:
 - `GET /api/v1/pricing?date=YYYY-MM-DD&base=CAD` - Pricing snapshot with FX, metals, crypto
 - `GET /api/v1/pricing/legacy` - Legacy pricing endpoint (backward compatibility)
 - `GET /api/v1/pricing/sync-status` - Sync config, provider status, data coverage, daemon state
-- `POST /api/v1/pricing/sync` - Sync pricing for a date range (requires `PRICING_ALLOW_NETWORK=1`)
-- `POST /api/v1/pricing/sync-date` - Sync pricing for a single date (used by UI)
-- `POST /api/v1/pricing/refresh` - Force refresh pricing, bypassing cache (legacy)
+- `POST /api/v1/pricing/sync` - Sync pricing for a date range (requires `PRICING_ALLOW_NETWORK=1`) **[admin]**
+- `POST /api/v1/pricing/sync-date` - Sync pricing for a single date **[admin]**
+- `POST /api/v1/pricing/refresh` - Force refresh pricing, bypassing cache (legacy) **[admin]**
 - `POST /api/v1/calculate` - Calculate zakat from asset list (auto-detects v1/v2/v3 format)
 - `GET /api/v1/currencies` - Currency list (CAD first, then high-volume, then alphabetical)
-- `POST /api/v1/visitors/sync-now` - Ad-hoc visitor R2 backup; returns .com/.ca domain stats
+- `POST /api/v1/visitors/sync-now` - Ad-hoc visitor R2 backup; returns .com/.ca domain stats **[admin]**
+- `POST /api/v1/visitors/refresh-geodb` - Download Apple geodb, enrich visitor geo, backup to R2 **[admin]**
+
+**[admin]** endpoints require `X-Admin-Secret: <ADMIN_SECRET>` header.
 
 #### POST /api/v1/calculate (v2 format)
 ```json
@@ -328,6 +331,7 @@ Additional visitor/geo config (not in `get_feature_flags()`):
 - `GEODB_REFRESH_INTERVAL_SECONDS` (default: 604800 = 1 week) - How often to re-download Apple geodb
 - `VISITOR_BACKUP_INTERVAL_SECONDS` (default: 21600 = 6h) - How often to back up visitor logs to R2 (loop cadence)
 - `VISITOR_HASH_SALT` (default: `zakat-visitor-salt-change-me`) - Salt for IP hashing
+- `ADMIN_SECRET` - Token for sensitive admin endpoints (`X-Admin-Secret` header). Required; endpoints return 403 if unset.
 
 Feature flags are passed to templates as `feature_flags` dict. Frontend uses `{% if feature_flags.X %}` conditionally.
 

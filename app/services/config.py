@@ -194,6 +194,14 @@ def get_visitor_backup_interval_seconds() -> int:
     return int(os.environ.get('VISITOR_BACKUP_INTERVAL_SECONDS', '21600'))
 
 
+def get_admin_secret() -> str:
+    """Return the admin secret token for protecting sensitive API endpoints.
+
+    Controlled by ADMIN_SECRET env var. If empty, admin endpoints are locked out.
+    """
+    return os.environ.get('ADMIN_SECRET', '').strip()
+
+
 def get_visitor_hash_salt() -> str:
     """Get the salt for hashing visitor IPs.
 
