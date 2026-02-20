@@ -805,6 +805,71 @@ def pricing_sync_status():
     })
 
 
+@api_bp.route('/visitors/refresh-geodb', methods=['POST'])
+def visitors_refresh_geodb():
+    """Download Apple geodb, enrich visitor geo, backup to R2. One-shot full refresh."""
+    from app.services.geolocation import (
+        download_and_parse_apple_geodb,
+        store_geodb_to_sqlite,
+        store_geodb_to_r2,
+        GeoIndex,
+        set_geo_index,
+    )
+
+    if not is_visitor_logging_enabled():
+        return jsonify({'error': 'Visitor logging disabled'}), 403
+
+    r2 = get_r2_client()
+    db = get_db()
+    result = {'success': False, 'steps': {}}
+
+    # 1. Download geodb
+    try:
+        rows = download_and_parse_apple_geodb()
+        result['steps']['download'] = {'ok': True, 'entries': len(rows)}
+    except Exception as e:
+        result['steps']['download'] = {'ok': False, 'error': str(e)}
+        return jsonify(result), 500
+
+    # 2. Store to R2
+    if r2:
+        try:
+            store_geodb_to_r2(r2, rows)
+            result['steps']['r2'] = {'ok': True}
+        except Exception as e:
+            result['steps']['r2'] = {'ok': False, 'error': str(e)}
+
+    # 3. Store to SQLite + reload memory index
+    try:
+        store_geodb_to_sqlite(db, rows)
+        index = GeoIndex()
+        index.load_from_rows(rows)
+        set_geo_index(index)
+        result['steps']['index'] = {'ok': True, 'size': index.size}
+    except Exception as e:
+        result['steps']['index'] = {'ok': False, 'error': str(e)}
+        return jsonify(result), 500
+
+    # 4. Backfill visitor geo
+    try:
+        geo_stats = backfill_visitor_geolocation(db)
+        result['steps']['geo_backfill'] = geo_stats
+    except Exception as e:
+        result['steps']['geo_backfill'] = {'ok': False, 'error': str(e)}
+
+    # 5. Backup visitors to R2
+    if r2:
+        try:
+            backup_visitors_to_r2(db, r2)
+            result['steps']['visitor_backup'] = {'ok': True}
+        except Exception as e:
+            result['steps']['visitor_backup'] = {'ok': False, 'error': str(e)}
+
+    result['success'] = True
+    result['completed_at'] = datetime.now(timezone.utc).isoformat()
+    return jsonify(result)
+
+
 @api_bp.route('/visitors/sync-now', methods=['POST'])
 def visitors_sync_now():
     """Run ad-hoc visitor backup to R2 and return .com/.ca domain stats."""
