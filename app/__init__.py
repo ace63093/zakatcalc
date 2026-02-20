@@ -95,11 +95,15 @@ def create_app(config: dict | None = None) -> Flask:
             # Prefer CF-Connecting-IP (real client IP from Cloudflare)
             # over remote_addr which may be a proxy/load-balancer IP
             client_ip = request.headers.get('CF-Connecting-IP') or request.remote_addr
+            # CF-IPCountry is set by Cloudflare on every request; more reliable
+            # than the sparse Apple geodb CIDR lookup.
+            cf_country = request.headers.get('CF-IPCountry') or ''
             result = log_visitor(
                 get_db(),
                 client_ip,
                 request.user_agent.string,
                 request.host,
+                country_code_hint=cf_country,
             )
             g.visitor_geo = result
         except Exception:

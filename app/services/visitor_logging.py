@@ -35,8 +35,12 @@ def _normalize_host(host: str) -> str:
     return value
 
 
-def log_visitor(db, ip_address: str, user_agent: str = '', host: str = '') -> Optional[dict]:
+def log_visitor(db, ip_address: str, user_agent: str = '', host: str = '',
+                country_code_hint: str = '') -> Optional[dict]:
     """Record a visitor, upserting by IP string.
+
+    country_code_hint: ISO 2-letter code from a trusted header (e.g. CF-IPCountry).
+    Takes priority over the sparse Apple geodb CIDR lookup. Ignored if empty or 'XX'.
 
     Returns dict with ip_hash (legacy key storing plain IP) and geo info, or None.
     """
@@ -76,12 +80,15 @@ def log_visitor(db, ip_address: str, user_agent: str = '', host: str = '') -> Op
             # keep legacy domain rows and continue logging.
             pass
 
-    # Geo lookup
+    # Geo lookup — prefer trusted header hint (e.g. CF-IPCountry) over Apple CIDR lookup
     country_code = None
     region_code = None
     city = None
 
-    if is_geolocation_enabled():
+    hint = (country_code_hint or '').strip().upper()
+    if hint and hint not in ('', 'XX', 'T1'):
+        country_code = hint
+    elif is_geolocation_enabled():
         geo_index = get_geo_index()
         if geo_index:
             result = geo_index.lookup(ip_address)
