@@ -3,6 +3,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from app.db import get_db
+from tests.conftest import TEST_ADMIN_SECRET
+
+ADMIN_HEADERS = {'X-Admin-Secret': TEST_ADMIN_SECRET}
 
 
 class TestSyncStatusEndpoint:
@@ -91,7 +94,7 @@ class TestSyncDateEndpoint:
     def test_sync_disabled_returns_403(self, mock_enabled, db_client):
         """Sync-date returns 403 when sync is disabled."""
         response = db_client.post('/api/v1/pricing/sync-date',
-                                  json={'date': '2026-01-05'})
+                                  json={'date': '2026-01-05'}, headers=ADMIN_HEADERS)
         assert response.status_code == 403
 
         data = response.get_json()
@@ -101,7 +104,7 @@ class TestSyncDateEndpoint:
     @patch('app.routes.api.is_sync_enabled', return_value=True)
     def test_missing_date_returns_400(self, mock_enabled, db_client):
         """Sync-date requires date parameter."""
-        response = db_client.post('/api/v1/pricing/sync-date', json={})
+        response = db_client.post('/api/v1/pricing/sync-date', json={}, headers=ADMIN_HEADERS)
         assert response.status_code == 400
 
         data = response.get_json()
@@ -111,7 +114,7 @@ class TestSyncDateEndpoint:
     def test_invalid_date_format(self, mock_enabled, db_client):
         """Invalid date format returns 400."""
         response = db_client.post('/api/v1/pricing/sync-date',
-                                  json={'date': 'not-a-date'})
+                                  json={'date': 'not-a-date'}, headers=ADMIN_HEADERS)
         assert response.status_code == 400
 
         data = response.get_json()
@@ -135,7 +138,7 @@ class TestSyncDateEndpoint:
         mock_get_sync.return_value = mock_service
 
         response = db_client.post('/api/v1/pricing/sync-date',
-                                  json={'date': '2026-01-05'})
+                                  json={'date': '2026-01-05'}, headers=ADMIN_HEADERS)
         assert response.status_code == 200
 
         data = response.get_json()
@@ -150,25 +153,27 @@ class TestSyncRangeEndpoint:
     def test_sync_disabled_returns_403(self, mock_enabled, db_client):
         """Sync returns 403 when sync is disabled."""
         response = db_client.post('/api/v1/pricing/sync',
-                                  json={'start_date': '2026-01-01', 'end_date': '2026-01-05'})
+                                  json={'start_date': '2026-01-01', 'end_date': '2026-01-05'},
+                                  headers=ADMIN_HEADERS)
         assert response.status_code == 403
 
     @patch('app.routes.api.is_sync_enabled', return_value=True)
     def test_requires_start_and_end_date(self, mock_enabled, db_client):
         """Sync requires both start_date and end_date."""
         response = db_client.post('/api/v1/pricing/sync',
-                                  json={'start_date': '2026-01-01'})
+                                  json={'start_date': '2026-01-01'}, headers=ADMIN_HEADERS)
         assert response.status_code == 400
 
         response = db_client.post('/api/v1/pricing/sync',
-                                  json={'end_date': '2026-01-05'})
+                                  json={'end_date': '2026-01-05'}, headers=ADMIN_HEADERS)
         assert response.status_code == 400
 
     @patch('app.routes.api.is_sync_enabled', return_value=True)
     def test_start_after_end_returns_400(self, mock_enabled, db_client):
         """Start date after end date returns 400."""
         response = db_client.post('/api/v1/pricing/sync',
-                                  json={'start_date': '2026-01-10', 'end_date': '2026-01-05'})
+                                  json={'start_date': '2026-01-10', 'end_date': '2026-01-05'},
+                                  headers=ADMIN_HEADERS)
         assert response.status_code == 400
 
         data = response.get_json()
@@ -191,7 +196,8 @@ class TestSyncRangeEndpoint:
         mock_get_sync.return_value = mock_service
 
         response = db_client.post('/api/v1/pricing/sync',
-                                  json={'start_date': '2026-01-01', 'end_date': '2026-01-05'})
+                                  json={'start_date': '2026-01-01', 'end_date': '2026-01-05'},
+                                  headers=ADMIN_HEADERS)
         assert response.status_code == 200
 
         data = response.get_json()
@@ -232,7 +238,7 @@ class TestVisitorSyncNowEndpoint:
 
     @patch('app.routes.api.is_visitor_logging_enabled', return_value=False)
     def test_visitor_logging_disabled_returns_403(self, mock_enabled, db_client):
-        response = db_client.post('/api/v1/visitors/sync-now')
+        response = db_client.post('/api/v1/visitors/sync-now', headers=ADMIN_HEADERS)
         assert response.status_code == 403
 
         data = response.get_json()
@@ -242,7 +248,7 @@ class TestVisitorSyncNowEndpoint:
     @patch('app.routes.api.is_visitor_logging_enabled', return_value=True)
     @patch('app.routes.api.get_r2_client', return_value=None)
     def test_r2_unavailable_returns_503(self, mock_get_r2, mock_enabled, db_client):
-        response = db_client.post('/api/v1/visitors/sync-now')
+        response = db_client.post('/api/v1/visitors/sync-now', headers=ADMIN_HEADERS)
         assert response.status_code == 503
 
         data = response.get_json()
@@ -280,7 +286,7 @@ class TestVisitorSyncNowEndpoint:
             )
             db.commit()
 
-        response = db_client.post('/api/v1/visitors/sync-now')
+        response = db_client.post('/api/v1/visitors/sync-now', headers=ADMIN_HEADERS)
         assert response.status_code == 200
 
         data = response.get_json()

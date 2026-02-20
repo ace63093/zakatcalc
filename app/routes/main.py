@@ -2,6 +2,7 @@
 from flask import Blueprint, render_template, redirect, send_from_directory, current_app
 
 from app.services.config import get_feature_flags
+from app.content.charities import CHARITIES, COUNTRY_OPTIONS
 
 main_bp = Blueprint('main', __name__)
 
@@ -58,6 +59,11 @@ def privacy_policy():
 def cad_to_bdt():
     """Render the CAD to BDT conversion page."""
     return render_template('cad_to_bdt.html')
+
+
+@main_bp.route('/charities')
+def charities():
+    return render_template('charities.html', charities=CHARITIES, country_options=COUNTRY_OPTIONS)
 
 
 @main_bp.route('/summary')

@@ -3,6 +3,7 @@ from datetime import date, datetime, timezone
 from flask import Blueprint, jsonify, request, current_app
 
 from app.db import get_db
+from app.content.charities import CHARITIES as _CHARITIES_DATA
 from app.services.pricing import get_pricing, format_pricing_response
 from app.services.calc import calculate_zakat, calculate_zakat_v2
 from app.services.advanced_calc import calculate_zakat_v3
@@ -701,6 +702,14 @@ def _calculate_v3(body: dict):
     }
 
     return jsonify(result)
+
+
+@api_bp.route('/charities')
+def charities_api():
+    """Return charity directory as JSON. Optional ?country=CA filter."""
+    country_filter = request.args.get('country', '').upper().strip()
+    results = [c for c in _CHARITIES_DATA if c['country'] == country_filter] if country_filter else list(_CHARITIES_DATA)
+    return jsonify({'charities': results, 'count': len(results), 'filter': {'country': country_filter or None}})
 
 
 @api_bp.route('/pricing/sync', methods=['POST'])

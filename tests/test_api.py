@@ -54,16 +54,18 @@ def test_pricing_silver_has_nisab_info(client, temp_data_dir):
 
 def test_pricing_refresh_returns_200(client, temp_data_dir):
     """POST /api/v1/pricing/refresh should return status 200."""
-    response = client.post('/api/v1/pricing/refresh')
+    from tests.conftest import TEST_ADMIN_SECRET
+    response = client.post('/api/v1/pricing/refresh', headers={'X-Admin-Secret': TEST_ADMIN_SECRET})
     assert response.status_code == 200
 
 
 def test_pricing_refresh_returns_refreshed_status(client, temp_data_dir):
     """POST /api/v1/pricing/refresh should return cache_status of refreshed."""
+    from tests.conftest import TEST_ADMIN_SECRET
     # First populate cache
     client.get('/api/v1/pricing/legacy')
     # Then refresh
-    response = client.post('/api/v1/pricing/refresh')
+    response = client.post('/api/v1/pricing/refresh', headers={'X-Admin-Secret': TEST_ADMIN_SECRET})
     data = response.get_json()
     assert data['cache_status'] == 'refreshed'
 

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Where to Give Your Zakat — Muslim Charity Directory{% endblock %}
+
+{% block head %}
+<meta name="description" content="Find trusted, registered Muslim charities in Canada and the USA to give your Zakat. CRA and IRS 501(c)(3) registered organizations listed.">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/charities.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="content-section charities-header">
+        <h1>Where to Give Your Zakat</h1>
+        <p class="charities-subtitle">Registered Muslim charities in Canada and the USA.</p>
+    </div>
+
+    <div class="charities-notice">
+        All organizations listed are government-registered charities (CRA or IRS 501(c)(3)).
+        Listing here is not an endorsement — always verify registration status directly before donating.
+    </div>
+
+    <!-- Country tabs -->
+    <div class="charities-tabs" role="tablist">
+        <button class="charities-tab active" data-country="all" role="tab" aria-selected="true">All</button>
+        {% for opt in country_options %}
+        <button class="charities-tab" data-country="{{ opt.code }}" role="tab" aria-selected="false">
+            {{ opt.flag }} {{ opt.label }}
+        </button>
+        {% endfor %}
+    </div>
+
+    <!-- Search -->
+    <div class="charities-search-wrap">
+        <input type="search" id="charitiesSearch" class="charities-search"
+               placeholder="Search by name…" aria-label="Search charities" autocomplete="off">
+    </div>
+
+    <!-- No results -->
+    <p class="charities-no-results" id="charitiesNoResults" hidden>No charities match your search.</p>
+
+    <!-- Card grid -->
+    <div class="charities-grid" id="charitiesGrid">
+        {% for charity in charities %}
+        <div class="charity-card {% if charity.featured %}charity-card--featured{% endif %}"
+             data-country="{{ charity.country }}"
+             data-name="{{ charity.name | lower }}">
+
+            <div class="charity-card__header">
+                <h2 class="charity-card__name">{{ charity.name }}</h2>
+                {% if charity.featured %}
+                <span class="charity-featured-badge">Featured</span>
+                {% endif %}
+            </div>
+
+            <div class="charity-card__tags">
+                {% for tag in charity.tags %}
+                <span class="charity-tag charity-tag--{{ tag | lower | replace(' ', '-') }}">{{ tag }}</span>
+                {% endfor %}
+            </div>
+
+            <p class="charity-card__desc">{{ charity.description }}</p>
+
+            <p class="charity-card__reg">
+                <span class="charity-reg-label">{{ charity.registration_label }}:</span>
+                {% if charity.registration_number %}
+                <span class="charity-reg-num">{{ charity.registration_number }}</span>
+                {% else %}
+                <span class="charity-reg-num charity-reg-num--unknown">Number not available</span>
+                {% endif %}
+            </p>
+
+            <div class="charity-card__footer">
+                <a href="{{ charity.website }}" class="charity-website-link"
+                   target="_blank" rel="noopener noreferrer">Visit Website ↗</a>
+                <a href="{{ charity.donate_url }}" class="charity-donate-btn"
+                   target="_blank" rel="noopener noreferrer">Donate</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="charities-disclaimer">
+        <strong>Disclaimer:</strong> This directory is for informational purposes only and does not constitute
+        a religious ruling on Zakat eligibility. For guidance on eligible Zakat recipients, consult a qualified Islamic scholar.
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    var grid = document.getElementById('charitiesGrid');
+    var noResults = document.getElementById('charitiesNoResults');
+    var searchInput = document.getElementById('charitiesSearch');
+    var tabs = document.querySelectorAll('.charities-tab');
+    var activeCountry = 'all';
+
+    function applyFilters() {
+        var query = searchInput.value.trim().toLowerCase();
+        var visible = 0;
+        grid.querySelectorAll('.charity-card').forEach(function (card) {
+            var countryMatch = activeCountry === 'all' || card.dataset.country === activeCountry;
+            var nameMatch = !query || card.dataset.name.includes(query);
+            card.hidden = !(countryMatch && nameMatch);
+            if (!card.hidden) visible++;
+        });
+        noResults.hidden = visible > 0;
+    }
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            tabs.forEach(function (t) { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+            tab.classList.add('active');
+            tab.setAttribute('aria-selected', 'true');
+            activeCountry = tab.dataset.country;
+            applyFilters();
+        });
+    });
+
+    searchInput.addEventListener('input', applyFilters);
+}());
+</script>
+{% endblock %}

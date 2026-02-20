@@ -13,6 +13,13 @@ from tests.fakes.fake_r2 import FakeR2
 # Fixed "today" for deterministic tests - 2026-01-15 is a Wednesday
 FROZEN_TODAY = date(2026, 1, 15)
 
+# Known admin secret used in tests. Tests that call admin-protected endpoints
+# must pass headers={'X-Admin-Secret': TEST_ADMIN_SECRET}.
+TEST_ADMIN_SECRET = 'test-admin-secret'
+
+# Set ADMIN_SECRET at import time so all tests use a known value.
+os.environ['ADMIN_SECRET'] = TEST_ADMIN_SECRET
+
 
 @pytest.fixture
 def app():

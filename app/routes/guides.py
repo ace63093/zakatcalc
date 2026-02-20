@@ -80,6 +80,7 @@ def sitemap():
         ("/faq", CORE_LASTMOD),
         ("/contact", CORE_LASTMOD),
         ("/guides", CORE_LASTMOD),
+        ("/charities", "2026-02-20"),
     ]
     for guide in GUIDES.values():
         items.append((f"/{guide['slug']}", guide["last_modified"]))

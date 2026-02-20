@@ -156,6 +156,32 @@ def test_cad_to_bdt_contains_heading(client):
     assert b'CAD to BDT' in response.data
 
 
+def test_charities_page_returns_200(client):
+    response = client.get('/charities')
+    assert response.status_code == 200
+
+def test_charities_page_contains_heading(client):
+    response = client.get('/charities')
+    assert b'Where to Give Your Zakat' in response.data
+
+def test_charities_page_contains_canadian_charity(client):
+    response = client.get('/charities')
+    assert b'National Zakat Foundation Canada' in response.data
+
+def test_charities_page_contains_us_charity(client):
+    response = client.get('/charities')
+    assert b'Zakat Foundation of America' in response.data
+
+def test_charities_page_contains_tabs(client):
+    response = client.get('/charities')
+    assert b'data-country="CA"' in response.data
+    assert b'data-country="US"' in response.data
+
+def test_charities_page_featured_badge(client):
+    response = client.get('/charities')
+    assert b'charity-card--featured' in response.data
+
+
 def test_visitor_logging_uses_cf_connecting_ip(app, monkeypatch):
     """Visitor logging should prefer CF-Connecting-IP over remote_addr."""
     monkeypatch.setenv('ENABLE_VISITOR_LOGGING', '1')

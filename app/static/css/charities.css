@@ -1,0 +1,286 @@
+/* ============================================================
+   charities.css — Where to Give Your Zakat page
+   ============================================================ */
+
+.charities-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.charities-subtitle {
+    color: var(--text-secondary, #6b7280);
+    font-size: 1.05rem;
+    margin-top: 8px;
+}
+
+/* Disclaimer box */
+.charities-notice {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+    font-size: 0.9rem;
+    color: #0c4a6e;
+    line-height: 1.5;
+}
+
+/* --- Country tab strip --- */
+.charities-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.charities-tab {
+    padding: 9px 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fff;
+    color: #6b7280;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.charities-tab:hover {
+    border-color: #a5b4fc;
+    color: #4f46e5;
+}
+
+.charities-tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+}
+
+/* --- Search --- */
+.charities-search-wrap {
+    margin-bottom: 24px;
+}
+
+.charities-search {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: #111827;
+    transition: border-color 0.2s;
+    background: #fff;
+}
+
+.charities-search:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* --- No results --- */
+.charities-no-results {
+    text-align: center;
+    color: #9ca3af;
+    padding: 40px 0;
+    font-size: 1rem;
+}
+
+/* --- Card grid --- */
+.charities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 20px;
+}
+
+/* --- Card --- */
+.charity-card {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 22px;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+
+.charity-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.13);
+    border-color: #c4b5fd;
+}
+
+.charity-card--featured {
+    border-color: #667eea;
+    background: linear-gradient(160deg, #f5f3ff 0%, #fff 60%);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.1);
+}
+
+/* --- Card header --- */
+.charity-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.charity-card__name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.3;
+    margin: 0;
+}
+
+.charity-featured-badge {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* --- Tags --- */
+.charity-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.charity-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.charity-tag--local-distribution {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.charity-tag--international-relief {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+/* --- Description --- */
+.charity-card__desc {
+    color: #6b7280;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    margin-bottom: 14px;
+    flex-grow: 1;
+}
+
+/* --- Registration --- */
+.charity-card__reg {
+    font-size: 0.78rem;
+    color: #9ca3af;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.charity-reg-label {
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.charity-reg-num {
+    font-family: 'Courier New', monospace;
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    font-size: 0.76rem;
+}
+
+.charity-reg-num--unknown {
+    font-style: italic;
+    background: none;
+    border: none;
+    font-family: inherit;
+}
+
+/* --- Footer --- */
+.charity-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.charity-website-link {
+    color: #667eea;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.charity-website-link:hover {
+    text-decoration: underline;
+}
+
+.charity-donate-btn {
+    display: inline-block;
+    padding: 8px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: transform 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+}
+
+.charity-donate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+}
+
+/* --- Disclaimer at bottom --- */
+.charities-disclaimer {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 36px;
+    font-size: 0.88rem;
+    color: #78350f;
+    line-height: 1.5;
+}
+
+/* --- Responsive --- */
+@media (max-width: 640px) {
+    .charities-grid {
+        grid-template-columns: 1fr;
+    }
+    .charities-search {
+        max-width: 100%;
+    }
+    .charity-card__footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .charity-donate-btn {
+        text-align: center;
+    }
+}
