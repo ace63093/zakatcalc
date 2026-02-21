@@ -2,6 +2,11 @@
    charities.css — Where to Give Your Zakat page
    ============================================================ */
 
+/* Ensure [hidden] works even when display:flex is set on cards */
+.charity-card[hidden] {
+    display: none;
+}
+
 .charities-header {
     text-align: center;
     margin-bottom: 28px;
@@ -27,11 +32,24 @@
 }
 
 /* --- Country tab strip --- */
+.charities-tabs-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    margin-bottom: 20px;
+    /* Fade edges to hint at scroll */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+}
+.charities-tabs-wrap::-webkit-scrollbar { display: none; }
+
 .charities-tabs {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
-    margin-bottom: 20px;
+    padding: 4px 16px;
+    width: max-content;
+    min-width: 100%;
 }
 
 .charities-tab {

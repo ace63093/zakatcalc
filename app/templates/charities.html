@@ -3,7 +3,7 @@
 {% block title %}Where to Give Your Zakat — Muslim Charity Directory{% endblock %}
 
 {% block head %}
-<meta name="description" content="Find trusted, registered Muslim charities in Canada and the USA to give your Zakat. CRA and IRS 501(c)(3) registered organizations listed.">
+<meta name="description" content="Find trusted, government-registered Muslim charities worldwide to give your Zakat. Covers Canada, USA, UK, Australia, and more.">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/charities.css') }}">
 {% endblock %}
 
@@ -11,22 +11,24 @@
 <div class="container">
     <div class="content-section charities-header">
         <h1>Where to Give Your Zakat</h1>
-        <p class="charities-subtitle">Registered Muslim charities in Canada and the USA.</p>
+        <p class="charities-subtitle">Government-registered Muslim charities across {{ country_options | length }} countries.</p>
     </div>
 
     <div class="charities-notice">
-        All organizations listed are government-registered charities (CRA or IRS 501(c)(3)).
+        All organizations listed are government-registered charities in their respective countries.
         Listing here is not an endorsement — always verify registration status directly before donating.
     </div>
 
-    <!-- Country tabs -->
-    <div class="charities-tabs" role="tablist">
-        <button class="charities-tab active" data-country="all" role="tab" aria-selected="true">All</button>
-        {% for opt in country_options %}
-        <button class="charities-tab" data-country="{{ opt.code }}" role="tab" aria-selected="false">
-            {{ opt.flag }} {{ opt.label }}
-        </button>
-        {% endfor %}
+    <!-- Country tabs (scrollable) -->
+    <div class="charities-tabs-wrap">
+        <div class="charities-tabs" role="tablist">
+            <button class="charities-tab" data-country="all" role="tab" aria-selected="false">All</button>
+            {% for opt in country_options %}
+            <button class="charities-tab" data-country="{{ opt.code }}" role="tab" aria-selected="false">
+                {{ opt.flag }} {{ opt.label }}
+            </button>
+            {% endfor %}
+        </div>
     </div>
 
     <!-- Search -->
@@ -65,7 +67,7 @@
                 {% if charity.registration_number %}
                 <span class="charity-reg-num">{{ charity.registration_number }}</span>
                 {% else %}
-                <span class="charity-reg-num charity-reg-num--unknown">Number not available</span>
+                <span class="charity-reg-num charity-reg-num--unknown">See website</span>
                 {% endif %}
             </p>
 
@@ -106,17 +108,26 @@
         noResults.hidden = visible > 0;
     }
 
-    tabs.forEach(function (tab) {
-        tab.addEventListener('click', function () {
-            tabs.forEach(function (t) { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
-            tab.classList.add('active');
-            tab.setAttribute('aria-selected', 'true');
-            activeCountry = tab.dataset.country;
-            applyFilters();
+    function activateTab(country) {
+        tabs.forEach(function (t) {
+            var match = t.dataset.country === country;
+            t.classList.toggle('active', match);
+            t.setAttribute('aria-selected', match ? 'true' : 'false');
+            if (match) t.scrollIntoView({ block: 'nearest', inline: 'center' });
         });
+        activeCountry = country;
+        applyFilters();
+    }
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () { activateTab(tab.dataset.country); });
     });
 
     searchInput.addEventListener('input', applyFilters);
+
+    // Pre-select country from server-side geo hint, fallback to "all"
+    var userCountry = {{ user_country | tojson }};
+    activateTab(userCountry || 'all');
 }());
 </script>
 {% endblock %}

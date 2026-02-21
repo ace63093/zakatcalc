@@ -1,8 +1,9 @@
 """Main routes for the Zakat Calculator UI."""
-from flask import Blueprint, render_template, redirect, send_from_directory, current_app
+from flask import Blueprint, render_template, redirect, request, send_from_directory, current_app
 
 from app.services.config import get_feature_flags
-from app.content.charities import CHARITIES, COUNTRY_OPTIONS
+from app.content.charities import COUNTRY_OPTIONS
+from app.services.charities_service import get_charities
 
 main_bp = Blueprint('main', __name__)
 
@@ -63,7 +64,19 @@ def cad_to_bdt():
 
 @main_bp.route('/charities')
 def charities():
-    return render_template('charities.html', charities=CHARITIES, country_options=COUNTRY_OPTIONS)
+    from app.services.r2_client import get_r2_client
+    charities_list = get_charities(r2_client=get_r2_client())
+    # Pre-select the visitor's country if we have charities for it
+    user_country = request.headers.get('CF-IPCountry', '').upper().strip()
+    country_codes = {opt['code'] for opt in COUNTRY_OPTIONS}
+    if user_country not in country_codes:
+        user_country = ''
+    return render_template(
+        'charities.html',
+        charities=charities_list,
+        country_options=COUNTRY_OPTIONS,
+        user_country=user_country,
+    )
 
 
 @main_bp.route('/summary')

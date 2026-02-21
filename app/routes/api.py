@@ -3,7 +3,8 @@ from datetime import date, datetime, timezone
 from flask import Blueprint, jsonify, request, current_app
 
 from app.db import get_db
-from app.content.charities import CHARITIES as _CHARITIES_DATA
+from app.content.charities import CHARITIES as _CHARITIES_DATA, COUNTRY_OPTIONS as _COUNTRY_OPTIONS
+from app.services.charities_service import get_charities as _get_charities, save_to_r2 as _charities_save_to_r2, invalidate_cache as _charities_invalidate_cache
 from app.services.pricing import get_pricing, format_pricing_response
 from app.services.calc import calculate_zakat, calculate_zakat_v2
 from app.services.advanced_calc import calculate_zakat_v3
@@ -723,9 +724,37 @@ def _calculate_v3(body: dict):
 @api_bp.route('/charities')
 def charities_api():
     """Return charity directory as JSON. Optional ?country=CA filter."""
+    r2 = get_r2_client()
+    all_charities = _get_charities(r2_client=r2)
     country_filter = request.args.get('country', '').upper().strip()
-    results = [c for c in _CHARITIES_DATA if c['country'] == country_filter] if country_filter else list(_CHARITIES_DATA)
-    return jsonify({'charities': results, 'count': len(results), 'filter': {'country': country_filter or None}})
+    results = [c for c in all_charities if c['country'] == country_filter] if country_filter else list(all_charities)
+    return jsonify({
+        'charities': results,
+        'count': len(results),
+        'total': len(all_charities),
+        'country_options': _COUNTRY_OPTIONS,
+        'filter': {'country': country_filter or None},
+    })
+
+
+@api_bp.route('/charities/push-r2', methods=['POST'])
+def charities_push_r2():
+    """Push the current hardcoded charity list to R2 and refresh in-memory cache. [admin]"""
+    auth_error = _check_admin_secret()
+    if auth_error:
+        return auth_error
+
+    r2 = get_r2_client()
+    if not r2:
+        return jsonify({'error': 'R2 unavailable', 'message': 'Set R2_ENABLED=1 with valid R2_* configuration'}), 503
+
+    charities = list(_CHARITIES_DATA)
+    ok = _charities_save_to_r2(r2, charities)
+    if not ok:
+        return jsonify({'error': 'Failed to save charities to R2'}), 500
+
+    _charities_invalidate_cache()
+    return jsonify({'success': True, 'count': len(charities), 'message': 'Charities pushed to R2 and cache cleared'})
 
 
 @api_bp.route('/pricing/sync', methods=['POST'])
