@@ -67,7 +67,7 @@ def _check_admin_secret():
 
 
 def _domain_rollup(db, domain: str) -> dict:
-    """Get unique IP and visit totals for a domain and subdomains."""
+    """Get unique IP and visit totals for a domain and subdomains, with daily breakdown."""
     row = db.execute(
         '''
         SELECT
@@ -79,10 +79,26 @@ def _domain_rollup(db, domain: str) -> dict:
         ''',
         (domain, f'%.{domain}')
     ).fetchone()
+
+    daily_rows = db.execute(
+        '''
+        SELECT
+            date(last_seen) AS day,
+            COUNT(DISTINCT ip_hash) AS unique_ips
+        FROM visitor_domains
+        WHERE host = ? OR host LIKE ?
+        GROUP BY date(last_seen)
+        ORDER BY date(last_seen) DESC
+        LIMIT 30
+        ''',
+        (domain, f'%.{domain}')
+    ).fetchall()
+
     return {
         'unique_ips': int(row['unique_ips'] or 0),
         'visits': int(row['visits'] or 0),
         'last_seen': row['last_seen'],
+        'daily': [{'date': r['day'], 'unique_ips': int(r['unique_ips'])} for r in daily_rows],
     }
 
 
@@ -937,6 +953,18 @@ def visitors_sync_now():
 
     domains = {domain: _domain_rollup(db, domain) for domain in TRACKED_DOMAINS}
 
+    overall_daily = db.execute(
+        '''
+        SELECT
+            date(last_seen) AS day,
+            COUNT(DISTINCT ip_hash) AS unique_ips
+        FROM visitors
+        GROUP BY date(last_seen)
+        ORDER BY date(last_seen) DESC
+        LIMIT 30
+        '''
+    ).fetchall()
+
     return jsonify({
         'success': True,
         'synced_at': datetime.now(timezone.utc).isoformat(),
@@ -946,4 +974,5 @@ def visitors_sync_now():
             'domain_rows': int(domain_rows_total or 0),
         },
         'domains': domains,
+        'daily': [{'date': r['day'], 'unique_ips': int(r['unique_ips'])} for r in overall_daily],
     })
